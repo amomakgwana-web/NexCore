@@ -1,0 +1,2 @@
+# NexCore
+Enterprise Resource Planner
