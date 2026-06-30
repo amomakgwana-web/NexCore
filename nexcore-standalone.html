@@ -1042,7 +1042,7 @@ tr:hover td{background:var(--sf);}
       <!-- PROCUREMENT -->
       <div class="page" id="page-procurement">
         <div class="ph"><div class="ph-icon" style="background:var(--bl)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg></div><div><div class="ph-title">Procurement</div><div class="ph-sub">Purchase Orders · Vendor Management</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="openModal('newPOModal')">New PO</button></div></div>
-        <div class="content"><div class="card"><div class="ch2"><span class="ch2-title">Purchase Orders</span></div><div class="cb" style="padding:0;"><div class="tw"><table><thead><tr><th>PO Number</th><th>Vendor</th><th>Description</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody><tr><td class="mo tb">PO-2025-0892</td><td class="tb">Dell Technologies SA</td><td>20× Dell XPS 15 Laptops</td><td class="mo">R 284,500</td><td><span class="badge am">Pending Approval</span></td><td><button class="btn bp btn-xs" onclick="openModal('approvalModal')">Review</button></td></tr><tr><td class="mo tb">PO-2025-0891</td><td class="tb">Nashua SA</td><td>Office equipment × 4</td><td class="mo">R 124,000</td><td><span class="badge gn">Approved</span></td><td><button class="btn bs btn-xs" onclick="toast('PO details loaded','#2563EB')">View</button></td></tr><tr><td class="mo tb">PO-2025-0890</td><td class="tb">Vodacom Business</td><td>Data & connectivity Q1</td><td class="mo">R 68,400</td><td><span class="badge gn">Received</span></td><td><button class="btn bs btn-xs" onclick="toast('GRN confirmed','#16A34A')">View</button></td></tr><tr><td class="mo tb">PO-2025-0888</td><td class="tb">Microsoft SA</td><td>M365 licences 674 users</td><td class="mo">R 135,200</td><td><span class="badge am">Pending Approval</span></td><td><button class="btn bp btn-xs" onclick="openModal('approvalModal')">Review</button></td></tr></tbody></table></div></div></div></div>
+        <div class="content"><div class="card"><div class="ch2"><span class="ch2-title">Purchase Orders</span></div><div class="cb" style="padding:0;"><div class="tw"><table><thead><tr><th>PO Number</th><th>Vendor</th><th>Description</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody id="poTableBody"><tr><td class="mo tb">PO-2025-0892</td><td class="tb">Dell Technologies SA</td><td>20× Dell XPS 15 Laptops</td><td class="mo">R 284,500</td><td><span class="badge am">Pending Approval</span></td><td><button class="btn bp btn-xs" onclick="openModal('approvalModal')">Review</button></td></tr><tr><td class="mo tb">PO-2025-0891</td><td class="tb">Nashua SA</td><td>Office equipment × 4</td><td class="mo">R 124,000</td><td><span class="badge gn">Approved</span></td><td><button class="btn bs btn-xs" onclick="toast('PO details loaded','#2563EB')">View</button></td></tr><tr><td class="mo tb">PO-2025-0890</td><td class="tb">Vodacom Business</td><td>Data & connectivity Q1</td><td class="mo">R 68,400</td><td><span class="badge gn">Received</span></td><td><button class="btn bs btn-xs" onclick="toast('GRN confirmed','#16A34A')">View</button></td></tr><tr><td class="mo tb">PO-2025-0888</td><td class="tb">Microsoft SA</td><td>M365 licences 674 users</td><td class="mo">R 135,200</td><td><span class="badge am">Pending Approval</span></td><td><button class="btn bp btn-xs" onclick="openModal('approvalModal')">Review</button></td></tr></tbody></table></div></div></div></div>
       </div>
 
       <!-- APPROVALS -->
@@ -3521,13 +3521,26 @@ function initPageContents(){
 
 function renderDashboard(){
   const r = currentRole;
+  // ── Live KPI helpers ──
+  const _invs    = window.INVOICE_DATA || window.INVOICES_DATA || [];
+  const _emps    = window.EMPLOYEES || [];
+  const _approvs = window.APPROVALS_DATA || [];
+  const _pos     = window.PO_DATA || [];
+  const empCount    = _emps.length  || 674;
+  const pendCount   = (_approvs.filter(a => a.status === 'Pending').length) || 7;
+  const outAmt      = _invs.filter(i => i.status === 'Outstanding' || i.status === 'Overdue')
+                            .reduce((s, i) => s + Number(i.total_amount || i.total || 0), 0);
+  const openPOCount = _pos.filter(p => p.status === 'Pending Approval').length || 3;
+  const fmtLive = v => v >= 1e6 ? 'R ' + (v/1e6).toFixed(1) + 'M' : v > 0 ? fmt(v) : null;
+  const outSub  = fmtLive(outAmt) ? fmtLive(outAmt) + ' outstanding' : '3 overdue';
+
   let html = '';
   if(['admin','cfo'].includes(r)){
     html = `<div class="kg kg-4">
       <div class="kpi or"><div class="kpi-lbl">Total Revenue</div><div class="kpi-val">R 84.7M</div><div class="kpi-sub">+18.4% YoY</div></div>
       <div class="kpi bl"><div class="kpi-lbl">SwiftPay Volume</div><div class="kpi-val">480K</div><div class="kpi-sub">+32.1% transactions</div></div>
-      <div class="kpi gn"><div class="kpi-lbl">Active Employees</div><div class="kpi-val">674</div><div class="kpi-sub">+12 this quarter</div></div>
-      <div class="kpi rd"><div class="kpi-lbl">Pending Approvals</div><div class="kpi-val">7</div><div class="kpi-sub">3 overdue</div></div>
+      <div class="kpi gn"><div class="kpi-lbl">Active Employees</div><div class="kpi-val">${empCount}</div><div class="kpi-sub">+12 this quarter</div></div>
+      <div class="kpi rd"><div class="kpi-lbl">Pending Approvals</div><div class="kpi-val">${pendCount}</div><div class="kpi-sub">${outSub}</div></div>
     </div>
     <div class="module-grid">
       <div class="mod-card" onclick="openPage('finance')"><div class="mod-card-icon" style="background:var(--or)">${svgIcon('dollar','16px','white')}</div><div><div class="mod-card-name">Finance</div><div class="mod-card-desc">GL · P&L · Cash flow</div><div class="mod-card-stat">R 84.7M revenue</div></div></div>
@@ -3539,17 +3552,18 @@ function renderDashboard(){
     </div>
     <div class="card"><div class="ch2">${svgIcon('bar','13px','var(--or)')}<span class="ch2-title">Live Activity</span></div><div class="cb" style="padding:8px 14px;">${getActivityHTML()}</div></div>`;
   } else if(r==='manager'){
+    const mgrPend = pendCount || 3;
     html = `<div class="kg kg-4">
-      <div class="kpi or"><div class="kpi-lbl">My Pending Approvals</div><div class="kpi-val">3</div></div>
+      <div class="kpi or"><div class="kpi-lbl">My Pending Approvals</div><div class="kpi-val">${mgrPend}</div></div>
       <div class="kpi bl"><div class="kpi-lbl">Team Size</div><div class="kpi-val">12</div></div>
       <div class="kpi gn"><div class="kpi-lbl">Leave Requests</div><div class="kpi-val">2</div></div>
-      <div class="kpi rd"><div class="kpi-lbl">Open POs</div><div class="kpi-val">4</div></div>
+      <div class="kpi rd"><div class="kpi-lbl">Open POs</div><div class="kpi-val">${openPOCount}</div></div>
     </div>
     <div class="g2"><div class="card"><div class="ch2"><span class="ch2-title">Pending Approvals</span></div><div class="cb" style="padding:0;"><div class="tw"><table><thead><tr><th>Request</th><th>Type</th><th>Amount</th><th></th></tr></thead><tbody><tr><td class="tb">PO-2025-0892</td><td>Purchase Order</td><td class="mo">R 284,500</td><td><button class="btn bp btn-xs" onclick="openModal('approvalModal')">Review</button></td></tr><tr><td class="tb">LEAVE-0028</td><td>Leave (Sipho N.)</td><td>5 days</td><td><button class="btn bg btn-xs" onclick="toast('Leave approved','#16A34A')">Approve</button></td></tr></tbody></table></div></div></div><div class="card"><div class="ch2"><span class="ch2-title">Recent Activity</span></div><div class="cb" style="padding:8px 14px;">${getActivityHTML(3)}</div></div></div>`;
   } else if(r==='hr'){
     html = `<div class="kg kg-4">
-      <div class="kpi gn"><div class="kpi-lbl">Total Employees</div><div class="kpi-val">674</div></div>
-      <div class="kpi or"><div class="kpi-lbl">Leave Pending</div><div class="kpi-val">3</div></div>
+      <div class="kpi gn"><div class="kpi-lbl">Total Employees</div><div class="kpi-val">${empCount}</div></div>
+      <div class="kpi or"><div class="kpi-lbl">Leave Pending</div><div class="kpi-val">${pendCount || 3}</div></div>
       <div class="kpi bl"><div class="kpi-lbl">Payroll Due</div><div class="kpi-val">R 9.2M</div></div>
       <div class="kpi rd"><div class="kpi-lbl">Onboarding</div><div class="kpi-val">2</div></div>
     </div>
@@ -3882,22 +3896,68 @@ function renderESSContent(){
 
 /* ═══ APPROVALS ═══ */
 
+function _ageStr(ts) {
+  if (!ts) return '?';
+  const diff = Date.now() - new Date(ts).getTime();
+  const h = Math.floor(diff / 3600000);
+  if (h < 1) return Math.floor(diff / 60000) + 'm';
+  if (h < 24) return h + 'h';
+  return Math.floor(h / 24) + 'd';
+}
+
 function renderApprovalContent(){
   const el=document.getElementById('approvalContent');if(!el)return;
-  const approvals=[
-    {id:'PO-2025-0892',type:'Purchase Order',from:'Thabo M.',desc:'Dell Laptops × 20',amount:'R 284,500',priority:'High',mod:'Procurement',age:'2h'},
-    {id:'PO-2025-0888',type:'Purchase Order',from:'Thabo M.',desc:'Microsoft M365 × 674',amount:'R 135,200',priority:'High',mod:'Procurement',age:'5h'},
-    {id:'INV-6624',type:'Invoice',from:'City of Tshwane',desc:'xPayments quarterly fee',amount:'R 284,000',priority:'Medium',mod:'xBilling',age:'1d'},
-    {id:'PAY-0142',type:'Payout',from:'TransFund',desc:'Settlement batch',amount:'R 2,840,000',priority:'High',mod:'SwiftPay',age:'30m'},
-    {id:'LEAVE-0028',type:'Leave',from:'Sipho N.',desc:'Annual leave 5 days',amount:'—',priority:'Low',mod:'HR',age:'1d'},
-    {id:'CONTRACT-084',type:'Contract',from:'Interfile Holdings',desc:'Maintenance renewal',amount:'R 47,200',priority:'Medium',mod:'xVault',age:'2d'},
-    {id:'BUDGET-012',type:'Budget',from:'Marketing Dept',desc:'Q1 overspend approval',amount:'R 30,000',priority:'Low',mod:'Finance',age:'3d'},
+  const live = window.APPROVALS_DATA;
+  const mockApprovals=[
+    {_id:null,id:'PO-2025-0892',type:'Purchase Order',from:'Thabo M.',desc:'Dell Laptops × 20',amount:'R 284,500',priority:'High',mod:'Procurement',age:'2h'},
+    {_id:null,id:'PO-2025-0888',type:'Purchase Order',from:'Thabo M.',desc:'Microsoft M365 × 674',amount:'R 135,200',priority:'High',mod:'Procurement',age:'5h'},
+    {_id:null,id:'INV-6624',type:'Invoice',from:'City of Tshwane',desc:'xPayments quarterly fee',amount:'R 284,000',priority:'Medium',mod:'xBilling',age:'1d'},
+    {_id:null,id:'PAY-0142',type:'Payout',from:'TransFund',desc:'Settlement batch',amount:'R 2,840,000',priority:'High',mod:'SwiftPay',age:'30m'},
+    {_id:null,id:'LEAVE-0028',type:'Leave',from:'Sipho N.',desc:'Annual leave 5 days',amount:'—',priority:'Low',mod:'HR',age:'1d'},
+    {_id:null,id:'CONTRACT-084',type:'Contract',from:'Interfile Holdings',desc:'Maintenance renewal',amount:'R 47,200',priority:'Medium',mod:'xVault',age:'2d'},
   ];
-  el.innerHTML=approvals.map(a=>`<div class="card"><div style="display:flex;align-items:center;gap:12px;padding:12px 14px;">
+  const approvals = (live && live.length)
+    ? live.map(a => ({
+        _id:      a.id,
+        id:       a.document_ref || a.id.slice(0,8).toUpperCase(),
+        type:     a.document_type || 'Request',
+        from:     a.submitter_name || '—',
+        desc:     a.notes || a.description || '—',
+        amount:   a.amount ? fmt(Number(a.amount)) : '—',
+        priority: Number(a.amount) > 100000 ? 'High' : Number(a.amount) > 20000 ? 'Medium' : 'Low',
+        mod:      a.module || 'General',
+        age:      _ageStr(a.created_at),
+      }))
+    : mockApprovals;
+  el.innerHTML = approvals.length === 0
+    ? '<div class="card" style="padding:24px;text-align:center;color:var(--mid);">No pending approvals</div>'
+    : approvals.map(a => {
+        const reviewFn = a._id
+          ? `openApprovalReview('${a._id}','${a.id}','${a.amount}')`
+          : `openModal('approvalModal')`;
+        return `<div class="card"><div style="display:flex;align-items:center;gap:12px;padding:12px 14px;">
     <div style="width:34px;height:34px;background:var(--or-bg);border-radius:var(--r8);display:flex;align-items:center;justify-content:center;">${svgIcon('file','16px','var(--or)')}</div>
     <div style="flex:1;"><div style="font-size:13px;font-weight:700;">${a.id} — ${a.type}</div><div style="font-size:11px;color:var(--mid);">${a.from} · ${a.desc}</div><div style="display:flex;gap:6px;margin-top:5px;"><span class="badge ${a.priority==='High'?'rd':a.priority==='Medium'?'am':'gy'}">${a.priority}</span><span class="badge gy">${a.mod}</span><span style="font-size:10px;color:var(--mu);">${a.age} ago</span></div></div>
-    <div style="text-align:right;"><div style="font-size:15px;font-weight:900;font-family:var(--mo);">${a.amount}</div><div style="display:flex;gap:6px;margin-top:6px;"><button class="btn bp btn-xs" onclick="openModal('approvalModal')">Review</button><button class="btn bs btn-xs" onclick="openModal('delegateModal')">Delegate</button></div></div>
-  </div></div>`).join('');
+    <div style="text-align:right;"><div style="font-size:15px;font-weight:900;font-family:var(--mo);">${a.amount}</div><div style="display:flex;gap:6px;margin-top:6px;"><button class="btn bp btn-xs" onclick="${reviewFn}">Review</button><button class="btn bs btn-xs" onclick="openModal('delegateModal')">Delegate</button></div></div>
+  </div></div>`;
+    }).join('');
+}
+
+function openApprovalReview(dbId, label, amount) {
+  // Pre-fill the approval modal with live context, then submit via submitApproval()
+  const titleEl = document.querySelector('#approvalModal .alert-title');
+  const bodyEl  = document.querySelector('#approvalModal .alert-body');
+  if (titleEl) titleEl.textContent = label;
+  if (bodyEl)  bodyEl.textContent  = amount;
+  // Wire the modal approve/reject buttons to the real DB call
+  const mf = document.querySelector('#approvalModal .mf');
+  if (mf) {
+    mf.innerHTML = `
+      <button class="btn bd2" onclick="submitApproval('${dbId}','reject');closeModal('approvalModal')">Reject</button>
+      <button class="btn bs" onclick="closeModal('approvalModal');openModal('delegateModal')">Delegate</button>
+      <button class="btn bp" onclick="submitApproval('${dbId}','approve');closeModal('approvalModal')">Approve</button>`;
+  }
+  openModal('approvalModal');
 }
 
 /* ═══ ASSET REGISTER ═══ */
@@ -5579,7 +5639,27 @@ function renderVendorScoring() {
 
 // Alias for supabase.js compatibility
 function renderBillingContent() { if (!window._billingRenderedByBudgetMgmt) renderBillingFull(); }
-function renderProcurementTable() { /* handled by static HTML */ }
+function renderProcurementTable() {
+  const tbody = document.getElementById('poTableBody');
+  if (!tbody) return;
+  const pos = window.PO_DATA;
+  if (!pos || !pos.length) return;
+  const sb = s => s === 'Approved' || s === 'Received' ? 'gn' : s === 'Rejected' ? 'rd' : 'am';
+  tbody.innerHTML = pos.map(p => {
+    const isPending = p.status === 'Pending Approval';
+    const action = isPending
+      ? `openModal('approvalModal')`
+      : `toast('${p.po_number} — ${p.vendor_name}','#2563EB')`;
+    return `<tr>
+      <td class="mo tb">${p.po_number}</td>
+      <td class="tb">${p.vendor_name}</td>
+      <td>${p.description}</td>
+      <td class="mo">${fmt(p.total_amount)}</td>
+      <td><span class="badge ${sb(p.status)}">${p.status}</span></td>
+      <td><button class="btn ${isPending?'bp':'bs'} btn-xs" onclick="${action}">${isPending?'Review':'View'}</button></td>
+    </tr>`;
+  }).join('');
+}
 
 
 /* ════════════════════════════════════════════════════════════
@@ -6267,7 +6347,19 @@ function budgetAddDept()       { if(typeof toast==='function') toast('Opening Ne
 function budgetEditDept(id)    { if(typeof toast==='function') toast(`Editing budget for ${BUDGET_DEPTS.find(d=>d.id===id)?.name}…`,'#3B82F6'); }
 function budgetViewHistory(id) { if(typeof toast==='function') toast(`Loading spend history…`,'#3B82F6'); }
 function budgetEditCategory(id){ if(typeof toast==='function') toast(`Editing category limit…`,'#3B82F6'); }
-function budgetExport()        { if(typeof toast==='function') toast('Generating Budget Report PDF…','#16A34A'); }
+function budgetExport() {
+  const rows = (window.BUDGET_DATA || []).length
+    ? window.BUDGET_DATA
+    : window.BUDGET_DEPTS || [];
+  if (!rows.length) { toast('No budget data loaded', '#D97706'); return; }
+  exportToCSV(rows.map(r => ({
+    department:    r.dept || r.name,
+    budget:        r.budget || r.budget_amount,
+    actual_spent:  r.actual || r.actual_spent,
+    variance:      (r.budget || r.budget_amount || 0) - (r.actual || r.actual_spent || 0),
+    utilisation_pct: Math.round(((r.actual || r.actual_spent || 0) / (r.budget || r.budget_amount || 1)) * 100) + '%',
+  })), 'nexcore_budget.csv');
+}
 function budgetDeptFilter(q)   {
   document.querySelectorAll('#budgetDeptGrid .card').forEach(el=>{
     el.style.display = el.innerText.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
@@ -6275,7 +6367,31 @@ function budgetDeptFilter(q)   {
 }
 
 function invoiceNew()            { if(typeof toast==='function') toast('Opening new invoice form…','#3B82F6'); }
-function invoiceExport()         { if(typeof toast==='function') toast('Exporting invoice register…','#16A34A'); }
+function exportToCSV(rows, filename) {
+  if (!rows || !rows.length) { toast('No data to export', '#EF4444'); return; }
+  const headers = Object.keys(rows[0]);
+  const esc = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const csv = [headers.map(esc).join(','), ...rows.map(r => headers.map(h => esc(r[h])).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = filename;
+  a.click();
+  toast('CSV downloaded — ' + filename, '#16A34A');
+}
+
+function invoiceExport() {
+  const invs = window.INVOICE_DATA || window.INVOICES_DATA || [];
+  if (!invs.length) { toast('No invoice data loaded yet', '#D97706'); return; }
+  exportToCSV(invs.map(i => ({
+    invoice_number: i.invoice_number || i.id,
+    client:         i.client_name || i.client,
+    status:         i.status,
+    issue_date:     i.issue_date || i.issued,
+    due_date:       i.due_date || i.due,
+    amount_excl:    i.amount_excl || i.amtExcl || '',
+    total_amount:   i.total_amount || i.total || '',
+  })), 'nexcore_invoices.csv');
+}
 function invoiceApprove(id)      { if(typeof toast==='function') toast(`Invoice ${id} approved and queued for payment`,'#16A34A'); }
 function invoicePay(id)          { if(typeof toast==='function') toast(`Payment initiated for ${id} via SwiftPay`,'#16A34A'); }
 function invoiceView(id)         { if(typeof toast==='function') toast(`Opening invoice ${id}…`,'#3B82F6'); }
