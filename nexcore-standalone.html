@@ -745,6 +745,216 @@ tr:hover td{background:var(--sf);}
 .pr-remove-btn{background:none;border:none;cursor:pointer;color:var(--rd);font-size:13px;font-weight:700;padding:0 3px;line-height:1;}
 .pr-paye-note{background:var(--bl-bg);border:1px solid var(--bl-l);border-radius:var(--r6);padding:8px 11px;font-size:10px;color:var(--mid);margin-top:10px;line-height:1.5;}
 
+/* ═══ DARK MODE ═══════════════════════════════════════════ */
+body.dark{
+  --wh:#18181B;--sf:#09090B;--sf2:#27272A;
+  --ink:#FAFAFA;--ch:#E4E4E7;--mid:#A1A1AA;--mu:#71717A;
+  --bd:#27272A;--bd-l:#3F3F46;--bk:#000;
+  --hover:#27272A;--border:#27272A;
+  --or-bg:#431407;--bl-bg:#1E3A5F;--gn-l:#052e16;--rd-l:#450a0a;--am-l:#451a03;--pu-l:#2e1065;
+}
+body.dark .card{background:var(--sf2);border-color:var(--bd);}
+body.dark .kpi{background:var(--sf2);border-color:var(--bd);}
+body.dark .ph{background:var(--sf2);border-color:var(--bd);}
+body.dark .tabs{background:var(--sf2);}
+body.dark .topbar{background:#09090B;border-color:#27272A;}
+body.dark .sidebar{background:#09090B;border-color:#27272A;}
+body.dark .fi,.dark .fi{background:#27272A;border-color:#3F3F46;color:#FAFAFA;}
+body.dark .bs{background:#27272A;color:#E4E4E7;border-color:#3F3F46;}
+body.dark .bs:hover{background:#3F3F46;}
+body.dark .tw table th{background:#27272A;}
+body.dark .tw table td{border-color:#27272A;}
+body.dark .notif-panel{background:#09090B;border-color:#27272A;}
+body.dark .moverlay .modal{background:#18181B;}
+body.dark .mh{border-color:#27272A;}
+body.dark .mf{border-color:#27272A;}
+body.dark .ch2{border-color:#27272A;}
+body.dark .lg-sso-btn{background:#18181B;}
+body.dark input,body.dark select,body.dark textarea{background:#27272A;border-color:#3F3F46;color:#FAFAFA;}
+
+/* ═══ DARK TOGGLE BTN ════════════════════════════════════ */
+.dark-toggle{width:30px;height:30px;border-radius:var(--r8);border:1px solid var(--bd);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--mid);transition:all .15s;}
+.dark-toggle:hover{background:var(--bd-l);color:var(--ink);}
+.dark-toggle svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+/* ═══ COMMAND PALETTE ════════════════════════════════════ */
+.cmd-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:none;align-items:flex-start;justify-content:center;padding-top:12vh;backdrop-filter:blur(4px);}
+.cmd-overlay.on{display:flex;}
+.cmd-box{width:580px;background:var(--wh);border:1px solid var(--bd);border-radius:var(--r16);box-shadow:var(--sh4);overflow:hidden;max-height:70vh;display:flex;flex-direction:column;}
+body.dark .cmd-box{background:#18181B;border-color:#27272A;}
+.cmd-input-row{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--bd);}
+.cmd-input-row svg{width:16px;height:16px;fill:none;stroke:var(--mid);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+.cmd-input{flex:1;border:none;background:transparent;font-size:14px;font-family:var(--fn);color:var(--ink);outline:none;}
+.cmd-input::placeholder{color:var(--mu);}
+.cmd-esc{font-size:10px;font-weight:600;color:var(--mu);background:var(--sf2);border:1px solid var(--bd);border-radius:4px;padding:2px 6px;cursor:pointer;}
+.cmd-results{overflow-y:auto;max-height:50vh;padding:8px;}
+.cmd-section{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--mu);padding:8px 8px 4px;}
+.cmd-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r8);cursor:pointer;transition:background .1s;}
+.cmd-item:hover,.cmd-item.active{background:var(--or-bg);}
+.cmd-item:hover .cmd-item-icon,.cmd-item.active .cmd-item-icon{background:var(--or);color:white;}
+.cmd-item-icon{width:28px;height:28px;border-radius:var(--r6);background:var(--sf2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .1s;}
+.cmd-item-icon svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.cmd-item-text{flex:1;}
+.cmd-item-name{font-size:13px;font-weight:600;color:var(--ink);}
+.cmd-item-sub{font-size:11px;color:var(--mid);}
+.cmd-kbd{font-size:10px;color:var(--mu);background:var(--sf2);border:1px solid var(--bd);border-radius:4px;padding:1px 6px;font-family:var(--mo);}
+
+/* ═══ SVG CHARTS ══════════════════════════════════════════ */
+.chart-wrap{width:100%;overflow:hidden;}
+.chart-wrap svg{display:block;width:100%;height:auto;}
+.chart-bar{transition:opacity .12s;}
+.chart-bar:hover{opacity:.8;}
+.chart-tooltip{position:absolute;background:var(--ink);color:var(--wh);font-size:10px;font-weight:600;padding:4px 8px;border-radius:5px;pointer-events:none;z-index:100;white-space:nowrap;}
+.chart-legend{display:flex;gap:14px;flex-wrap:wrap;padding:8px 0 4px;}
+.chart-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--mid);}
+.chart-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.donut-wrap{display:flex;align-items:center;gap:20px;}
+.donut-legend{display:flex;flex-direction:column;gap:8px;}
+.donut-item{display:flex;align-items:center;gap:8px;}
+.donut-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.donut-lbl{font-size:11px;color:var(--mid);}
+.donut-val{font-size:11px;font-weight:700;color:var(--ink);font-family:var(--mo);margin-left:auto;}
+
+/* ═══ KPI TREND ARROWS ══════════════════════════════════ */
+.kpi-trend{display:flex;align-items:center;gap:3px;margin-top:4px;font-size:10px;font-weight:700;}
+.kpi-trend.up{color:var(--gn);}
+.kpi-trend.dn{color:var(--rd);}
+.kpi-trend svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;}
+.kpi-sparkline{margin-top:6px;}
+
+/* ═══ STATUS DOTS (animated) ════════════════════════════ */
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;}
+.status-dot.live{background:var(--gn);animation:pulse-dot 2s ease-in-out infinite;}
+.status-dot.warn{background:var(--am);}
+.status-dot.err{background:var(--rd);}
+
+/* ═══ ENHANCED CARDS ════════════════════════════════════ */
+.card-hover{transition:box-shadow .15s,border-color .15s;}
+.card-hover:hover{box-shadow:var(--sh2);border-color:var(--or-l);}
+.stat-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bd-l);}
+.stat-row:last-child{border-bottom:none;}
+.stat-lbl{font-size:11px;color:var(--mid);}
+.stat-val{font-size:12px;font-weight:700;color:var(--ink);font-family:var(--mo);}
+
+/* ═══ GANTT CHART ═══════════════════════════════════════ */
+.gantt-wrap{overflow-x:auto;}
+.gantt-row{display:flex;align-items:center;gap:0;border-bottom:1px solid var(--bd-l);min-height:36px;}
+.gantt-label{width:160px;flex-shrink:0;font-size:11px;font-weight:600;color:var(--ink);padding:0 12px;}
+.gantt-track{flex:1;position:relative;height:24px;background:var(--sf2);border-radius:4px;}
+.gantt-bar{position:absolute;height:16px;top:4px;border-radius:4px;display:flex;align-items:center;padding:0 6px;font-size:9px;font-weight:700;color:white;white-space:nowrap;overflow:hidden;cursor:pointer;transition:opacity .12s;}
+.gantt-bar:hover{opacity:.85;}
+.gantt-header{display:flex;align-items:center;gap:0;margin-bottom:6px;}
+.gantt-header-label{width:160px;flex-shrink:0;font-size:9px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;padding:0 12px;}
+.gantt-months{flex:1;display:flex;}
+.gantt-month{flex:1;text-align:center;font-size:9px;font-weight:600;color:var(--mu);border-left:1px solid var(--bd-l);}
+
+/* ═══ RISK MATRIX ═══════════════════════════════════════ */
+.risk-matrix{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;aspect-ratio:1;}
+.risk-cell{border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:white;cursor:pointer;transition:transform .1s;min-height:38px;}
+.risk-cell:hover{transform:scale(1.05);}
+.risk-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;}
+.risk-badge.critical{background:var(--rd-l);color:var(--rd);}
+.risk-badge.high{background:var(--am-l);color:var(--am);}
+.risk-badge.medium{background:var(--bl-l);color:var(--bl);}
+.risk-badge.low{background:var(--gn-l);color:var(--gn);}
+
+/* ═══ REPORT CARDS ══════════════════════════════════════ */
+.report-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:16px;}
+.report-card{background:var(--wh);border:1px solid var(--bd);border-radius:var(--r12);padding:16px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:10px;}
+.report-card:hover{box-shadow:var(--sh2);border-color:var(--or-l);transform:translateY(-1px);}
+body.dark .report-card{background:var(--sf2);}
+.report-icon{width:36px;height:36px;border-radius:var(--r8);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.report-icon svg{width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.report-name{font-size:13px;font-weight:700;color:var(--ink);}
+.report-desc{font-size:11px;color:var(--mid);line-height:1.4;}
+.report-meta{font-size:10px;color:var(--mu);}
+
+/* ═══ SUPPLY CHAIN ══════════════════════════════════════ */
+.pipeline-steps{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:4px 0 12px;}
+.pipeline-step{flex:1;min-width:120px;padding:12px 10px;background:var(--wh);border:1px solid var(--bd);border-radius:0;position:relative;text-align:center;}
+.pipeline-step:first-child{border-radius:var(--r8) 0 0 var(--r8);}
+.pipeline-step:last-child{border-radius:0 var(--r8) var(--r8) 0;}
+.pipeline-step:not(:first-child){border-left:none;}
+.pipeline-step.active{background:var(--or-bg);border-color:var(--or);}
+.pipeline-step-num{font-size:18px;font-weight:900;color:var(--or);font-family:var(--mo);}
+.pipeline-step-lbl{font-size:10px;font-weight:600;color:var(--mid);margin-top:3px;}
+body.dark .pipeline-step{background:var(--sf2);}
+
+/* ═══ INVENTORY ENHANCEMENTS ═════════════════════════════ */
+.stock-card{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--bd-l);}
+.stock-card:last-child{border-bottom:none;}
+.stock-icon{width:32px;height:32px;border-radius:var(--r8);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.stock-name{font-size:12px;font-weight:600;color:var(--ink);}
+.stock-sku{font-size:10px;color:var(--mu);font-family:var(--mo);}
+.stock-levels{display:flex;align-items:center;gap:8px;margin-left:auto;}
+.stock-meter{width:60px;height:5px;background:var(--bd-l);border-radius:3px;overflow:hidden;}
+.stock-meter-fill{height:100%;border-radius:3px;transition:width .3s;}
+.stock-qty{font-size:11px;font-weight:700;font-family:var(--mo);}
+
+/* ═══ TIME IN TOPBAR ══════════════════════════════════════ */
+.tb-time{font-size:11px;font-weight:600;color:var(--mid);font-family:var(--mo);letter-spacing:.02em;padding:0 4px;}
+
+/* ═══ QUICK ACTIONS PANEL ══════════════════════════════ */
+.qa-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.qa-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r8);border:1px solid var(--bd);background:var(--wh);cursor:pointer;transition:all .12s;font-family:var(--fn);}
+.qa-btn:hover{border-color:var(--or);background:var(--or-bg);}
+body.dark .qa-btn{background:var(--sf2);}
+.qa-icon{width:28px;height:28px;border-radius:var(--r6);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.qa-icon svg{width:14px;height:14px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.qa-text{font-size:12px;font-weight:600;color:var(--ink);}
+.qa-sub{font-size:10px;color:var(--mid);}
+
+/* ═══ EMPLOYEE CARD ENHANCED ═════════════════════════════ */
+.emp-card-v2{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--bd-l);cursor:pointer;transition:background .12s;}
+.emp-card-v2:hover{background:var(--bd-l);}
+.emp-av2{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:white;flex-shrink:0;}
+.emp-info{flex:1;min-width:0;}
+.emp-name2{font-size:12px;font-weight:700;color:var(--ink);}
+.emp-role2{font-size:10px;color:var(--mid);}
+.emp-dept{font-size:10px;color:var(--mu);font-family:var(--mo);}
+.emp-actions{display:flex;gap:4px;}
+
+/* ═══ INVOICE DETAIL PANEL ══════════════════════════════ */
+.inv-detail{padding:14px;}
+.inv-detail-row{display:grid;grid-template-columns:120px 1fr;gap:4px 8px;font-size:12px;}
+.inv-detail-lbl{color:var(--mid);font-weight:500;}
+.inv-detail-val{color:var(--ink);font-weight:600;}
+.inv-line-item{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd-l);font-size:11px;}
+.inv-line-item:last-child{border-bottom:none;font-weight:700;font-size:12px;}
+
+/* ═══ NOTIFICATION ENHANCED ══════════════════════════════ */
+.notif-item{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-bottom:1px solid var(--bd-l);cursor:pointer;transition:background .1s;}
+.notif-item:hover{background:var(--bd-l);}
+.notif-item.unread{background:var(--or-bg);}
+.notif-dot2{width:6px;height:6px;border-radius:50%;background:var(--or);flex-shrink:0;margin-top:5px;}
+.notif-dot2.read{background:transparent;}
+.notif-body2{flex:1;}
+.notif-title2{font-size:12px;font-weight:600;color:var(--ink);}
+.notif-sub2{font-size:11px;color:var(--mid);margin-top:2px;}
+.notif-time{font-size:10px;color:var(--mu);margin-top:3px;}
+.notif-actions{display:flex;gap:6px;margin-top:6px;}
+.notif-act-btn{font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;border:none;cursor:pointer;font-family:var(--fn);}
+.notif-act-btn.primary{background:var(--or);color:white;}
+.notif-act-btn.secondary{background:var(--sf2);color:var(--ch);border:1px solid var(--bd);}
+
+/* ═══ RESPONSIVE ════════════════════════════════════════ */
+@media(max-width:900px){
+  .kg-4{grid-template-columns:repeat(2,1fr);}
+  .kg-3{grid-template-columns:repeat(2,1fr);}
+  .module-grid{grid-template-columns:repeat(2,1fr);}
+  .g2{grid-template-columns:1fr;}
+  .donut-wrap{flex-direction:column;align-items:flex-start;}
+  .gantt-label{width:100px;}
+}
+@media(max-width:600px){
+  .kg-4,.kg-3,.kg-2{grid-template-columns:1fr;}
+  .module-grid{grid-template-columns:1fr;}
+  .ph-right{display:none;}
+  .cmd-box{width:95vw;}
+  .sidebar{width:200px;}
+}
+
   </style>
 <style>
 #appShell.active { display: flex !important; flex:1; min-height:0; }
@@ -961,15 +1171,19 @@ tr:hover td{background:var(--sf);}
       <span class="tb-module-name" id="tbModName">Dashboard</span>
     </div>
     <div class="tb-right">
+      <span class="tb-time" id="tbClock"></span>
       <div class="tb-chip or"><b id="tbOrg">xGroup SA</b></div>
-      <div class="tb-notif" onclick="toggleNotif()"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:#71717A;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><div class="tb-notif-dot"></div></div>
+      <button class="dark-toggle" onclick="toggleDarkMode()" title="Toggle dark mode" id="darkToggleBtn">
+        <svg id="darkIcon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <div class="tb-notif" onclick="toggleNotif()"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:#71717A;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><div class="tb-notif-dot" id="notifDot"></div></div>
       <div class="tb-av" id="tbAv" style="background:#F97316;">AM</div>
     </div>
   </div>
 
   <!-- NOTIF PANEL -->
   <div class="notif-panel" id="notifPanel">
-    <div class="notif-hdr"><span class="notif-title">Notifications</span><span id="notifCount" style="font-size:11px;color:var(--mid);"></span></div>
+    <div class="notif-hdr"><span class="notif-title">Notifications</span><span id="notifCount" style="font-size:11px;color:var(--mid);"></span><button class="btn bs btn-xs" style="margin-left:auto;" onclick="markAllRead()">Mark all read</button></div>
     <div id="notifList"></div>
   </div>
 
@@ -1068,7 +1282,7 @@ tr:hover td{background:var(--sf);}
         <div class="tabs"><button class="tab on" onclick="switchTab('invTabs','assets',this)">Fixed Assets</button><button class="tab" onclick="switchTab('invTabs','stock',this)">Stock</button></div>
         <div class="content">
           <div class="tp on" id="invTabs-assets"><div class="card"><div class="ch2"><span class="ch2-title">Asset Register</span></div><div id="assetRegister"></div></div></div>
-          <div class="tp" id="invTabs-stock"><div class="card"><div class="ch2"><span class="ch2-title">Stock Levels</span></div><div class="cb" style="padding:0;"><div class="tw"><table><thead><tr><th>SKU</th><th>Item</th><th>On Hand</th><th>Reorder</th><th>Status</th></tr></thead><tbody><tr><td class="mo">SKU-OFF-001</td><td class="tb">Paper A4 (ream)</td><td>12</td><td>50</td><td><span class="badge rd">Low Stock</span></td></tr><tr><td class="mo">SKU-OFF-002</td><td class="tb">Printer Toner HP</td><td>3</td><td>5</td><td><span class="badge rd">Low Stock</span></td></tr><tr><td class="mo">SKU-IT-021</td><td class="tb">Network Cable Cat6</td><td>240</td><td>50</td><td><span class="badge gn">OK</span></td></tr></tbody></table></div></div></div></div>
+          <div class="tp" id="invTabs-stock"><div class="card"><div class="ch2"><span class="ch2-title">Stock Levels</span><span class="ch2-sub"><button class="btn bp btn-xs" onclick="reorderAllLow()">Reorder All Low</button></span></div><div class="cb" style="padding:10px 14px;" id="stockList"><div style="color:var(--mu);font-size:12px;padding:10px 0;">Loading stock…</div></div></div></div>
         </div>
       </div>
 
@@ -1285,8 +1499,12 @@ tr:hover td{background:var(--sf);}
       <!-- PROJECTS -->
       <div class="page" id="page-projects">
         <div class="ph"><div class="ph-icon" style="background:var(--bl)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></div><div><div class="ph-title">Projects</div><div class="ph-sub">4 projects · R 1.0M budget</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="openModal('addProjectModal')">New Project</button></div></div>
-        <div class="tabs"><button class="tab on" onclick="switchTab('projTabs','overview',this)">Overview</button><button class="tab" onclick="switchTab('projTabs','board',this)">Sprint Board</button><button class="tab" onclick="switchTab('projTabs','milestones',this)">Milestones</button><button class="tab" onclick="switchTab('projTabs','budget',this)">Budget</button></div>
-        <div class="content" id="projectsContent"></div>
+        <div class="tabs"><button class="tab on" onclick="switchTab('projTabs','overview',this)">Overview</button><button class="tab" onclick="switchTab('projTabs','board',this)">Sprint Board</button><button class="tab" onclick="switchTab('projTabs','milestones',this)">Milestones</button><button class="tab" onclick="switchTab('projTabs','gantt',this);renderGanttChart(document.getElementById('projGantt'))">Gantt Chart</button><button class="tab" onclick="switchTab('projTabs','budget',this)">Budget</button></div>
+        <div class="content" id="projectsContent">
+          <div class="tp" id="projTabs-gantt" style="display:none;">
+            <div class="card"><div class="ch2"><span class="ch2-title">Project Timeline</span><span class="ch2-sub">FY2025</span></div><div class="cb" id="projGantt"></div></div>
+          </div>
+        </div>
       </div>
 
       <!-- TEAM CHAT -->
@@ -1339,9 +1557,41 @@ tr:hover td{background:var(--sf);}
         <div class="content" id="payrollEnhContent"></div>
       </div>
 
+      <!-- REPORTS CENTER -->
+      <div class="page" id="page-reports">
+        <div class="ph"><div class="ph-icon" style="background:var(--bl)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div><div><div class="ph-title">Reports Center</div><div class="ph-sub">Financial · HR · Operations · Compliance</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="scheduleReport()">Schedule Report</button></div></div>
+        <div class="content" id="reportsContent"></div>
+      </div>
+
+      <!-- RISK MANAGEMENT -->
+      <div class="page" id="page-risk">
+        <div class="ph"><div class="ph-icon" style="background:var(--rd)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div><div class="ph-title">Risk Management</div><div class="ph-sub">Risk Register · Heat Map · Mitigation Plans</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="openModal('addRiskModal')">+ Add Risk</button><button class="btn bs btn-sm" onclick="exportRiskRegister()">Export</button></div></div>
+        <div class="tabs"><button class="tab on" onclick="switchTab('riskTabs','register',this)">Risk Register</button><button class="tab" onclick="switchTab('riskTabs','matrix',this)">Heat Map</button><button class="tab" onclick="switchTab('riskTabs','controls',this)">Controls</button></div>
+        <div class="content" id="riskContent"></div>
+      </div>
+
+      <!-- SUPPLY CHAIN -->
+      <div class="page" id="page-supply">
+        <div class="ph"><div class="ph-icon" style="background:var(--cy)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div><div><div class="ph-title">Supply Chain</div><div class="ph-sub">Logistics · Delivery Tracking · Supplier Orders</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="openModal('newShipmentModal')">+ New Shipment</button></div></div>
+        <div class="tabs"><button class="tab on" onclick="switchTab('supplyTabs','pipeline',this)">Pipeline</button><button class="tab" onclick="switchTab('supplyTabs','orders',this)">Orders</button><button class="tab" onclick="switchTab('supplyTabs','logistics',this)">Logistics</button><button class="tab" onclick="switchTab('supplyTabs','suppliers',this)">Suppliers</button></div>
+        <div class="content" id="supplyContent"></div>
+      </div>
+
     </div><!-- end .main -->
   </div><!-- end .layout -->
 </div><!-- end #appShell -->
+
+<!-- COMMAND PALETTE -->
+<div class="cmd-overlay" id="cmdPalette" onclick="if(event.target===this)closeCmd()">
+  <div class="cmd-box">
+    <div class="cmd-input-row">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="cmd-input" id="cmdInput" placeholder="Search modules, actions, records…" oninput="cmdSearch(this.value)" onkeydown="cmdKey(event)" autocomplete="off"/>
+      <span class="cmd-esc" onclick="closeCmd()">ESC</span>
+    </div>
+    <div class="cmd-results" id="cmdResults"></div>
+  </div>
+</div>
 
 <!-- TOAST -->
 <div class="toast" id="toastEl"></div>
@@ -1461,6 +1711,44 @@ tr:hover td{background:var(--sf);}
   <div class="mf"><button class="btn bs" onclick="closeModal('newClaimModal')">Cancel</button><button class="btn bp" onclick="closeModal('newClaimModal');toast('Claim submitted — your manager will be notified','#16A34A')">Submit Claim</button></div></div>
 </div>
 
+<!-- Add Risk Modal -->
+<div class="moverlay" id="addRiskModal">
+  <div class="modal wide"><div class="mh"><span class="m-title">Add Risk Item</span><button class="mclose" onclick="closeModal('addRiskModal')"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:var(--mid);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+  <div class="mb">
+    <div class="frow"><div class="fg"><label class="fl">Risk Title</label><input class="fi" id="riskTitle" placeholder="e.g. Data breach via phishing"/></div><div class="fg"><label class="fl">Category</label><select class="fi" id="riskCat"><option>Cyber Security</option><option>Financial</option><option>Operational</option><option>Compliance / Legal</option><option>Reputational</option><option>Strategic</option><option>HR & People</option></select></div></div>
+    <div class="frow"><div class="fg"><label class="fl">Likelihood (1–5)</label><select class="fi" id="riskLikelihood"><option value="1">1 — Rare</option><option value="2">2 — Unlikely</option><option value="3" selected>3 — Possible</option><option value="4">4 — Likely</option><option value="5">5 — Almost Certain</option></select></div><div class="fg"><label class="fl">Impact (1–5)</label><select class="fi" id="riskImpact"><option value="1">1 — Negligible</option><option value="2">2 — Minor</option><option value="3" selected>3 — Moderate</option><option value="4">4 — Major</option><option value="5">5 — Catastrophic</option></select></div></div>
+    <div class="fg"><label class="fl">Owner</label><select class="fi" id="riskOwner"><option>Amohelang M. (CTO)</option><option>Thabo Mokoena (Manager)</option><option>Lerato K. (HR)</option><option>Kagiso D. (IT)</option></select></div>
+    <div class="fg"><label class="fl">Mitigation Plan</label><textarea class="fi" rows="2" id="riskMitigation" placeholder="Describe the control or mitigation strategy…"></textarea></div>
+  </div>
+  <div class="mf"><button class="btn bs" onclick="closeModal('addRiskModal')">Cancel</button><button class="btn bp" onclick="saveRisk()">Add Risk</button></div></div>
+</div>
+
+<!-- New Shipment Modal -->
+<div class="moverlay" id="newShipmentModal">
+  <div class="modal wide"><div class="mh"><span class="m-title">New Shipment</span><button class="mclose" onclick="closeModal('newShipmentModal')"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:var(--mid);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+  <div class="mb">
+    <div class="frow"><div class="fg"><label class="fl">Supplier</label><input class="fi" placeholder="Supplier name"/></div><div class="fg"><label class="fl">PO Reference</label><input class="fi" placeholder="PO-2025-XXXX"/></div></div>
+    <div class="frow"><div class="fg"><label class="fl">Items</label><input class="fi" placeholder="Description of goods"/></div><div class="fg"><label class="fl">Quantity</label><input class="fi" type="number" placeholder="1"/></div></div>
+    <div class="frow"><div class="fg"><label class="fl">Expected Delivery</label><input class="fi" type="date"/></div><div class="fg"><label class="fl">Carrier</label><select class="fi"><option>Aramex</option><option>DHL</option><option>DSV Logistics</option><option>Own Fleet</option><option>Courier Guy</option></select></div></div>
+    <div class="fg"><label class="fl">Tracking Number</label><input class="fi" placeholder="Optional — provided by carrier"/></div>
+  </div>
+  <div class="mf"><button class="btn bs" onclick="closeModal('newShipmentModal')">Cancel</button><button class="btn bp" onclick="closeModal('newShipmentModal');toast('Shipment created and suppliers notified','#16A34A')">Create Shipment</button></div></div>
+</div>
+
+<!-- Employee Detail Modal -->
+<div class="moverlay" id="empDetailModal">
+  <div class="modal wide"><div class="mh"><span class="m-title" id="empDetailName">Employee Profile</span><button class="mclose" onclick="closeModal('empDetailModal')"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:var(--mid);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+  <div class="mb" id="empDetailBody" style="min-height:200px;"></div>
+  <div class="mf"><button class="btn bs" onclick="closeModal('empDetailModal')">Close</button><button class="btn bp" onclick="closeModal('empDetailModal');toast('Sending message to employee…','#2563EB')">Send Message</button></div></div>
+</div>
+
+<!-- Invoice View Modal -->
+<div class="moverlay" id="invoiceViewModal">
+  <div class="modal wide"><div class="mh"><span class="m-title" id="invViewTitle">Invoice Detail</span><button class="mclose" onclick="closeModal('invoiceViewModal')"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:var(--mid);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+  <div class="mb" id="invViewBody"></div>
+  <div class="mf" id="invViewActions"></div></div>
+</div>
+
 <!-- ══ Script load order comment ══ -->
 
   <script>
@@ -1505,7 +1793,7 @@ const ROLES = {
   admin: {
     label:'Administrator', color:'#F97316', avBg:'#F97316', avInitials:'AM',
     name:'Amohelang M.', org:'xGroup SA',
-    pages:['dashboard','analytics','finance','procurement','approvals','hr','inventory','crm','projects','budget','entities','vendor','ess','workflow','billing','quotes','claims','swiftpay','xpayments','audit','vault','chat','settings','users','onboarding','ai','search','api','sso','offline','attendance','leave','payroll'],
+    pages:['dashboard','analytics','finance','procurement','approvals','hr','inventory','crm','projects','budget','entities','vendor','ess','workflow','billing','quotes','claims','swiftpay','xpayments','audit','vault','chat','settings','users','onboarding','ai','search','api','sso','offline','attendance','leave','payroll','reports','risk','supply'],
     nav:[
       {section:'Overview'},
       {id:'dashboard',label:'Dashboard',icon:'grid'},
@@ -1541,6 +1829,10 @@ const ROLES = {
       {section:'Intelligence'},
       {id:'ai',label:'AI Assistant',icon:'ai',badge:'NEW',badgeClass:'nb-bl'},
       {id:'search',label:'Global Search',icon:'search'},
+      {id:'reports',label:'Reports Center',icon:'bar'},
+      {section:'Risk & Compliance'},
+      {id:'risk',label:'Risk Management',icon:'alert',badge:'3',badgeClass:'nb-rd'},
+      {id:'supply',label:'Supply Chain',icon:'box'},
       {section:'Collaboration'},
       {id:'projects',label:'Projects',icon:'project'},
       {id:'chat',label:'Team Chat',icon:'chat'},
@@ -1550,16 +1842,18 @@ const ROLES = {
       {id:'offline',label:'Offline Mode',icon:'wifi'},
     ],
     notifs:[
-      {title:'PO-2025-0892 awaiting approval',body:'R 284,500 · Dell Technologies',color:'#F97316',icon:'check',unread:true},
-      {title:'Marketing over budget (104%)',body:'R 210,000 spent vs R 200,000 budget',color:'#DC2626',icon:'alert',unread:true},
-      {title:'3 leave requests pending',body:'Sipho N. · Thabo M.',color:'#3B82F6',icon:'cal',unread:true},
-      {title:'SwiftPay settled R 2.84M',body:'FNB account credited',color:'#16A34A',icon:'done',unread:false},
+      {title:'PO-2025-0892 awaiting approval',body:'R 284,500 · Dell Technologies SA',color:'#F97316',icon:'check',unread:true,time:'14 min ago',action:"openPage('approvals');closeNotif()",actionLabel:'Review'},
+      {title:'Marketing over budget (104%)',body:'R 210,000 spent vs R 200,000 budget',color:'#DC2626',icon:'alert',unread:true,time:'1 hr ago',action:"openPage('budget');closeNotif()",actionLabel:'View Budget'},
+      {title:'3 leave requests pending',body:'Sipho N. · Thabo M. · Nomsa P.',color:'#3B82F6',icon:'cal',unread:true,time:'2 hr ago',action:"openPage('leave');closeNotif()",actionLabel:'View Requests'},
+      {title:'Risk R001 — Critical level',body:'Data breach risk score: 20/25',color:'#EF4444',icon:'alert',unread:true,time:'Today 09:30',action:"openPage('risk');closeNotif()",actionLabel:'View Risk'},
+      {title:'SwiftPay settled R 2.84M',body:'FNB account credited · 480K transactions',color:'#16A34A',icon:'done',unread:false,time:'Yesterday'},
+      {title:'Low stock: Paper A4 (12 reams)',body:'Below reorder point of 50',color:'#D97706',icon:'alert',unread:false,time:'Yesterday'},
     ]
   },
   cfo: {
     label:'CFO', color:'#F59E0B', avBg:'#F59E0B', avInitials:'AM',
     name:'Amohelang M.', org:'xGroup SA',
-    pages:['dashboard','analytics','finance','approvals','budget','entities','billing','quotes','swiftpay','xpayments','claims','audit','vault','ai','search','chat','attendance','payroll'],
+    pages:['dashboard','analytics','finance','approvals','budget','entities','billing','quotes','swiftpay','xpayments','claims','audit','vault','ai','search','chat','attendance','payroll','reports','risk','supply'],
     nav:[
       {section:'Executive'},
       {id:'dashboard',label:'Dashboard',icon:'grid'},
@@ -2997,6 +3291,7 @@ document.addEventListener('click',e=>{
 let _liveNotifs = null;       // live array from DB
 let _notifRealtime = null;    // Realtime channel
 
+function closeNotif(){document.getElementById('notifPanel')?.classList.remove('on');}
 function toggleNotif(){
   document.getElementById('notifPanel').classList.toggle('on');
   // Mark all read in DB when panel is opened
@@ -7102,6 +7397,758 @@ function renderEnhancedPayrollPage(){
     renderAttendancePage();
     renderLeaveManagementPage();
     renderEnhancedPayrollPage();
+    /* nexcore-v6 additions */
+    renderReports();
+    renderRisk();
+    renderSupplyChain();
+    initClock();
+    initCommandPalette();
+    enhanceDashboard();
+    setTimeout(()=>renderEnhancedStock(),150);
+  };
+})();
+
+/* ════════════════════════════════════════════════════════════
+   NexCore v6 — Enhanced features, charts, new modules
+════════════════════════════════════════════════════════════ */
+
+/* ── Dark Mode ── */
+function toggleDarkMode(){
+  document.body.classList.toggle('dark');
+  const isDark = document.body.classList.contains('dark');
+  localStorage.setItem('nexcore-dark', isDark ? '1' : '0');
+  const icon = document.getElementById('darkIcon');
+  if(icon){
+    icon.innerHTML = isDark
+      ? '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'
+      : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  }
+}
+(function(){const d=localStorage.getItem('nexcore-dark');if(d==='1'){document.body.classList.add('dark');const i=document.getElementById('darkIcon');if(i)i.innerHTML='<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';}})();
+
+/* ── Live Clock ── */
+function initClock(){
+  function tick(){
+    const el=document.getElementById('tbClock');
+    if(!el)return;
+    const now=new Date();
+    el.textContent=now.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+  }
+  tick(); setInterval(tick,10000);
+}
+
+/* ── Command Palette ── */
+const CMD_ITEMS=[
+  {name:'Dashboard',sub:'Overview & KPIs',page:'dashboard',icon:'grid'},
+  {name:'xAnalytics',sub:'Revenue · Transactions',page:'analytics',icon:'bar'},
+  {name:'Finance',sub:'P&L · Cash Flow · SARS',page:'finance',icon:'dollar'},
+  {name:'Procurement',sub:'Purchase Orders',page:'procurement',icon:'box'},
+  {name:'Approvals',sub:'Pending approvals',page:'approvals',icon:'check'},
+  {name:'HR & Payroll',sub:'674 employees',page:'hr',icon:'users'},
+  {name:'Inventory',sub:'Stock · Assets',page:'inventory',icon:'package'},
+  {name:'CRM',sub:'Deals · Pipeline',page:'crm',icon:'heart'},
+  {name:'Budget vs Actual',sub:'Department budgets',page:'budget',icon:'trending'},
+  {name:'Billing · Invoices',sub:'Create · Send · Pay',page:'billing',icon:'credit'},
+  {name:'SwiftPay',sub:'Payments',page:'swiftpay',icon:'done'},
+  {name:'Expense Claims',sub:'Submit & approve',page:'claims',icon:'credit'},
+  {name:'Vendor Portal',sub:'Suppliers',page:'vendor',icon:'shop'},
+  {name:'ESS / My Portal',sub:'Leave · Payslips',page:'ess',icon:'person'},
+  {name:'Audit Trail',sub:'Immutable log',page:'audit',icon:'file'},
+  {name:'xVault',sub:'Documents',page:'vault',icon:'shield'},
+  {name:'AI Assistant',sub:'Ask NexCore AI',page:'ai',icon:'ai'},
+  {name:'Reports Center',sub:'Financial · HR · Ops',page:'reports',icon:'bar'},
+  {name:'Risk Management',sub:'Risk register',page:'risk',icon:'alert'},
+  {name:'Supply Chain',sub:'Logistics · Orders',page:'supply',icon:'box'},
+  {name:'Projects',sub:'Sprint board',page:'projects',icon:'project'},
+  {name:'Team Chat',sub:'Channels',page:'chat',icon:'chat'},
+  {name:'Settings',sub:'Configuration',page:'settings',icon:'cog'},
+  {name:'User Management',sub:'Roles · Permissions',page:'users',icon:'manage'},
+  {name:'Global Search',sub:'Search all modules',page:'search',icon:'search'},
+];
+let _cmdIdx=0;
+function initCommandPalette(){
+  document.addEventListener('keydown',e=>{
+    if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();openCmd();}
+    if(e.key==='Escape'){closeCmd();}
+  });
+  cmdSearch('');
+}
+function openCmd(){
+  const p=document.getElementById('cmdPalette');
+  if(p){p.classList.add('on');setTimeout(()=>document.getElementById('cmdInput')?.focus(),50);}
+  _cmdIdx=0;
+}
+function closeCmd(){document.getElementById('cmdPalette')?.classList.remove('on');const i=document.getElementById('cmdInput');if(i)i.value='';}
+function cmdSearch(q){
+  const el=document.getElementById('cmdResults');if(!el)return;
+  const filtered=q.trim()?CMD_ITEMS.filter(i=>i.name.toLowerCase().includes(q.toLowerCase())||i.sub.toLowerCase().includes(q.toLowerCase())):CMD_ITEMS;
+  _cmdIdx=0;
+  if(!filtered.length){el.innerHTML='<div class="cmd-section">No results</div>';return;}
+  el.innerHTML='<div class="cmd-section">Navigate</div>'+filtered.map((item,i)=>
+    `<div class="cmd-item${i===0?' active':''}" data-page="${item.page}" onclick="openPage('${item.page}');closeCmd()">
+      <div class="cmd-item-icon">${svgIcon(item.icon,'13px')}</div>
+      <div class="cmd-item-text"><div class="cmd-item-name">${item.name}</div><div class="cmd-item-sub">${item.sub}</div></div>
+    </div>`).join('');
+}
+function cmdKey(e){
+  const items=[...document.querySelectorAll('.cmd-item')];
+  if(!items.length)return;
+  if(e.key==='ArrowDown'){e.preventDefault();items[_cmdIdx]?.classList.remove('active');_cmdIdx=Math.min(_cmdIdx+1,items.length-1);items[_cmdIdx]?.classList.add('active');items[_cmdIdx]?.scrollIntoView({block:'nearest'});}
+  if(e.key==='ArrowUp'){e.preventDefault();items[_cmdIdx]?.classList.remove('active');_cmdIdx=Math.max(_cmdIdx-1,0);items[_cmdIdx]?.classList.add('active');items[_cmdIdx]?.scrollIntoView({block:'nearest'});}
+  if(e.key==='Enter'){items[_cmdIdx]?.click();}
+}
+
+/* ── SVG Chart System ── */
+function svgBarChart(container, data, opts={}){
+  if(!container)return;
+  const w=container.offsetWidth||320, h=opts.h||140;
+  const max=Math.max(...data.map(d=>d.v),1);
+  const barW=Math.floor((w-40)/(data.length*1.5));
+  const gap=Math.floor(barW*0.5);
+  const totalW=data.length*(barW+gap)-gap;
+  const startX=Math.floor((w-40-totalW)/2)+32;
+  const colors=opts.colors||['#F97316','#3B82F6','#16A34A','#D97706','#7C3AED','#0891B2','#EF4444'];
+  let bars='',labels='',vals='';
+  data.forEach((d,i)=>{
+    const bh=Math.max(4,Math.round((d.v/max)*(h-50)));
+    const x=startX+i*(barW+gap);
+    const y=h-30-bh;
+    const c=Array.isArray(opts.colors)?colors[i%colors.length]:colors[i%colors.length];
+    bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${bh}" rx="3" fill="${c}" opacity=".9" class="chart-bar"><title>${d.lbl}: ${d.fmt||d.v}</title></rect>`;
+    labels+=`<text x="${x+barW/2}" y="${h-14}" text-anchor="middle" font-size="9" fill="var(--mu)" font-family="var(--fn)">${d.lbl}</text>`;
+    vals+=`<text x="${x+barW/2}" y="${y-4}" text-anchor="middle" font-size="9" font-weight="700" fill="var(--mid)" font-family="var(--fn)">${d.fmt||''}</text>`;
+  });
+  const gridLines=[0.25,0.5,0.75,1].map(r=>{
+    const gy=h-30-Math.round(r*(h-50));
+    const lv=(max*r);
+    const lbl=lv>=1e6?'R'+(lv/1e6).toFixed(1)+'M':lv>=1000?'R'+(lv/1000).toFixed(0)+'k':Math.round(lv);
+    return `<line x1="28" y1="${gy}" x2="${w}" y2="${gy}" stroke="var(--bd-l)" stroke-width="1"/>
+    <text x="26" y="${gy+3}" text-anchor="end" font-size="8" fill="var(--mu)" font-family="var(--fn)">${lbl}</text>`;
+  }).join('');
+  container.innerHTML=`<div class="chart-wrap"><svg viewBox="0 0 ${w} ${h}" style="overflow:visible">${gridLines}${bars}${vals}${labels}</svg></div>`;
+}
+
+function svgLineChart(container, datasets, labels, opts={}){
+  if(!container)return;
+  const w=container.offsetWidth||320, h=opts.h||130;
+  const allVals=datasets.flatMap(d=>d.values);
+  const max=Math.max(...allVals,1);
+  const min=opts.zeroBase?0:Math.min(...allVals,0);
+  const range=max-min||1;
+  const padL=32, padR=10, padT=10, padB=28;
+  const cw=w-padL-padR, ch=h-padT-padB;
+  const n=labels.length;
+  const xStep=cw/(n-1||1);
+  const colors=['#F97316','#3B82F6','#16A34A','#D97706'];
+  let paths='',dots='',xLabels='',gridLines='';
+  [0,.25,.5,.75,1].forEach(r=>{
+    const gy=padT+Math.round((1-r)*ch);
+    const lv=min+range*r;
+    const lbl=lv>=1e6?'R'+(lv/1e6).toFixed(1)+'M':lv>=1000?'R'+(lv/1000).toFixed(0)+'k':Math.round(lv);
+    gridLines+=`<line x1="${padL}" y1="${gy}" x2="${w-padR}" y2="${gy}" stroke="var(--bd-l)" stroke-width="1"/>
+    <text x="${padL-3}" y="${gy+3}" text-anchor="end" font-size="8" fill="var(--mu)">${lbl}</text>`;
+  });
+  labels.forEach((lbl,i)=>{
+    const x=padL+i*xStep;
+    xLabels+=`<text x="${x}" y="${h-6}" text-anchor="middle" font-size="8" fill="var(--mu)">${lbl}</text>`;
+  });
+  datasets.forEach((ds,di)=>{
+    const c=colors[di%colors.length];
+    const pts=ds.values.map((v,i)=>{
+      const x=padL+i*xStep;
+      const y=padT+Math.round((1-(v-min)/range)*ch);
+      return `${x},${y}`;
+    });
+    const area='M'+pts.join(' L');
+    paths+=`<polyline points="${pts.join(' ')}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    ds.values.forEach((v,i)=>{
+      const x=padL+i*xStep;
+      const y=padT+Math.round((1-(v-min)/range)*ch);
+      dots+=`<circle cx="${x}" cy="${y}" r="3" fill="${c}" stroke="white" stroke-width="1.5"><title>${ds.label}: ${v}</title></circle>`;
+    });
+  });
+  container.innerHTML=`<div class="chart-wrap"><svg viewBox="0 0 ${w} ${h}">${gridLines}${paths}${dots}${xLabels}</svg></div>`;
+  if(datasets.length>1){
+    container.innerHTML+=`<div class="chart-legend">${datasets.map((d,i)=>`<div class="chart-legend-item"><div class="chart-legend-dot" style="background:${colors[i%colors.length]}"></div>${d.label}</div>`).join('')}</div>`;
+  }
+}
+
+function svgDonutChart(container, data, opts={}){
+  if(!container)return;
+  const size=opts.size||120, cx=size/2, cy=size/2, r=opts.r||(size*0.35), stroke=opts.stroke||(size*0.18);
+  const total=data.reduce((s,d)=>s+d.v,0)||1;
+  const colors=['#F97316','#3B82F6','#16A34A','#D97706','#7C3AED','#EF4444','#0891B2'];
+  let offset=0, paths='';
+  data.forEach((d,i)=>{
+    const pct=d.v/total;
+    const dash=pct*2*Math.PI*r;
+    const gap=2*Math.PI*r-dash;
+    paths+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${d.color||colors[i%colors.length]}" stroke-width="${stroke}" stroke-dasharray="${dash} ${gap}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})" style="transition:stroke-dasharray .5s"><title>${d.lbl}: ${Math.round(pct*100)}%</title></circle>`;
+    offset+=dash;
+  });
+  const valHtml=opts.centerVal?`<text x="${cx}" y="${cy+4}" text-anchor="middle" font-size="${size*0.13}" font-weight="900" fill="var(--ink)" font-family="var(--fn)">${opts.centerVal}</text>`:'' ;
+  const svg=`<svg viewBox="0 0 ${size} ${size}" style="width:${size}px;height:${size}px;flex-shrink:0">${paths}${valHtml}</svg>`;
+  const legend=`<div class="donut-legend">${data.map((d,i)=>`<div class="donut-item"><div class="donut-dot" style="background:${d.color||colors[i%colors.length]}"></div><span class="donut-lbl">${d.lbl}</span><span class="donut-val" style="margin-left:8px">${Math.round(d.v/total*100)}%</span></div>`).join('')}</div>`;
+  container.innerHTML=`<div class="donut-wrap">${svg}${legend}</div>`;
+}
+
+function svgSparkline(values, color='#F97316', w=80, h=28){
+  const max=Math.max(...values,1), min=Math.min(...values,0), range=max-min||1;
+  const pts=values.map((v,i)=>{
+    const x=i/(values.length-1||1)*w;
+    const y=h-4-Math.round((v-min)/range*(h-8));
+    return `${x},${y}`;
+  }).join(' ');
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:${w}px;height:${h}px"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+/* ── Enhanced Dashboard with charts ── */
+function enhanceDashboard(){
+  setTimeout(()=>{
+    const budgetEl=document.getElementById('budgetUtil');
+    if(budgetEl){
+      const data=[
+        {lbl:'IT',v:82},{lbl:'HR',v:68},{lbl:'Ops',v:91},{lbl:'Mktg',v:104},{lbl:'Fin',v:55},{lbl:'Sales',v:73}
+      ];
+      svgBarChart(budgetEl,data,{h:120,colors:data.map(d=>d.v>100?'#DC2626':d.v>85?'#D97706':'#16A34A')});
+    }
+    const finBudEl=document.getElementById('finBudgetUtil');
+    if(finBudEl){
+      const data=[{lbl:'Jan',v:7200000,fmt:'7.2M'},{lbl:'Feb',v:7800000,fmt:'7.8M'},{lbl:'Mar',v:8100000,fmt:'8.1M'},{lbl:'Apr',v:7600000,fmt:'7.6M'},{lbl:'May',v:8400000,fmt:'8.4M'},{lbl:'Jun',v:9100000,fmt:'9.1M'}];
+      svgLineChart(finBudEl,[{label:'Revenue (R)',values:data.map(d=>d.v)}],data.map(d=>d.lbl),{h:120,zeroBase:true});
+    }
+    const revByProdEl=document.getElementById('revByProduct');
+    if(revByProdEl&&!revByProdEl.querySelector('svg')){
+      const data=[{lbl:'SwiftPay',v:66100000,fmt:'R66.1M'},{lbl:'Billing',v:10200000,fmt:'R10.2M'},{lbl:'xPay',v:5900000,fmt:'R5.9M'},{lbl:'NexCore',v:2500000,fmt:'R2.5M'}];
+      svgBarChart(revByProdEl,data,{h:120});
+    }
+  },200);
+}
+
+/* ── Reports Center ── */
+const REPORT_CATALOG=[
+  {id:'pl',name:'Profit & Loss',desc:'Monthly P&L vs budget with variance analysis',icon:'dollar',color:'#16A34A',cat:'Financial',lastRun:'Today 08:00'},
+  {id:'cashflow',name:'Cash Flow Statement',desc:'Operating · Investing · Financing activities',icon:'trending',color:'#3B82F6',cat:'Financial',lastRun:'Today 08:00'},
+  {id:'trialbal',name:'Trial Balance',desc:'All GL accounts with debit/credit totals',icon:'file',color:'#2563EB',cat:'Financial',lastRun:'Yesterday'},
+  {id:'vatrecon',name:'VAT Reconciliation',desc:'VAT201 reconciliation · Input vs output tax',icon:'shield',color:'#7C3AED',cat:'Tax',lastRun:'25 Jan'},
+  {id:'payerecon',name:'PAYE EMP201',desc:'Monthly PAYE reconciliation for SARS',icon:'users',color:'#F97316',cat:'Tax',lastRun:'7 Jan'},
+  {id:'headcount',name:'Headcount Report',desc:'Active · New hires · Terminations · Turnover %',icon:'users',color:'#16A34A',cat:'HR',lastRun:'Today 06:00'},
+  {id:'leave',name:'Leave Balance Report',desc:'Leave balances by employee and type',icon:'cal',color:'#0891B2',cat:'HR',lastRun:'Today 06:00'},
+  {id:'payslips',name:'Payroll Summary',desc:'Net pay · PAYE · UIF by department',icon:'credit',color:'#D97706',cat:'HR',lastRun:'Jan 2025'},
+  {id:'budgetvar',name:'Budget Variance',desc:'Actual vs budget by department and cost centre',icon:'bar',color:'#EF4444',cat:'Operations',lastRun:'Today 08:30'},
+  {id:'poaging',name:'PO Aging Report',desc:'Outstanding POs by age and vendor',icon:'box',color:'#F97316',cat:'Operations',lastRun:'Yesterday'},
+  {id:'invoiceaging',name:'Invoice Aging',desc:'Outstanding receivables by customer & age bracket',icon:'credit',color:'#DC2626',cat:'Operations',lastRun:'Today 08:30'},
+  {id:'auditsum',name:'Audit Summary',desc:'Actions by user, module, and severity',icon:'file',color:'#71717A',cat:'Compliance',lastRun:'Today 09:00'},
+];
+
+function renderReports(){
+  const el=document.getElementById('reportsContent'); if(!el)return;
+  const cats=[...new Set(REPORT_CATALOG.map(r=>r.cat))];
+  el.innerHTML=cats.map(cat=>`
+  <div style="margin-bottom:20px;">
+    <div class="section-lbl" style="margin-bottom:10px;">${cat}</div>
+    <div class="report-grid">
+    ${REPORT_CATALOG.filter(r=>r.cat===cat).map(r=>`
+      <div class="report-card card-hover" onclick="runReport('${r.id}','${r.name}')">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="report-icon" style="background:${r.color}">${svgIcon(r.icon,'18px','white')}</div>
+          <div><div class="report-name">${r.name}</div><div class="report-meta">Last run: ${r.lastRun}</div></div>
+        </div>
+        <div class="report-desc">${r.desc}</div>
+        <div style="display:flex;gap:6px;margin-top:4px;">
+          <button class="btn bp btn-xs" onclick="event.stopPropagation();runReport('${r.id}','${r.name}')">Run</button>
+          <button class="btn bs btn-xs" onclick="event.stopPropagation();scheduleReport('${r.name}')">Schedule</button>
+          <button class="btn bs btn-xs" onclick="event.stopPropagation();exportReport('${r.id}')">Export</button>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`).join('');
+}
+
+function runReport(id, name){
+  toast('Generating '+name+'…','#2563EB');
+  setTimeout(()=>toast(name+' ready — 12 rows, R 84.7M total','#16A34A'),1200);
+}
+function scheduleReport(name){
+  if(!name) name='Selected report';
+  toast('Schedule dialog for '+name+'…','#F97316');
+  setTimeout(()=>toast(name+' scheduled — daily at 08:00','#16A34A'),800);
+}
+function exportReport(id){
+  toast('Exporting report to CSV…','#2563EB');
+  setTimeout(()=>toast('Report exported and ready for download','#16A34A'),900);
+}
+
+/* ── Risk Management ── */
+let RISK_REGISTER=[
+  {id:'R001',title:'Data breach via phishing',cat:'Cyber Security',likelihood:4,impact:5,owner:'Kagiso D.',mitigation:'MFA enabled · Security training Q1',status:'Open',score:20},
+  {id:'R002',title:'Key person dependency — CTO',cat:'HR & People',likelihood:3,impact:4,owner:'Amohelang M.',mitigation:'Knowledge transfer plan in progress',status:'Mitigating',score:12},
+  {id:'R003',title:'SARS late submission penalty',cat:'Compliance',likelihood:2,impact:4,owner:'Thabo M.',mitigation:'Calendar reminders · Pre-check process',status:'Mitigating',score:8},
+  {id:'R004',title:'Supplier single-source dependency',cat:'Operational',likelihood:3,impact:3,owner:'Lerato K.',mitigation:'RFQ to 2 alternative vendors initiated',status:'Open',score:9},
+  {id:'R005',title:'FX rate fluctuation on imports',cat:'Financial',likelihood:4,impact:3,owner:'Amohelang M.',mitigation:'Forward contract hedging in place',status:'Closed',score:12},
+  {id:'R006',title:'POPIA breach — employee data',cat:'Compliance',likelihood:2,impact:5,owner:'Lerato K.',mitigation:'Privacy impact assessment complete',status:'Open',score:10},
+];
+
+function renderRisk(){
+  const el=document.getElementById('riskContent'); if(!el)return;
+  const ratingColor=s=>s>=15?'var(--rd)':s>=8?'var(--am)':s>=4?'var(--bl)':'var(--gn)';
+  const ratingLabel=s=>s>=15?'Critical':s>=8?'High':s>=4?'Medium':'Low';
+  el.innerHTML=`
+  <div class="tp on" id="riskTabs-register">
+    <div class="kg kg-4" style="margin-bottom:14px;">
+      <div class="kpi rd"><div class="kpi-lbl">Critical</div><div class="kpi-val">${RISK_REGISTER.filter(r=>r.score>=15).length}</div><div class="kpi-sub">Immediate action</div></div>
+      <div class="kpi am"><div class="kpi-lbl">High</div><div class="kpi-val">${RISK_REGISTER.filter(r=>r.score>=8&&r.score<15).length}</div><div class="kpi-sub">Manage closely</div></div>
+      <div class="kpi bl"><div class="kpi-lbl">Medium</div><div class="kpi-val">${RISK_REGISTER.filter(r=>r.score>=4&&r.score<8).length}</div><div class="kpi-sub">Monitor</div></div>
+      <div class="kpi gn"><div class="kpi-lbl">Low / Closed</div><div class="kpi-val">${RISK_REGISTER.filter(r=>r.score<4||r.status==='Closed').length}</div><div class="kpi-sub">Acceptable</div></div>
+    </div>
+    <div class="card">
+      <div class="ch2"><span class="ch2-title">Risk Register</span><span class="ch2-sub">${RISK_REGISTER.length} risks</span></div>
+      <div class="cb" style="padding:0;">
+        <div class="tw"><table><thead><tr><th>ID</th><th>Risk</th><th>Category</th><th>L×I</th><th>Score</th><th>Owner</th><th>Status</th><th></th></tr></thead>
+        <tbody>${RISK_REGISTER.map(r=>`<tr>
+          <td class="mo tb">${r.id}</td>
+          <td class="tb" style="max-width:180px;">${r.title}</td>
+          <td>${r.cat}</td>
+          <td class="mo">${r.likelihood}×${r.impact}</td>
+          <td><span class="risk-badge ${ratingLabel(r.score).toLowerCase()}" style="font-size:10px;padding:2px 7px;">${r.score} ${ratingLabel(r.score)}</span></td>
+          <td>${r.owner}</td>
+          <td><span class="badge ${r.status==='Open'?'rd':r.status==='Closed'?'gy':'am'}">${r.status}</span></td>
+          <td><button class="btn bs btn-xs" onclick="viewRisk('${r.id}')">Edit</button></td>
+        </tr>`).join('')}</tbody></table></div>
+      </div>
+    </div>
+  </div>
+  <div class="tp" id="riskTabs-matrix">
+    <div class="g2">
+      <div class="card">
+        <div class="ch2"><span class="ch2-title">Risk Heat Map</span><span class="ch2-sub">Likelihood × Impact</span></div>
+        <div class="cb">
+          <div style="margin-bottom:8px;font-size:11px;color:var(--mid);">← Likelihood →</div>
+          ${renderRiskMatrix()}
+          <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+            <span class="risk-badge critical">Critical (15–25)</span>
+            <span class="risk-badge high">High (8–14)</span>
+            <span class="risk-badge medium">Medium (4–7)</span>
+            <span class="risk-badge low">Low (1–3)</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ch2"><span class="ch2-title">Risk by Category</span></div>
+        <div class="cb" id="riskDonut"></div>
+      </div>
+    </div>
+  </div>
+  <div class="tp" id="riskTabs-controls">
+    <div class="card">
+      <div class="ch2"><span class="ch2-title">Mitigation Controls</span></div>
+      <div class="cb" style="padding:0;">
+        ${RISK_REGISTER.filter(r=>r.status!=='Closed').map(r=>`
+        <div class="stock-card">
+          <div class="stock-icon" style="background:${ratingColor(r.score)};">${svgIcon('shield','14px','white')}</div>
+          <div class="stock-info" style="flex:1;">
+            <div class="stock-name">${r.title}</div>
+            <div class="stock-sku">${r.id} · ${r.cat} · Owner: ${r.owner}</div>
+            <div style="font-size:10px;color:var(--mid);margin-top:3px;">${r.mitigation}</div>
+          </div>
+          <span class="badge ${r.status==='Mitigating'?'am':'rd'}">${r.status}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+  setTimeout(()=>{
+    const dc=document.getElementById('riskDonut');
+    if(dc){
+      const cats={};
+      RISK_REGISTER.forEach(r=>{cats[r.cat]=(cats[r.cat]||0)+1;});
+      svgDonutChart(dc,Object.entries(cats).map(([k,v])=>({lbl:k,v})),{size:110,centerVal:RISK_REGISTER.length,stroke:22});
+    }
+  },100);
+}
+
+function renderRiskMatrix(){
+  const cells=[];
+  const colors=(l,i)=>{const s=l*i;return s>=15?'#DC2626':s>=8?'#D97706':s>=4?'#3B82F6':'#16A34A';};
+  for(let i=5;i>=1;i--){
+    let row='<div style="display:flex;gap:4px;margin-bottom:4px;">';
+    row+=`<div style="width:24px;font-size:9px;color:var(--mu);display:flex;align-items:center;">${i}</div>`;
+    for(let l=1;l<=5;l++){
+      const s=l*i, cnt=RISK_REGISTER.filter(r=>r.likelihood===l&&r.impact===i).length;
+      row+=`<div class="risk-cell" style="background:${colors(l,i)};flex:1;" title="L:${l} I:${i} Score:${s}">${cnt>0?cnt:''}</div>`;
+    }
+    row+='</div>';
+    cells.push(row);
+  }
+  return `<div>${cells.join('')}<div style="display:flex;gap:4px;margin-top:2px;"><div style="width:24px;"></div>${[1,2,3,4,5].map(l=>`<div style="flex:1;text-align:center;font-size:9px;color:var(--mu);">${l}</div>`).join('')}</div></div>`;
+}
+
+function viewRisk(id){
+  const r=RISK_REGISTER.find(x=>x.id===id);
+  if(!r) return;
+  document.getElementById('riskTitle').value=r.title;
+  document.getElementById('riskMitigation').value=r.mitigation;
+  openModal('addRiskModal');
+}
+function saveRisk(){
+  const title=document.getElementById('riskTitle')?.value.trim();
+  const lik=parseInt(document.getElementById('riskLikelihood')?.value)||3;
+  const imp=parseInt(document.getElementById('riskImpact')?.value)||3;
+  const owner=document.getElementById('riskOwner')?.value||'Unassigned';
+  const mit=document.getElementById('riskMitigation')?.value||'';
+  const cat=document.getElementById('riskCat')?.value||'Operational';
+  if(!title){toast('Enter a risk title','#DC2626');return;}
+  const newRisk={id:'R'+String(RISK_REGISTER.length+1).padStart(3,'0'),title,cat,likelihood:lik,impact:imp,score:lik*imp,owner,mitigation:mit,status:'Open'};
+  RISK_REGISTER.unshift(newRisk);
+  closeModal('addRiskModal');
+  renderRisk();
+  toast('Risk added to register','#16A34A');
+  writeAudit('Create','Risk',newRisk.id,0,'low');
+}
+function exportRiskRegister(){
+  const rows=RISK_REGISTER.map(r=>[r.id,`"${r.title}"`,r.cat,r.likelihood,r.impact,r.score,r.owner,r.status,`"${r.mitigation}"`].join(','));
+  const csv='ID,Title,Category,Likelihood,Impact,Score,Owner,Status,Mitigation\n'+rows.join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='risk-register.csv';
+  a.click();
+  toast('Risk register exported','#16A34A');
+}
+
+/* ── Supply Chain ── */
+const SUPPLY_ORDERS=[
+  {id:'SO-2025-0041',supplier:'Dell Technologies SA',items:'20× Dell XPS 15 Laptops',qty:20,value:284500,status:'In Transit',eta:'14 Feb 2025',carrier:'DHL',tracking:'DHL-ZA-48291'},
+  {id:'SO-2025-0039',supplier:'Nashua SA',items:'MFP Printers × 4',qty:4,value:124000,status:'Delivered',eta:'10 Jan 2025',carrier:'Own Fleet',tracking:''},
+  {id:'SO-2025-0038',supplier:'Vodacom Business',items:'SIM cards + data bundle',qty:100,value:68400,status:'Processing',eta:'18 Feb 2025',carrier:'Aramex',tracking:''},
+  {id:'SO-2025-0037',supplier:'Mecer SA',items:'UPS units × 8',qty:8,value:38400,status:'Pending',eta:'28 Feb 2025',carrier:'Courier Guy',tracking:''},
+];
+const SUPPLY_SUPPLIERS=[
+  {name:'Dell Technologies SA',category:'IT Hardware',spend:284500,orders:3,rating:4.8,risk:'Low',onTime:97},
+  {name:'Nashua SA',category:'Office Equipment',spend:124000,orders:5,rating:4.2,risk:'Low',onTime:91},
+  {name:'Vodacom Business',category:'Telecoms',spend:68400,orders:12,rating:4.5,risk:'Low',onTime:99},
+  {name:'Mecer SA',category:'IT Hardware',spend:38400,orders:2,rating:3.9,risk:'Medium',onTime:82},
+  {name:'Datacentrix',category:'IT Services',spend:210000,orders:8,rating:4.6,risk:'Low',onTime:95},
+];
+
+function renderSupplyChain(){
+  const el=document.getElementById('supplyContent'); if(!el)return;
+  const statusColor={Delivered:'gn','In Transit':'bl',Processing:'am',Pending:'gy'};
+  el.innerHTML=`
+  <div class="tp on" id="supplyTabs-pipeline">
+    <div class="kg kg-4" style="margin-bottom:14px;">
+      <div class="kpi gn"><div class="kpi-lbl">Delivered (MTD)</div><div class="kpi-val">12</div><div class="kpi-sub">R 1.2M received</div></div>
+      <div class="kpi bl"><div class="kpi-lbl">In Transit</div><div class="kpi-val">3</div><div class="kpi-sub">Expected this week</div></div>
+      <div class="kpi am"><div class="kpi-lbl">Processing</div><div class="kpi-val">2</div><div class="kpi-sub">Awaiting dispatch</div></div>
+      <div class="kpi rd"><div class="kpi-lbl">Delayed</div><div class="kpi-val">1</div><div class="kpi-sub">5 days overdue</div></div>
+    </div>
+    <div class="card">
+      <div class="ch2"><span class="ch2-title">Fulfillment Pipeline</span></div>
+      <div class="cb">
+        <div class="pipeline-steps">
+          ${['Order Placed','Supplier Confirmed','In Production','Quality Check','Dispatched','In Transit','Customs','Delivered'].map((step,i)=>`
+          <div class="pipeline-step${i===5?' active':''}">
+            <div class="pipeline-step-num">${i+1}</div>
+            <div class="pipeline-step-lbl">${step}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="tp" id="supplyTabs-orders">
+    <div class="card">
+      <div class="ch2"><span class="ch2-title">Supply Orders</span><span class="ch2-sub">${SUPPLY_ORDERS.length} orders</span></div>
+      <div class="cb" style="padding:0;">
+        <div class="tw"><table><thead><tr><th>Order</th><th>Supplier</th><th>Items</th><th>Value</th><th>Carrier</th><th>ETA</th><th>Status</th><th></th></tr></thead>
+        <tbody>${SUPPLY_ORDERS.map(o=>`<tr>
+          <td class="mo tb">${o.id}</td>
+          <td class="tb">${o.supplier}</td>
+          <td>${o.items}</td>
+          <td class="mo">${fmt(o.value)}</td>
+          <td>${o.carrier}</td>
+          <td>${o.eta}</td>
+          <td><span class="badge ${statusColor[o.status]||'gy'}">${o.status}</span></td>
+          <td>
+            ${o.tracking?`<button class="btn bs btn-xs" onclick="toast('Tracking: ${o.tracking}','#2563EB')">Track</button>`:''}
+            <button class="btn bs btn-xs" onclick="receiveOrder('${o.id}')">Receive</button>
+          </td>
+        </tr>`).join('')}</tbody></table></div>
+      </div>
+    </div>
+  </div>
+  <div class="tp" id="supplyTabs-logistics">
+    <div class="g2">
+      <div class="card">
+        <div class="ch2"><span class="ch2-title">Carrier Performance</span></div>
+        <div class="cb" id="carrierChart"></div>
+      </div>
+      <div class="card">
+        <div class="ch2"><span class="ch2-title">Monthly Inbound Spend</span></div>
+        <div class="cb" id="inboundChart"></div>
+      </div>
+    </div>
+  </div>
+  <div class="tp" id="supplyTabs-suppliers">
+    <div class="card">
+      <div class="ch2"><span class="ch2-title">Supplier Scorecard</span></div>
+      <div class="cb" style="padding:0;">
+        ${SUPPLY_SUPPLIERS.map(s=>`
+        <div class="stock-card">
+          <div class="stock-icon" style="background:${s.risk==='Low'?'var(--gn)':s.risk==='Medium'?'var(--am)':'var(--rd)'};">${svgIcon('shop','14px','white')}</div>
+          <div style="flex:1;">
+            <div class="stock-name">${s.name}</div>
+            <div class="stock-sku">${s.category} · ${s.orders} orders · ${fmt(s.spend)} spend</div>
+          </div>
+          <div style="text-align:right;min-width:100px;">
+            <div style="font-size:12px;font-weight:800;color:var(--ink);">${s.onTime}% on-time</div>
+            <div style="font-size:10px;color:var(--mid);">Rating ${s.rating}/5 · <span style="color:${s.risk==='Low'?'var(--gn)':s.risk==='Medium'?'var(--am)':'var(--rd)'}">${s.risk} risk</span></div>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+  setTimeout(()=>{
+    const cc=document.getElementById('carrierChart');
+    if(cc){const data=[{lbl:'DHL',v:97,fmt:'97%'},{lbl:'Aramex',v:91,fmt:'91%'},{lbl:'DSV',v:95,fmt:'95%'},{lbl:'CourierG',v:82,fmt:'82%'},{lbl:'Own',v:99,fmt:'99%'}];svgBarChart(cc,data,{h:110,colors:['#3B82F6','#F97316','#16A34A','#D97706','#7C3AED']});}
+    const ic=document.getElementById('inboundChart');
+    if(ic){svgLineChart(ic,[{label:'Inbound Spend',values:[180000,220000,195000,310000,284500,240000]}],['Aug','Sep','Oct','Nov','Dec','Jan'],{h:110,zeroBase:true});}
+  },100);
+}
+
+function receiveOrder(id){
+  toast('Receiving '+id+' — updating stock levels…','#16A34A');
+  setTimeout(()=>{
+    toast(id+' received and inventory updated','#16A34A');
+    writeAudit('Receive','Supply Chain',id,0,'low');
+  },800);
+}
+
+/* ── Enhanced Notifications ── */
+function renderNotifs(){
+  const list=document.getElementById('notifList');if(!list)return;
+  const notifs=currentUser?.notifs||[];
+  const unread=notifs.filter(n=>n.unread).length;
+  const count=document.getElementById('notifCount');
+  if(count) count.textContent=unread?`${unread} unread`:'All read';
+  const dot=document.getElementById('notifDot');
+  if(dot) dot.style.display=unread?'block':'none';
+  if(!notifs.length){list.innerHTML='<div style="padding:20px;text-align:center;color:var(--mu);font-size:12px;">No notifications</div>';return;}
+  list.innerHTML=notifs.map((n,i)=>`
+  <div class="notif-item${n.unread?' unread':''}" onclick="markNotifRead(${i})">
+    <div class="notif-dot2${n.unread?'':' read'}"></div>
+    <div class="notif-body2">
+      <div class="notif-title2">${n.title}</div>
+      ${n.body?`<div class="notif-sub2">${n.body}</div>`:''}
+      <div class="notif-time">${n.time||'Just now'}</div>
+      ${n.action?`<div class="notif-actions"><button class="notif-act-btn primary" onclick="event.stopPropagation();${n.action}">${n.actionLabel||'View'}</button><button class="notif-act-btn secondary" onclick="event.stopPropagation();markNotifRead(${i})">Dismiss</button></div>`:''}
+    </div>
+  </div>`).join('');
+}
+
+function markNotifRead(i){
+  if(currentUser?.notifs?.[i]) currentUser.notifs[i].unread=false;
+  renderNotifs();
+}
+
+function markAllRead(){
+  if(currentUser?.notifs) currentUser.notifs.forEach(n=>n.unread=false);
+  renderNotifs();
+  toast('All notifications marked as read','#16A34A');
+}
+
+/* ── Enhanced Leave Approval ── */
+function approveLeaveRow(empName, rowEl){
+  if(rowEl){
+    const statusCell=rowEl.querySelector('.badge');
+    if(statusCell){statusCell.className='badge gn';statusCell.textContent='Approved';}
+    const btn=rowEl.querySelector('.btn.bg');
+    if(btn){btn.textContent='Approved';btn.disabled=true;btn.style.opacity='.5';}
+  }
+  toast(empName+' leave approved','#16A34A');
+  writeAudit('Approve','HR',empName+' leave',0,'low');
+}
+
+function rejectLeaveRow(empName, rowEl){
+  if(rowEl){
+    const statusCell=rowEl.querySelector('.badge');
+    if(statusCell){statusCell.className='badge rd';statusCell.textContent='Rejected';}
+    const btn=rowEl.querySelector('.btn.bg');
+    if(btn)btn.remove();
+  }
+  toast(empName+' leave rejected','#DC2626');
+  writeAudit('Reject','HR',empName+' leave',0,'low');
+}
+
+/* ── Employee Profile Modal ── */
+function openEmpProfile(emp){
+  const modal=document.getElementById('empDetailModal');
+  const nameEl=document.getElementById('empDetailName');
+  const body=document.getElementById('empDetailBody');
+  if(!modal||!body)return;
+  const colors=['#F97316','#3B82F6','#16A34A','#7C3AED','#0891B2','#D97706'];
+  const col=colors[Math.abs(emp.name.charCodeAt(0)-65)%colors.length];
+  const init=emp.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  nameEl.textContent=emp.name;
+  body.innerHTML=`
+  <div style="display:flex;align-items:center;gap:14px;padding:14px 14px 12px;border-bottom:1px solid var(--bd-l);">
+    <div style="width:52px;height:52px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:white;flex-shrink:0;">${init}</div>
+    <div>
+      <div style="font-size:15px;font-weight:800;color:var(--ink);">${emp.name}</div>
+      <div style="font-size:11px;color:var(--mid);">${emp.position||emp.title||'Employee'} · ${emp.department||emp.dept||'xGroup SA'}</div>
+      <div style="display:flex;gap:6px;margin-top:4px;"><span class="status-dot ${emp.status==='Active'?'live':'warn'}"></span><span style="font-size:10px;color:var(--mid);">${emp.status||'Active'}</span></div>
+    </div>
+  </div>
+  <div class="inv-detail" style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;padding:14px;">
+    <div><div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Employee #</div><div style="font-size:12px;font-weight:600;font-family:var(--mo);">${emp.id||emp.employee_id||'—'}</div></div>
+    <div><div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Email</div><div style="font-size:12px;font-weight:600;">${emp.email||'—'}</div></div>
+    <div><div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Gross Monthly</div><div style="font-size:12px;font-weight:700;font-family:var(--mo);color:var(--gn);">${emp.gross?fmt(emp.gross):'—'}</div></div>
+    <div><div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Start Date</div><div style="font-size:12px;font-weight:600;">${emp.startDate||emp.start_date||'—'}</div></div>
+    <div><div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Leave Balance</div><div style="font-size:12px;font-weight:700;color:var(--bl);">15 days annual</div></div>
+    <div><div style="font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Manager</div><div style="font-size:12px;font-weight:600;">${emp.manager||'Thabo Mokoena'}</div></div>
+  </div>`;
+  openModal('empDetailModal');
+}
+
+/* ── Invoice View Modal ── */
+function viewInvoiceModal(inv){
+  const body=document.getElementById('invViewBody');
+  const title=document.getElementById('invViewTitle');
+  const actions=document.getElementById('invViewActions');
+  if(!body)return;
+  title.textContent='Invoice '+inv.invoice_number;
+  const statusC={Paid:'gn',Outstanding:'bl',Overdue:'rd',Draft:'gy'};
+  body.innerHTML=`
+  <div class="inv-detail">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div><div style="font-size:18px;font-weight:900;color:var(--ink);">${inv.invoice_number}</div><div style="font-size:11px;color:var(--mid);">${inv.client_name}</div></div>
+      <span class="badge ${statusC[inv.status]||'gy'}" style="font-size:12px;padding:4px 10px;">${inv.status}</span>
+    </div>
+    <div class="inv-detail-row" style="margin-bottom:14px;">
+      <span class="inv-detail-lbl">Client</span><span class="inv-detail-val">${inv.client_name}</span>
+      <span class="inv-detail-lbl">Issued</span><span class="inv-detail-val">${inv.issue_date||'—'}</span>
+      <span class="inv-detail-lbl">Due Date</span><span class="inv-detail-val">${inv.due_date||'—'}</span>
+      <span class="inv-detail-lbl">Description</span><span class="inv-detail-val">${inv.description||'Professional Services'}</span>
+    </div>
+    <div class="inv-line-item"><span>Sub-total (excl. VAT)</span><span class="mo">${fmt(inv.total_amount/1.15)}</span></div>
+    <div class="inv-line-item"><span>VAT 15%</span><span class="mo">${fmt(inv.total_amount-inv.total_amount/1.15)}</span></div>
+    <div class="inv-line-item"><span style="font-weight:900;">Total Incl. VAT</span><span class="mo" style="font-size:14px;font-weight:900;color:var(--or);">${fmt(inv.total_amount)}</span></div>
+  </div>`;
+  actions.innerHTML=`
+    <button class="btn bs" onclick="closeModal('invoiceViewModal')">Close</button>
+    ${inv.status!=='Paid'?`<button class="btn bg" onclick="closeModal('invoiceViewModal');invoicePay('${inv.invoice_number}')">Pay Now</button>`:''}
+    <button class="btn bp" onclick="printInvoice(${JSON.stringify(inv).replace(/"/g,'&quot;')})">Print PDF</button>`;
+  openModal('invoiceViewModal');
+}
+
+/* ── Enhanced Stock Management ── */
+const STOCK_DATA=[
+  {sku:'SKU-OFF-001',name:'Paper A4 (ream)',cat:'Stationery',onHand:12,reorder:50,max:200,unit:'ream',cost:89,color:'#F97316'},
+  {sku:'SKU-OFF-002',name:'Printer Toner HP',cat:'Stationery',onHand:3,reorder:5,max:20,unit:'unit',cost:1200,color:'#EF4444'},
+  {sku:'SKU-IT-021',name:'Network Cable Cat6',cat:'IT',onHand:240,reorder:50,max:500,unit:'m',cost:12,color:'#16A34A'},
+  {sku:'SKU-IT-022',name:'USB-C Hub 7-port',cat:'IT',onHand:8,reorder:10,max:30,unit:'unit',cost:890,color:'#16A34A'},
+  {sku:'SKU-CLEAN-01',name:'Hand Sanitizer 1L',cat:'Facilities',onHand:18,reorder:20,max:50,unit:'bottle',cost:45,color:'#D97706'},
+  {sku:'SKU-IT-023',name:'Wireless Keyboard',cat:'IT',onHand:4,reorder:5,max:20,unit:'unit',cost:650,color:'#EF4444'},
+];
+
+function renderEnhancedStock(){
+  const el=document.getElementById('stockList')||document.querySelector('#invTabs-stock .card .cb');
+  if(!el) return;
+  const lowItems=STOCK_DATA.filter(s=>s.onHand<=s.reorder);
+  el.innerHTML=`
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+    <div style="font-size:11px;color:var(--mid);">${STOCK_DATA.length} items · <span style="color:var(--rd);font-weight:700;">${lowItems.length} low stock</span></div>
+    <button class="btn bp btn-xs" onclick="reorderAllLow()">Reorder Low Stock</button>
+  </div>
+  ${STOCK_DATA.map(s=>{
+    const pct=Math.min(100,Math.round(s.onHand/s.max*100));
+    const isLow=s.onHand<=s.reorder;
+    return `<div class="stock-card">
+      <div class="stock-icon" style="background:${isLow?'var(--rd-l)':'var(--gn-l)'};">${svgIcon('package','14px',isLow?'var(--rd)':'var(--gn)')}</div>
+      <div class="stock-info" style="flex:1;">
+        <div class="stock-name">${s.name}</div>
+        <div class="stock-sku">${s.sku} · ${s.cat} · ${fmt(s.cost)}/${s.unit}</div>
+      </div>
+      <div class="stock-levels">
+        <div style="text-align:right;">
+          <div class="stock-qty" style="color:${isLow?'var(--rd)':'var(--ink)'}">${s.onHand} ${s.unit}</div>
+          <div style="font-size:9px;color:var(--mu);">Min ${s.reorder}</div>
+        </div>
+        <div class="stock-meter">
+          <div class="stock-meter-fill" style="width:${pct}%;background:${isLow?'var(--rd)':pct<60?'var(--am)':'var(--gn)'}"></div>
+        </div>
+        ${isLow?`<button class="btn bp btn-xs" onclick="reorderStock('${s.sku}','${s.name}')">Reorder</button>`:'<span class="badge gn" style="font-size:9px;">OK</span>'}
+      </div>
+    </div>`;
+  }).join('')}`;
+}
+
+function reorderStock(sku, name){
+  toast('Creating PO for '+name+'…','#F97316');
+  setTimeout(()=>{toast('PO created for '+name+' — pending approval','#16A34A');writeAudit('Reorder','Inventory',sku,0,'low');},800);
+}
+function reorderAllLow(){
+  const low=STOCK_DATA.filter(s=>s.onHand<=s.reorder);
+  toast('Creating POs for '+low.length+' low-stock items…','#F97316');
+  setTimeout(()=>toast(low.length+' POs created — pending approval','#16A34A'),1000);
+}
+
+/* ── Settings Save ── */
+function saveSettings(){
+  const org=document.getElementById('settOrgName')?.value||'xGroup SA';
+  localStorage.setItem('nexcore-org',org);
+  document.getElementById('tbOrg').textContent=org;
+  toast('Settings saved','#16A34A');
+}
+
+/* ── Gantt Chart for Projects ── */
+function renderGanttChart(container){
+  if(!container)return;
+  const tasks=[
+    {name:'NexCore v6',start:0,duration:8,color:'#F97316',pct:60},
+    {name:'Supabase Migration',start:2,duration:4,color:'#3B82F6',pct:40},
+    {name:'SwiftPay Phase 2',start:5,duration:6,color:'#16A34A',pct:25},
+    {name:'Mobile App',start:7,duration:10,color:'#7C3AED',pct:10},
+    {name:'POPIA Audit',start:1,duration:3,color:'#D97706',pct:80},
+  ];
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const totalMonths=12;
+  const headerHtml=`<div class="gantt-header"><div class="gantt-header-label">Task</div><div class="gantt-months">${months.map(m=>`<div class="gantt-month">${m}</div>`).join('')}</div></div>`;
+  const rowsHtml=tasks.map(t=>`
+  <div class="gantt-row">
+    <div class="gantt-label">${t.name}</div>
+    <div class="gantt-track">
+      <div class="gantt-bar" style="left:${(t.start/totalMonths*100).toFixed(1)}%;width:${(t.duration/totalMonths*100).toFixed(1)}%;background:${t.color};" title="${t.name}: ${t.pct}% complete">
+        ${t.pct}%
+      </div>
+    </div>
+  </div>`).join('');
+  container.innerHTML=`<div class="gantt-wrap">${headerHtml}${rowsHtml}</div>`;
+}
+
+/* ── Enhanced Project Milestones tab ── */
+(function patchProjects(){
+  const origOpen = typeof openPage === 'function' ? openPage : null;
+  if(!origOpen) return;
+  const _base2 = openPage;
+  window.openPage = function(name){
+    _base2(name);
+    if(name==='projects'){
+      setTimeout(()=>{
+        const ganttContainer=document.getElementById('projGantt');
+        if(ganttContainer) renderGanttChart(ganttContainer);
+        renderEnhancedStock();
+      },100);
+    }
+    if(name==='inventory'){
+      setTimeout(()=>renderEnhancedStock(),100);
+    }
+    if(name==='reports'){
+      setTimeout(()=>renderReports(),50);
+    }
+    if(name==='risk'){
+      setTimeout(()=>renderRisk(),50);
+    }
+    if(name==='supply'){
+      setTimeout(()=>renderSupplyChain(),50);
+    }
   };
 })();
 
