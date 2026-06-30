@@ -27,6 +27,7 @@ jobs:
         run: |
           mkdir -p _site
           cp nexcore-standalone.html _site/index.html
+          cp CNAME _site/
           cp vercel.json _site/ 2>/dev/null || true
 
       - uses: actions/configure-pages@v4
