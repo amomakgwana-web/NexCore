@@ -1776,6 +1776,25 @@ function dbError(module, error) {
   toast(`Database error in ${module} — check console`, '#DC2626');
 }
 
+/* ── Edge Function caller ───────────────────────────────────── */
+async function callEdgeFunction(service, action, payload = {}) {
+  const client = sb();
+  if (!client) return { data: null, error: 'no_client' };
+  try {
+    const { data, error } = await client.functions.invoke(service, {
+      body: { action, ...payload },
+    });
+    if (error) {
+      console.warn(`[EF:${service}:${action}]`, error);
+      return { data: null, error };
+    }
+    return { data, error: null };
+  } catch (e) {
+    console.warn(`[EF:${service}:${action}]`, e);
+    return { data: null, error: e.message || String(e) };
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    AUTH — replaces USER_CREDENTIALS object
    Tables needed: auth.users (Supabase built-in) +
@@ -2617,14 +2636,21 @@ function toggleDemoCreds() {
   if (hdr)  hdr.classList.toggle('open', isOpen);
 }
 
-function showForgotPassword() {
+async function showForgotPassword() {
   const email = (document.getElementById('loginEmail')?.value || '').trim();
-  if (email) {
-    alert('Password reset\n\nA reset link has been sent to: ' + email + '\n\nIf you do not receive it within 5 minutes, contact:\nit@xgroup.co.za | +27 11 234 5678');
-  } else {
-    alert('Forgot password?\n\nEnter your email address in the field above, then click Forgot password?\n\nOr contact IT support directly:\nit@xgroup.co.za | +27 11 234 5678');
+  if (!email) {
+    showLoginError('Enter your email address first, then click Forgot password?');
     document.getElementById('loginEmail')?.focus();
+    return;
   }
+  const client = sb();
+  if (client) {
+    const { error } = await client.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.href,
+    });
+    if (error) { showLoginError(error.message); return; }
+  }
+  toast(`Password reset link sent to ${email} — check your inbox`, '#16A34A');
 }
 
 async function doLogin() {
@@ -2679,36 +2705,32 @@ async function doLogin() {
 }
 
 function doSSOLogin(provider) {
-  /* Simulate SSO — in production redirect to xCentral OIDC */
-  const email    = document.getElementById('loginEmail')?.value || '';
-  const provName = provider === 'google' ? 'Google' : 'Microsoft';
+  const provName      = provider === 'google' ? 'Google' : 'Microsoft';
+  const oauthProvider = provider === 'microsoft' ? 'azure' : provider;
+  const btn = document.getElementById(provider === 'google' ? 'googleBtn' : 'microsoftBtn');
+  const client = sb();
 
-  if (!email) {
-    showLoginError(`Enter your ${provName} work email first, then click Continue with ${provName}.`);
+  if (client) {
+    /* Real OAuth — triggers browser redirect; auth state listener handles login on return */
+    if (btn) { btn.textContent = 'Redirecting\u2026'; btn.disabled = true; }
+    signInWithOAuth(oauthProvider);
     return;
   }
 
-  /* Resolve role from email (SSO doesn't need a password) */
+  /* Demo fallback — no live Supabase client */
+  const email = document.getElementById('loginEmail')?.value || '';
+  if (!email) { showLoginError(`Enter your ${provName} work email first.`); return; }
   const entries = USER_CREDENTIALS[email.toLowerCase().trim()];
   const role = entries ? entries[0].role : null;
-
-  if (!role) {
-    showLoginError(`No xGroup account found for ${email}. Contact admin@xgroup.co.za.`);
-    return;
-  }
-
-  /* Simulate SSO flow with loading state */
-  const btn = document.getElementById(provider === 'google' ? 'googleBtn' : 'microsoftBtn');
-  if (btn) { btn.textContent = 'Signing in via ' + provName + '\u2026'; btn.disabled = true; }
-
+  if (!role) { showLoginError(`No account found for ${email}. Contact admin@xgroup.co.za.`); return; }
+  if (btn) { btn.textContent = 'Signing in\u2026'; btn.disabled = true; }
   setTimeout(() => {
-    currentRole = role;
-    currentUser = ROLES[role];
+    currentRole = role; currentUser = ROLES[role];
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('appShell').classList.add('active');
     document.body.className = 'role-' + role;
     bootstrapApp();
-  }, 1200);
+  }, 800);
 }
 
 async function doLogout() {
@@ -2767,6 +2789,39 @@ function bootstrapApp(){
     // Load live data
     loadAllData();
   });
+
+  // JWT auto-refresh + forced sign-out + OAuth redirect return handler
+  const _authClient = sb();
+  if (_authClient) {
+    _authClient.auth.onAuthStateChange((event, session) => {
+      if (event === 'TOKEN_REFRESHED') {
+        console.info('[NexCore] Session token refreshed');
+      } else if (event === 'SIGNED_OUT') {
+        doLogout();
+      } else if (event === 'SIGNED_IN' && session && !currentUser?.id) {
+        // OAuth redirect return — re-bootstrap with the new session
+        (async () => {
+          const profile = await getUserProfile(session.user.id);
+          const dbRole  = profile?.role || 'staff';
+          const role    = dbRole === 'hr_manager' ? 'hr' : dbRole;
+          currentRole   = role;
+          currentUser   = {
+            ...ROLES[role],
+            id:         session.user.id,
+            email:      session.user.email,
+            name:       profile?.full_name    || ROLES[role]?.name    || session.user.email,
+            avInitials: profile?.initials     || ROLES[role]?.avInitials || session.user.email.substring(0,2).toUpperCase(),
+            avBg:       profile?.avatar_color || ROLES[role]?.avBg    || '#6B7280',
+            org:        profile?.org          || ROLES[role]?.org      || 'xGroup SA',
+          };
+          document.getElementById('loginScreen').style.display = 'none';
+          document.getElementById('appShell').classList.add('active');
+          document.body.className = 'role-' + role;
+          bootstrapApp();
+        })();
+      }
+    });
+  }
 }
 
 /* ══ SVG ICONS ══ */
@@ -6109,17 +6164,23 @@ function renderClockWidget(containerId){
       </div>
       ${CLK_STATE.todayLog.length?`<div class="clk-today-log"><h4>Today's Log</h4>${logsHtml}</div>`:''}
     </div>`;
-    document.getElementById('clk-in-btn')?.addEventListener('click',()=>{
+    document.getElementById('clk-in-btn')?.addEventListener('click', async () => {
       const t=new Date();
       const ts=t.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
-      CLK_STATE.status='in';CLK_STATE.clockedInAt=Date.now();
-      CLK_STATE.todayLog.push({type:'in',time:ts});draw();
+      CLK_STATE.status='in'; CLK_STATE.clockedInAt=Date.now();
+      CLK_STATE.todayLog.push({type:'in',time:ts}); draw();
+      const {error} = await callEdgeFunction('attendance-service','clock_in');
+      if (error && error!=='no_client' && error!=='not_authenticated')
+        toast('Clocked in locally — DB sync pending','#D97706');
     });
-    document.getElementById('clk-out-btn')?.addEventListener('click',()=>{
+    document.getElementById('clk-out-btn')?.addEventListener('click', async () => {
       const t=new Date();
       const ts=t.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
-      CLK_STATE.status='out';CLK_STATE.clockedInAt=null;
-      CLK_STATE.todayLog.push({type:'out',time:ts});draw();
+      CLK_STATE.status='out'; CLK_STATE.clockedInAt=null;
+      CLK_STATE.todayLog.push({type:'out',time:ts}); draw();
+      const {error} = await callEdgeFunction('attendance-service','clock_out');
+      if (error && error!=='no_client' && error!=='not_authenticated')
+        toast('Clocked out locally — DB sync pending','#D97706');
     });
   }
   draw();
@@ -6129,6 +6190,15 @@ function renderClockWidget(containerId){
     if(e)e.textContent=new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     else clearInterval(window._clkTick);
   },1000);
+  // Load today's attendance state from live DB
+  (async () => {
+    const {data} = await callEdgeFunction('attendance-service','get_today');
+    if (!data) return;
+    CLK_STATE.status      = data.status || 'out';
+    CLK_STATE.clockedInAt = data.clocked_in_at ? new Date(data.clocked_in_at).getTime() : null;
+    CLK_STATE.todayLog    = (data.events || []).map(e => ({type:e.type, time:e.time}));
+    draw();
+  })();
 }
 
 /* ── Attendance Tracker (Manager / CFO) ─────────────────────── */
@@ -6197,12 +6267,26 @@ function renderAttendancePage(){
     document.getElementById('att-search')?.addEventListener('input',e=>{search=e.target.value;draw();});
   }
   draw();
+  // Overlay live attendance data from Edge Function
+  (async () => {
+    const {data} = await callEdgeFunction('attendance-service','get_summary');
+    if (!data?.records?.length) return;
+    let id = Date.now();
+    window._TK_EVENTS = [];
+    data.records.forEach(r => {
+      const base = {id:id++, empId:r.employee_id||r.emp_id, name:r.employee_name||r.name||r.employee_id, role:r.role||'', date:r.date};
+      if (r.clock_in)  window._TK_EVENTS.push({...base, type:'in',  time:r.clock_in,  ts:new Date(`${r.date}T${r.clock_in}`).getTime()});
+      if (r.clock_out) window._TK_EVENTS.push({...base, type:'out', time:r.clock_out, ts:new Date(`${r.date}T${r.clock_out}`).getTime()});
+    });
+    draw();
+  })();
 }
 
 /* ── Leave Management (Admin / HR) ──────────────────────────── */
 function renderLeaveManagementPage(){
   const page=document.getElementById('leaveContent');if(!page)return;
-  const recs=JSON.parse(JSON.stringify(TK_LEAVE));
+  let recs=JSON.parse(JSON.stringify(TK_LEAVE));
+  let balances=JSON.parse(JSON.stringify(TK_BALANCES));
   let tab='requests';
   function draw(){
     const typeBadge=t=>`<span class="lv-type-badge ${t}">${t.charAt(0).toUpperCase()+t.slice(1)}</span>`;
@@ -6223,7 +6307,7 @@ function renderLeaveManagementPage(){
         <td style="padding:9px 14px">${actions&&r.status==='pending'?`<button class="btn bp btn-xs lv-app" data-id="${r.id}" style="margin-right:4px;">Approve</button><button class="btn btn-xs lv-rej" data-id="${r.id}" style="background:var(--rd);color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;">Reject</button>`:'—'}</td>
       </tr>`).join('');
     };
-    const balHtml=TK_BALANCES.map(b=>`<div class="lv-balance-card">
+    const balHtml=balances.map(b=>`<div class="lv-balance-card">
       <div class="emp-name">${b.name}</div>
       <div class="lv-balance-row"><span>Annual (Paid)</span><span class="days">${b.paid}/${b.paidMax} days</span></div>
       <div class="lv-bar"><div class="lv-bar-fill paid" style="width:${(b.paid/b.paidMax*100).toFixed(0)}%"></div></div>
@@ -6265,30 +6349,90 @@ function renderLeaveManagementPage(){
     document.getElementById('lv-app')?.addEventListener('click',()=>{tab='approved';draw();});
     document.getElementById('lv-rej-tab')?.addEventListener('click',()=>{tab='rejected';draw();});
     document.getElementById('lv-bal')?.addEventListener('click',()=>{tab='balances';draw();});
-    page.querySelectorAll('.lv-app[data-id]').forEach(b=>b.addEventListener('click',e=>{
-      const r=recs.find(x=>x.id===e.target.dataset.id);if(r){r.status='approved';toast(`Leave approved for ${r.name}`,'#16A34A');draw();}
+    page.querySelectorAll('.lv-app[data-id]').forEach(b=>b.addEventListener('click', async e=>{
+      const r=recs.find(x=>String(x.id)===String(e.target.dataset.id));
+      if(!r) return;
+      r.status='approved'; draw();
+      const {error}=await callEdgeFunction('leave-service','approve_leave',{request_id:r.id});
+      if(error && error!=='no_client' && error!=='not_authenticated'){
+        r.status='pending'; draw(); toast('Approval failed — try again','#DC2626'); return;
+      }
+      toast(`Leave approved for ${r.name}`,'#16A34A');
     }));
-    page.querySelectorAll('.lv-rej[data-id]').forEach(b=>b.addEventListener('click',e=>{
-      const r=recs.find(x=>x.id===e.target.dataset.id);if(r){r.status='rejected';toast(`Leave rejected for ${r.name}`,'#DC2626');draw();}
+    page.querySelectorAll('.lv-rej[data-id]').forEach(b=>b.addEventListener('click', async e=>{
+      const r=recs.find(x=>String(x.id)===String(e.target.dataset.id));
+      if(!r) return;
+      r.status='rejected'; draw();
+      const {error}=await callEdgeFunction('leave-service','reject_leave',{request_id:r.id});
+      if(error && error!=='no_client' && error!=='not_authenticated'){
+        r.status='pending'; draw(); toast('Rejection failed — try again','#DC2626'); return;
+      }
+      toast(`Leave rejected for ${r.name}`,'#DC2626');
     }));
   }
   draw();
+  // Load live leave data from Edge Function
+  (async () => {
+    const [leaveRes, balRes] = await Promise.all([
+      callEdgeFunction('leave-service','get_all_leave'),
+      callEdgeFunction('leave-service','get_all_balances'),
+    ]);
+    let updated = false;
+    if (leaveRes.data) {
+      const raw = leaveRes.data.requests || leaveRes.data || [];
+      if (Array.isArray(raw) && raw.length) {
+        recs = raw.map(r => ({
+          id:     r.id,
+          empId:  r.employee_id || r.emp_id,
+          name:   r.employee_name || r.name || r.employee_id,
+          type:   r.leave_type   || r.type   || 'paid',
+          from:   r.start_date   || r.from,
+          to:     r.end_date     || r.to,
+          days:   r.days_requested || r.days || 1,
+          reason: r.reason || '',
+          status: r.status || 'pending',
+        }));
+        updated = true;
+      }
+    }
+    if (balRes.data) {
+      const bals = balRes.data.balances || balRes.data || [];
+      if (Array.isArray(bals) && bals.length) {
+        balances = bals.map(b => ({
+          empId:      b.employee_id  || b.emp_id,
+          name:       b.employee_name || b.name || b.employee_id,
+          paid:       b.annual_remaining ?? b.paid       ?? 0,
+          paidMax:    b.annual_total    ?? b.paidMax     ?? 21,
+          sick:       b.sick_remaining  ?? b.sick        ?? 0,
+          sickMax:    b.sick_total      ?? b.sickMax     ?? 30,
+          unpaidUsed: b.unpaid_taken    ?? b.unpaidUsed  ?? 0,
+        }));
+        updated = true;
+      }
+    }
+    if (updated) draw();
+  })();
 }
 
 /* ── Enhanced Payroll — PAYE / UIF / Custom Deductions (CFO) ── */
 function renderEnhancedPayrollPage(){
   const page=document.getElementById('payrollEnhContent');if(!page)return;
+  let liveEmps = null;  // populated from payroll-service when authenticated
+  let liveCustomDeds = {};  // { [empId]: [{label, amount, _liveId}] }
   let selId=TK_EMPLOYEES[0].id;
+  function empList(){ return liveEmps || TK_EMPLOYEES; }
+  function customDeds(id){ return liveCustomDeds[id] || TK_CUSTOM_DEDS[id] || []; }
   function draw(){
-    const emp=TK_EMPLOYEES.find(e=>e.id===selId);if(!emp)return;
+    const emps=empList();
+    const emp=emps.find(e=>e.id===selId)||emps[0];if(!emp)return;
     const paye=tkPAYE(emp.gross);
     const uifEmp=tkUIF(emp.gross);
     const uifEr=tkUIF(emp.gross);
-    const deds=TK_CUSTOM_DEDS[emp.id]||[];
+    const deds=customDeds(emp.id);
     const dedTotal=deds.reduce((s,d)=>s+d.amount,0);
     const totalDed=paye+uifEmp+dedTotal;
     const net=emp.gross-totalDed;
-    const empListHtml=TK_EMPLOYEES.map(e=>`
+    const empListHtml=empList().map(e=>`
       <div class="pr-emp-row ${e.id===selId?'sel':''}" data-eid="${e.id}">
         <div class="pr-emp-av">${tkInit(e.name)}</div>
         <div style="flex:1;min-width:0;">
@@ -6309,17 +6453,17 @@ function renderEnhancedPayrollPage(){
       <div class="pr-emp-list">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--bd)">
           <span style="font-size:13px;font-weight:700;color:var(--ink)">Employees</span>
-          <span style="font-size:10px;color:var(--mid)">${TK_EMPLOYEES.length} records</span>
+          <span style="font-size:10px;color:var(--mid)">${empList().length} records</span>
         </div>
         ${empListHtml}
         <div style="padding:10px 14px;border-top:1px solid var(--bd);background:var(--sf2)">
           <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink);margin-bottom:4px">
             <span style="color:var(--mid)">Total Payroll</span>
-            <strong style="font-family:var(--mo)">${tkZar(TK_EMPLOYEES.reduce((s,e)=>s+e.gross,0))}</strong>
+            <strong style="font-family:var(--mo)">${tkZar(empList().reduce((s,e)=>s+e.gross,0))}</strong>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink)">
             <span style="color:var(--mid)">Total UIF (Employer)</span>
-            <strong style="font-family:var(--mo);color:var(--rd)">${tkZar(TK_EMPLOYEES.reduce((s,e)=>s+tkUIF(e.gross),0))}</strong>
+            <strong style="font-family:var(--mo);color:var(--rd)">${tkZar(empList().reduce((s,e)=>s+tkUIF(e.gross),0))}</strong>
           </div>
         </div>
       </div>
@@ -6351,16 +6495,57 @@ function renderEnhancedPayrollPage(){
       </div>
     </div>`;
     page.querySelectorAll('[data-eid]').forEach(r=>r.addEventListener('click',()=>{selId=r.dataset.eid;draw();}));
-    document.getElementById('pr-add-btn')?.addEventListener('click',()=>{
+    document.getElementById('pr-add-btn')?.addEventListener('click', async ()=>{
       const lbl=document.getElementById('pr-ded-lbl')?.value.trim();
       const amt=parseFloat(document.getElementById('pr-ded-amt')?.value);
-      if(lbl&&!isNaN(amt)&&amt>0){TK_CUSTOM_DEDS[selId].push({label:lbl,amount:amt});draw();}
+      if(!lbl||isNaN(amt)||amt<=0) return;
+      const newDed={label:lbl,amount:amt};
+      if(!liveCustomDeds[selId]) liveCustomDeds[selId]=[];
+      liveCustomDeds[selId].push(newDed);
+      if(!TK_CUSTOM_DEDS[selId]) TK_CUSTOM_DEDS[selId]=[];
+      TK_CUSTOM_DEDS[selId].push(newDed);
+      draw();
+      const {data,error}=await callEdgeFunction('payroll-service','add_deduction',{employee_id:selId,label:lbl,amount:amt});
+      if(!error&&data?._liveId) newDed._liveId=data._liveId||data.id;
     });
-    page.querySelectorAll('[data-ri]').forEach(b=>b.addEventListener('click',e=>{
-      TK_CUSTOM_DEDS[selId].splice(parseInt(e.target.dataset.ri),1);draw();
+    page.querySelectorAll('[data-ri]').forEach(b=>b.addEventListener('click', async e=>{
+      const idx=parseInt(e.target.dataset.ri);
+      const deds=customDeds(selId);
+      const ded=deds[idx];
+      deds.splice(idx,1);
+      if(liveCustomDeds[selId]) liveCustomDeds[selId]=liveCustomDeds[selId].filter((_,i)=>i!==idx);
+      if(TK_CUSTOM_DEDS[selId]) TK_CUSTOM_DEDS[selId].splice(idx,1);
+      draw();
+      if(ded?._liveId) await callEdgeFunction('payroll-service','remove_deduction',{deduction_id:ded._liveId});
     }));
   }
   draw();
+  // Load live payroll data from Edge Function
+  (async () => {
+    const {data} = await callEdgeFunction('payroll-service','get_payroll_overview');
+    if (!data) return;
+    const raw = data.employees || data || [];
+    if (!Array.isArray(raw) || !raw.length) return;
+    liveEmps = raw.map(e => ({
+      id:    e.id || e.employee_id,
+      name:  e.name || e.full_name || e.employee_name || e.id,
+      role:  e.job_title || e.role || '',
+      gross: Number(e.gross_salary || e.gross || 0),
+    }));
+    selId = liveEmps[0].id;
+    // Pre-load deductions for each employee
+    await Promise.all(liveEmps.map(async emp => {
+      const {data:pd} = await callEdgeFunction('payroll-service','get_employee_payroll',{employee_id:emp.id});
+      if (pd?.deductions?.length) {
+        liveCustomDeds[emp.id] = pd.deductions.map(d => ({
+          label:   d.label || d.description,
+          amount:  Number(d.amount),
+          _liveId: d.id,
+        }));
+      }
+    }));
+    draw();
+  })();
 }
 
 /* ══════════════════════════════════════════════════════════════
