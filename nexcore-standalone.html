@@ -1375,8 +1375,8 @@ tr:hover td{background:var(--sf);}
 <!-- New PO Modal -->
 <div class="moverlay" id="newPOModal">
   <div class="modal wide"><div class="mh"><span class="m-title">New Purchase Order</span><button class="mclose" onclick="closeModal('newPOModal')"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:var(--mid);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
-  <div class="mb"><div class="fg"><label class="fl">Vendor</label><select class="fi"><option>Dell Technologies SA</option><option>Microsoft SA</option><option>Vodacom Business</option><option>Nashua SA</option></select></div><div class="fg"><label class="fl">Description</label><input class="fi" placeholder="What are you procuring?"/></div><div class="frow"><div class="fg"><label class="fl">Qty</label><input class="fi" type="number" value="1"/></div><div class="fg"><label class="fl">Unit Price (R excl. VAT)</label><input class="fi" type="number"/></div></div><div class="frow"><div class="fg"><label class="fl">Budget Line</label><select class="fi"><option>Technology</option><option>Operations</option><option>Marketing</option><option>HR</option></select></div><div class="fg"><label class="fl">Required By</label><input class="fi" type="date"/></div></div></div>
-  <div class="mf"><button class="btn bs" onclick="closeModal('newPOModal')">Cancel</button><button class="btn bp" onclick="closeModal('newPOModal');toast('PO submitted to approval chain','#16A34A')">Submit PO</button></div></div>
+  <div class="mb"><div class="fg"><label class="fl">Vendor</label><select class="fi" id="poVendor"><option>Dell Technologies SA</option><option>Microsoft SA</option><option>Vodacom Business</option><option>Nashua SA</option></select></div><div class="fg"><label class="fl">Description</label><input class="fi" id="poDesc" placeholder="What are you procuring?"/></div><div class="frow"><div class="fg"><label class="fl">Qty</label><input class="fi" id="poQty" type="number" value="1" min="1"/></div><div class="fg"><label class="fl">Unit Price (R excl. VAT)</label><input class="fi" id="poPrice" type="number" min="0"/></div></div><div class="frow"><div class="fg"><label class="fl">Budget Line</label><select class="fi" id="poBudget"><option>Technology</option><option>Operations</option><option>Marketing</option><option>HR</option></select></div><div class="fg"><label class="fl">Required By</label><input class="fi" id="poRequiredBy" type="date"/></div></div></div>
+  <div class="mf"><button class="btn bs" onclick="closeModal('newPOModal')">Cancel</button><button class="btn bp" onclick="savePurchaseOrder()">Submit PO</button></div></div>
 </div>
 
 <!-- Add Vendor Modal -->
@@ -1391,6 +1391,15 @@ tr:hover td{background:var(--sf);}
   <div class="modal"><div class="mh"><span class="m-title">Submit Invoice</span><button class="mclose" onclick="closeModal('submitInvModal')"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:var(--mid);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
   <div class="mb"><div class="fg"><label class="fl">PO Reference</label><select class="fi"><option>PO-2025-0892</option></select></div><div class="fg"><label class="fl">Invoice Number</label><input class="fi" placeholder="Your invoice number"/></div><div class="fg"><label class="fl">Amount (excl. VAT)</label><input class="fi" type="number"/></div><div class="fg"><label class="fl">Upload Invoice PDF</label><div style="border:1px dashed var(--bd);border-radius:var(--r6);padding:12px;text-align:center;cursor:pointer;background:var(--sf);" onclick="toast('PDF upload ready','#2563EB')"><div style="font-size:11px;color:var(--mid);">Click to upload invoice PDF</div></div></div></div>
   <div class="mf"><button class="btn bs" onclick="closeModal('submitInvModal')">Cancel</button><button class="btn bp" onclick="closeModal('submitInvModal');toast('Invoice submitted — 3-way match running','#16A34A')">Submit</button></div></div>
+</div>
+
+<!-- OTP Confirmation Modal -->
+<div class="moverlay" id="otpModal">
+  <div class="modal"><div class="mh"><span class="m-title">Confirm Action</span><button class="mclose" onclick="closeModal('otpModal')"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:var(--mid);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+  <div class="mb"><div class="alert or" style="margin-bottom:14px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:#D97706;stroke-width:2;flex-shrink:0;margin-top:1px;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><div><div class="alert-title" id="otpLabel">Confirm this action</div><div class="alert-body" id="otpSub">Enter the 6-digit code sent to your registered email address.</div></div></div>
+  <div class="fg"><label class="fl">One-Time PIN</label><input class="fi" id="otpInput" type="text" inputmode="numeric" maxlength="6" placeholder="000000" style="font-size:20px;letter-spacing:8px;text-align:center;font-family:var(--mo);"/></div>
+  <div style="text-align:center;margin-top:6px;"><button class="btn bs btn-xs" id="otpSendBtn" onclick="_otpSend()">Send OTP to my email</button></div></div>
+  <div class="mf"><button class="btn bd2" onclick="closeModal('otpModal')">Cancel</button><button class="btn bp" onclick="_otpVerify()">Verify &amp; Confirm</button></div></div>
 </div>
 
 <!-- Sign Contract Modal -->
@@ -3714,7 +3723,30 @@ function renderCRMKanban(){
 
 function renderAnalytics(){
   const rp=document.getElementById('revByProduct');
-  if(rp){const items=[{lbl:'SwiftPay',pct:78,v:'R 66.1M',c:'var(--or)'},{lbl:'xBilling',pct:12,v:'R 10.2M',c:'var(--bl-m)'},{lbl:'xPayments',pct:7,v:'R 5.9M',c:'var(--gn)'},{lbl:'NexCore',pct:3,v:'R 2.5M',c:'var(--pu)'}];rp.innerHTML=items.map(i=>`<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:11px;"><span style="font-weight:600;">${i.lbl}</span><span style="font-family:var(--mo);font-weight:700;">${i.pct}% · ${i.v}</span></div><div class="prog thick"><div class="prog-fill" style="width:${i.pct}%;background:${i.c};"></div></div></div>`).join('');}
+  if(rp){
+    // Use live invoice totals grouped by status if available
+    const invs = window.INVOICE_DATA || window.INVOICES_DATA || [];
+    if (invs.length) {
+      const paid = invs.filter(i=>i.status==='Paid'||i.status==='paid');
+      const outstanding = invs.filter(i=>i.status==='Outstanding');
+      const overdue = invs.filter(i=>i.status==='Overdue');
+      const draft = invs.filter(i=>i.status==='Draft');
+      const sum = arr => arr.reduce((s,i)=>s+Number(i.total_amount||i.total||0),0);
+      const total = sum(invs) || 1;
+      const paidAmt=sum(paid), outAmt=sum(outstanding), ovAmt=sum(overdue), drAmt=sum(draft);
+      const fmtM = v => v>=1e6?'R '+(v/1e6).toFixed(1)+'M':'R '+Math.round(v/1000)+'k';
+      const items=[
+        {lbl:'Paid',pct:Math.round(paidAmt/total*100),v:fmtM(paidAmt),c:'var(--gn)'},
+        {lbl:'Outstanding',pct:Math.round(outAmt/total*100),v:fmtM(outAmt),c:'var(--bl-m)'},
+        {lbl:'Overdue',pct:Math.round(ovAmt/total*100),v:fmtM(ovAmt),c:'var(--rd)'},
+        {lbl:'Draft',pct:Math.round(drAmt/total*100),v:fmtM(drAmt),c:'var(--mid)'},
+      ].filter(i=>i.pct>0);
+      rp.innerHTML=items.map(i=>`<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:11px;"><span style="font-weight:600;">${i.lbl}</span><span style="font-family:var(--mo);font-weight:700;">${i.pct}% · ${i.v}</span></div><div class="prog thick"><div class="prog-fill" style="width:${i.pct}%;background:${i.c};"></div></div></div>`).join('');
+    } else {
+      const items=[{lbl:'SwiftPay',pct:78,v:'R 66.1M',c:'var(--or)'},{lbl:'xBilling',pct:12,v:'R 10.2M',c:'var(--bl-m)'},{lbl:'xPayments',pct:7,v:'R 5.9M',c:'var(--gn)'},{lbl:'NexCore',pct:3,v:'R 2.5M',c:'var(--pu)'}];
+      rp.innerHTML=items.map(i=>`<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:11px;"><span style="font-weight:600;">${i.lbl}</span><span style="font-family:var(--mo);font-weight:700;">${i.pct}% · ${i.v}</span></div><div class="prog thick"><div class="prog-fill" style="width:${i.pct}%;background:${i.c};"></div></div></div>`).join('');
+    }
+  }
   const mv=document.getElementById('muniVolume');
   if(mv){const items=[{lbl:'Tshwane',pct:92,v:'441,600'},{lbl:'Johannesburg',pct:88,v:'422,400'},{lbl:'Ekurhuleni',pct:71,v:'340,800'},{lbl:'eThekwini',pct:64,v:'307,200'},{lbl:'Cape Town',pct:59,v:'283,200'}];mv.innerHTML=items.map((i,idx)=>{const colors=['#F97316','#3B82F6','#16A34A','#D97706','#7C3AED'];return`<div style="margin-bottom:9px;"><div style="display:flex;justify-content:space-between;margin-bottom:2px;font-size:11px;"><span style="font-weight:600;">${i.lbl}</span><span style="font-family:var(--mo);">${i.pct}% · ${i.v}</span></div><div class="prog thick"><div class="prog-fill" style="width:${i.pct}%;background:${colors[idx]};"></div></div></div>`;}).join('');}
 }
@@ -3789,10 +3821,10 @@ function renderESSContent(){
   <div class="tp" id="essTabs-leave">
     <div class="g2">
       <div class="card"><div class="ch2"><span class="ch2-title">Apply for Leave</span></div><div class="cb">
-        <div class="fg"><label class="fl">Leave Type</label><select class="fi"><option>Annual (13 days remaining)</option><option>Sick (28 days)</option><option>Family Responsibility (3 days)</option></select></div>
+        <div class="fg"><label class="fl">Leave Type</label><select class="fi" id="leaveType"><option value="Annual">Annual (13 days remaining)</option><option value="Sick">Sick (28 days)</option><option value="Family Responsibility">Family Responsibility (3 days)</option></select></div>
         <div class="frow"><div class="fg"><label class="fl">From</label><input class="fi" type="date" id="lf"/></div><div class="fg"><label class="fl">To</label><input class="fi" type="date" id="lt"/></div></div>
-        <div class="fg"><label class="fl">Notes</label><textarea class="fi" rows="2"></textarea></div>
-        <button class="btn bp" style="width:100%;justify-content:center;" onclick="toast('Leave submitted — Thabo M. will be notified','#16A34A')">Submit Request</button>
+        <div class="fg"><label class="fl">Notes</label><textarea class="fi" id="leaveNotes" rows="2"></textarea></div>
+        <button class="btn bp" style="width:100%;justify-content:center;" onclick="submitLeaveRequest()">Submit Request</button>
       </div></div>
       <div class="card"><div class="ch2"><span class="ch2-title">Leave Balances</span></div><div class="cb">
         ${[{t:'Annual Leave',r:13,tot:15,c:'var(--gn)'},{t:'Sick Leave (BCEA)',r:28,tot:30,c:'var(--bl-m)'},{t:'Family Responsibility',r:3,tot:3,c:'var(--am)'}].map(l=>`<div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="font-weight:600;">${l.t}</span><span style="font-weight:800;font-family:var(--mo);color:${l.c};">${l.r}/${l.tot}</span></div><div class="prog"><div class="prog-fill" style="width:${Math.round(l.r/l.tot*100)}%;background:${l.c};"></div></div></div>`).join('')}
@@ -6259,19 +6291,116 @@ function supplierInvoices(id) {
   if(typeof toast==='function') toast(`Filtering invoices for ${s?.name}…`,'#3B82F6');
 }
 
-async function payrollRunAll() {
-  if(typeof toast==='function') toast('Initiating payroll run — processing…','#F97316');
-  const period = new Date().toISOString().slice(0,7); // YYYY-MM
-  const { data, error } = await callEdgeFunction('payroll-service', 'run_payroll', { period });
-  if (error && error !== 'no_client' && error !== 'not_authenticated') {
-    toast('Payroll run failed — check console', '#EF4444');
-    console.error('[run_payroll]', error);
+/* ══ OTP GATE ════════════════════════════════════════════════ */
+let _otpPendingAction = null;
+
+function confirmWithOTP(label, action) {
+  _otpPendingAction = action;
+  const lbl = document.getElementById('otpLabel');
+  const inp = document.getElementById('otpInput');
+  const btn = document.getElementById('otpSendBtn');
+  if (lbl) lbl.textContent = label;
+  if (inp) inp.value = '';
+  if (btn) { btn.textContent = 'Send OTP to my email'; btn.disabled = false; }
+  openModal('otpModal');
+  _otpSend();
+}
+
+async function _otpSend() {
+  const btn = document.getElementById('otpSendBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  const { error } = await callEdgeFunction('auth-service', 'send_otp', {});
+  if (error === 'no_client' || error === 'not_authenticated' || error) {
+    // Demo mode — surface OTP in a toast so the user can proceed
+    window._mockOtp = String(Math.floor(100000 + Math.random() * 900000));
+    toast('Demo OTP: ' + window._mockOtp, '#F97316');
+    if (btn) { btn.textContent = 'Resend OTP'; btn.disabled = false; }
     return;
   }
-  const count = data?.processed ?? '—';
-  toast(`Payroll run complete — ${count} employees processed for ${period}`, '#16A34A');
-  // Reload payroll overview to show updated state
-  setTimeout(() => renderEnhancedPayrollPage && renderEnhancedPayrollPage(), 800);
+  toast('OTP sent to your email', '#16A34A');
+  if (btn) { btn.textContent = 'Resend OTP'; btn.disabled = false; }
+}
+
+async function _otpVerify() {
+  const code = (document.getElementById('otpInput')?.value || '').trim();
+  if (code.length !== 6) { toast('Enter the 6-digit code', '#EF4444'); return; }
+  // Demo mode: accept mock OTP
+  if (window._mockOtp && code === window._mockOtp) {
+    window._mockOtp = null;
+    closeModal('otpModal');
+    if (typeof _otpPendingAction === 'function') await _otpPendingAction();
+    _otpPendingAction = null;
+    return;
+  }
+  const { data, error } = await callEdgeFunction('auth-service', 'verify_otp', { code });
+  if (error || data?.valid === false) { toast('Invalid or expired OTP', '#EF4444'); return; }
+  closeModal('otpModal');
+  if (typeof _otpPendingAction === 'function') await _otpPendingAction();
+  _otpPendingAction = null;
+}
+
+/* ══ PURCHASE ORDER SAVE ════════════════════════════════════ */
+async function savePurchaseOrder() {
+  const vendor  = document.getElementById('poVendor')?.value;
+  const desc    = document.getElementById('poDesc')?.value?.trim();
+  const qty     = parseFloat(document.getElementById('poQty')?.value) || 0;
+  const price   = parseFloat(document.getElementById('poPrice')?.value) || 0;
+  const budget  = document.getElementById('poBudget')?.value;
+  const reqBy   = document.getElementById('poRequiredBy')?.value;
+  if (!desc)  { toast('Enter a description', '#EF4444'); return; }
+  if (!price) { toast('Enter a unit price', '#EF4444'); return; }
+  closeModal('newPOModal');
+  const result = await createPurchaseOrder({ vendor, description: desc, qty, unitPrice: price, budgetLine: budget, requiredBy: reqBy });
+  if (result) renderProcurementTable && renderProcurementTable();
+}
+
+/* ══ LEAVE REQUEST SUBMIT ═══════════════════════════════════ */
+async function submitLeaveRequest() {
+  const leaveType = document.getElementById('leaveType')?.value;
+  const fromDate  = document.getElementById('lf')?.value;
+  const toDate    = document.getElementById('lt')?.value;
+  const notes     = document.getElementById('leaveNotes')?.value?.trim();
+  if (!fromDate || !toDate) { toast('Select leave dates', '#EF4444'); return; }
+  if (fromDate > toDate)    { toast('End date must be after start date', '#EF4444'); return; }
+  const client = sb();
+  if (client) {
+    const days = Math.max(1, Math.round((new Date(toDate) - new Date(fromDate)) / 86400000) + 1);
+    const { error } = await client.from('leave_requests').insert({
+      employee_id:  currentUser?.id || null,
+      leave_type:   leaveType,
+      start_date:   fromDate,
+      end_date:     toDate,
+      days_requested: days,
+      status:       'Pending',
+      notes:        notes || null,
+    });
+    if (error) { dbError('leave_requests', error); return; }
+    await writeAudit('LEAVE_REQUEST', 'HR', leaveType + ' ' + fromDate, null, 'Info');
+  }
+  toast(`${leaveType} leave submitted — your manager will be notified`, '#16A34A');
+  document.getElementById('lf').value = '';
+  document.getElementById('lt').value = '';
+  if (document.getElementById('leaveNotes')) document.getElementById('leaveNotes').value = '';
+}
+
+/* ══ PAYROLL RUN (OTP-gated) ════════════════════════════════ */
+async function payrollRunAll() {
+  const period = new Date().toISOString().slice(0,7);
+  confirmWithOTP(
+    `Run payroll for ${period} — all active employees will be processed`,
+    async () => {
+      toast('Payroll run initiated — processing…', '#F97316');
+      const { data, error } = await callEdgeFunction('payroll-service', 'run_payroll', { period });
+      if (error && error !== 'no_client' && error !== 'not_authenticated') {
+        toast('Payroll run failed — check console', '#EF4444');
+        console.error('[run_payroll]', error);
+        return;
+      }
+      const count = data?.processed ?? '—';
+      toast(`Payroll complete — ${count} employees processed for ${period}`, '#16A34A');
+      setTimeout(() => renderEnhancedPayrollPage && renderEnhancedPayrollPage(), 800);
+    }
+  );
 }
 function payrollSubmit(dept)     { if(typeof toast==='function') toast(`Payroll submitted for ${dept.toUpperCase()} — awaiting approval`,'#3B82F6'); }
 function payrollApprove(dept)    {
