@@ -152,18 +152,21 @@ CREATE POLICY "Admin and CFO manage vendors"
 CREATE INDEX IF NOT EXISTS idx_vendors_status ON public.vendors(status);
 
 -- ─── purchase_orders ──────────────────────────────────────────
+-- Columns match what createPurchaseOrder() inserts from the frontend
 CREATE TABLE IF NOT EXISTS public.purchase_orders (
   id            uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   po_number     text        UNIQUE NOT NULL,
-  vendor_id     uuid        REFERENCES public.vendors(id),
-  requester_id  uuid        REFERENCES auth.users(id),
-  approver_id   uuid        REFERENCES auth.users(id),
-  total_amount  numeric(15,2) NOT NULL DEFAULT 0,
-  status        text        NOT NULL DEFAULT 'draft'
-                              CHECK (status IN ('draft','pending_approval','approved',
-                                                'rejected','received','cancelled')),
+  vendor_name   text        NOT NULL,
+  vendor_id     uuid        REFERENCES public.vendors(id),  -- optional FK for 3-way match
   description   text,
-  due_date      date,
+  quantity      numeric(10,2),
+  unit_price    numeric(12,2),
+  total_amount  numeric(15,2) NOT NULL DEFAULT 0,
+  status        text        NOT NULL DEFAULT 'Pending Approval',
+  budget_line   text,
+  required_by   date,
+  requestor_id  uuid        REFERENCES auth.users(id),
+  approver_id   uuid        REFERENCES auth.users(id),
   entity_id     uuid        REFERENCES public.entities(id),
   created_at    timestamptz NOT NULL DEFAULT now(),
   updated_at    timestamptz NOT NULL DEFAULT now()
@@ -172,7 +175,7 @@ ALTER TABLE public.purchase_orders ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Requester and managers read POs"
   ON public.purchase_orders FOR SELECT
-  USING (requester_id = auth.uid()
+  USING (requestor_id = auth.uid()
     OR (SELECT role FROM public.user_profiles WHERE id = auth.uid())
        IN ('admin','cfo','manager'));
 
@@ -186,7 +189,7 @@ CREATE POLICY "Managers update POs"
          IN ('admin','cfo','manager'));
 
 CREATE INDEX IF NOT EXISTS idx_po_status ON public.purchase_orders(status);
-CREATE INDEX IF NOT EXISTS idx_po_vendor ON public.purchase_orders(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_po_vendor_name ON public.purchase_orders(vendor_name);
 
 -- ─── approvals ────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.approvals (
@@ -300,20 +303,24 @@ CREATE POLICY "Owner and managers update deals"
 
 CREATE INDEX IF NOT EXISTS idx_crm_stage ON public.crm_deals(stage);
 
--- ─── invoices ─────────────────────────────────────────────────
+-- ─── invoices (AR / billing — matches frontend createInvoice()) ──
 CREATE TABLE IF NOT EXISTS public.invoices (
   id              uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   invoice_number  text        UNIQUE NOT NULL,
-  vendor_id       uuid        REFERENCES public.vendors(id),
-  po_id           uuid        REFERENCES public.purchase_orders(id),
+  client_name     text        NOT NULL,
+  contact_email   text,
   amount_excl     numeric(15,2) NOT NULL DEFAULT 0,
   vat_amount      numeric(15,2) NOT NULL DEFAULT 0,
-  amount_incl     numeric(15,2) GENERATED ALWAYS AS (amount_excl + vat_amount) STORED,
-  status          text        NOT NULL DEFAULT 'pending'
-                                CHECK (status IN ('pending','approved','paid','rejected','disputed')),
+  total_amount    numeric(15,2) NOT NULL DEFAULT 0,
+  status          text        NOT NULL DEFAULT 'Draft'
+                                CHECK (status IN ('Draft','Outstanding','Overdue','Paid','Cancelled')),
+  issue_date      date        NOT NULL DEFAULT CURRENT_DATE,
   due_date        date,
   paid_date       date,
-  pdf_url         text,       -- Supabase Storage signed URL
+  description     text,
+  reference       text,
+  pdf_url         text,
+  vendor_id       uuid        REFERENCES public.vendors(id),
   entity_id       uuid        REFERENCES public.entities(id),
   created_at      timestamptz NOT NULL DEFAULT now(),
   updated_at      timestamptz NOT NULL DEFAULT now()
@@ -325,20 +332,13 @@ CREATE POLICY "Finance reads all invoices"
   USING ((SELECT role FROM public.user_profiles WHERE id = auth.uid())
          IN ('admin','cfo','manager'));
 
-CREATE POLICY "Vendors read their own invoices"
-  ON public.invoices FOR SELECT
-  USING (vendor_id IN (
-    SELECT id FROM public.vendors
-    WHERE contact_email = (SELECT email FROM auth.users WHERE id = auth.uid())
-  ));
-
 CREATE POLICY "Finance manages invoices"
   ON public.invoices FOR ALL
   USING ((SELECT role FROM public.user_profiles WHERE id = auth.uid())
          IN ('admin','cfo'));
 
 CREATE INDEX IF NOT EXISTS idx_invoices_status ON public.invoices(status);
-CREATE INDEX IF NOT EXISTS idx_invoices_vendor ON public.invoices(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_client ON public.invoices(client_name);
 
 -- ─── chat_messages ────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.chat_messages (
