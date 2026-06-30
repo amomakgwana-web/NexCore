@@ -342,13 +342,15 @@ CREATE INDEX IF NOT EXISTS idx_invoices_vendor ON public.invoices(vendor_id);
 
 -- ─── chat_messages ────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.chat_messages (
-  id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  channel     text        NOT NULL DEFAULT 'general',
-  sender_id   uuid        REFERENCES auth.users(id),
-  sender_name text,
-  content     text        NOT NULL,
-  entity_id   uuid        REFERENCES public.entities(id),
-  created_at  timestamptz NOT NULL DEFAULT now()
+  id             uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  channel_id     text        NOT NULL DEFAULT 'general',
+  sender_id      uuid        REFERENCES auth.users(id),
+  user_name      text,
+  user_initials  text,
+  user_color     text,
+  content        text        NOT NULL,
+  entity_id      uuid        REFERENCES public.entities(id),
+  created_at     timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
@@ -357,11 +359,42 @@ CREATE POLICY "All authenticated users read chat"
 
 CREATE POLICY "Authenticated users post messages"
   ON public.chat_messages FOR INSERT
-  WITH CHECK (auth.uid() IS NOT NULL AND sender_id = auth.uid());
+  WITH CHECK (auth.uid() IS NOT NULL);
 
 ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;
 
-CREATE INDEX IF NOT EXISTS idx_chat_channel ON public.chat_messages(channel, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_channel ON public.chat_messages(channel_id, created_at DESC);
+
+-- ─── notifications ────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.notifications (
+  id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     uuid        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  title       text        NOT NULL,
+  body        text,
+  icon        text        NOT NULL DEFAULT 'check',
+  color       text        NOT NULL DEFAULT '#F97316',
+  unread      boolean     NOT NULL DEFAULT true,
+  link_page   text,
+  entity_id   uuid        REFERENCES public.entities(id),
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users read own notifications"
+  ON public.notifications FOR SELECT
+  USING (user_id = auth.uid());
+
+CREATE POLICY "System inserts notifications"
+  ON public.notifications FOR INSERT
+  WITH CHECK (true);
+
+CREATE POLICY "Users mark own notifications read"
+  ON public.notifications FOR UPDATE
+  USING (user_id = auth.uid());
+
+ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+
+CREATE INDEX IF NOT EXISTS idx_notifs_user ON public.notifications(user_id, created_at DESC);
 
 -- ─── claims ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.claims (

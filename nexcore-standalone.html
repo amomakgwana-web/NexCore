@@ -1997,6 +1997,22 @@ async function loadInvoices() {
   if (billingPage?.classList.contains('on')) renderBillingContent();
 }
 
+async function loadMyPayslips() {
+  const { data, error } = await callEdgeFunction('payroll-service', 'get_my_payslips');
+  const el = document.getElementById('essPayslipsList');
+  if (!el || error || !data?.payslips?.length) return;
+  const payslips = data.payslips;
+  el.innerHTML = payslips.map((p, i) => {
+    const label = p.period || p.month || 'Unknown';
+    const net   = p.net_pay != null ? 'R ' + Number(p.net_pay).toLocaleString('en-ZA', {minimumFractionDigits:2}) : '—';
+    const isNew = i === 0;
+    const pdfClick = p.pdf_url
+      ? `window.open('${p.pdf_url}','_blank')`
+      : `toast('Payslip PDF for ${label}…','#16A34A')`;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--bd-l);background:${isNew?'var(--or-bg)':''};"><div style="width:28px;height:28px;border-radius:var(--r6);background:${isNew?'var(--or)':'var(--sf2)'};display:flex;align-items:center;justify-content:center;">${svgIcon('file','13px',isNew?'white':'var(--mid)')}</div><div style="flex:1;"><div style="font-size:12px;font-weight:700;">${label}</div><div style="font-size:10px;color:var(--mid);">Net: ${net}</div></div>${isNew?'<span class="badge gn">New</span>':''}<button class="btn ${isNew?'bp':'bs'} btn-xs" onclick="${pdfClick}">PDF</button></div>`;
+  }).join('');
+}
+
 async function createInvoice(inv) {
   const client = sb(); if (!client) return;
   const invNo = 'INV-' + Date.now().toString().slice(-4);
@@ -2360,6 +2376,9 @@ async function loadAllData() {
     loadCRMDeals().catch(console.warn);
     loadInvoices().catch(console.warn);
     subscribeApprovals();
+    loadNotifications().catch(console.warn);
+    subscribeNotifications();
+    loadMyPayslips().catch(console.warn);
     // Refresh AI context with live numbers
     refreshAIContext().catch(console.warn);
   } catch(err) {
@@ -2931,17 +2950,67 @@ document.addEventListener('click',e=>{
 
 /* ══ NOTIFICATIONS ══ */
 
-function toggleNotif(){ document.getElementById('notifPanel').classList.toggle('on'); }
+let _liveNotifs = null;       // live array from DB
+let _notifRealtime = null;    // Realtime channel
+
+function toggleNotif(){
+  document.getElementById('notifPanel').classList.toggle('on');
+  // Mark all read in DB when panel is opened
+  const client = sb();
+  if (client && currentUser?.id) {
+    client.from('notifications').update({ unread: false })
+      .eq('user_id', currentUser.id).eq('unread', true)
+      .then(() => {
+        if (_liveNotifs) _liveNotifs.forEach(n => n.unread = false);
+        renderNotifs();
+      });
+  }
+}
+
+async function loadNotifications() {
+  const client = sb(); if (!client || !currentUser?.id) return;
+  const { data, error } = await client
+    .from('notifications')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false })
+    .limit(30);
+  if (error) return;
+  _liveNotifs = data;
+  renderNotifs();
+}
+
+function subscribeNotifications() {
+  const client = sb(); if (!client || !currentUser?.id) return;
+  if (_notifRealtime) client.removeChannel(_notifRealtime);
+  _notifRealtime = client
+    .channel('notifs:' + currentUser.id)
+    .on('postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'notifications',
+        filter: 'user_id=eq.' + currentUser.id },
+      payload => {
+        if (!_liveNotifs) _liveNotifs = [];
+        _liveNotifs.unshift(payload.new);
+        renderNotifs();
+        // Show toast for new notification
+        toast(payload.new.title, payload.new.color || '#F97316');
+      })
+    .subscribe();
+}
 
 function renderNotifs(){
-  const notifs = currentUser.notifs||[];
+  const notifs = _liveNotifs || currentUser?.notifs || [];
   const iconMap = {check:svgIcon('check','12px','white'),alert:svgIcon('alert','12px','white'),done:svgIcon('done','12px','white'),cal:svgIcon('cal','12px','white')};
-  document.getElementById('notifList').innerHTML = notifs.map(n=>`
+  const el = document.getElementById('notifList');
+  if (el) el.innerHTML = notifs.length ? notifs.map(n=>`
     <div class="notif-item ${n.unread?'unread':''}">
-      <div class="notif-item-icon" style="background:${n.color};">${iconMap[n.icon]||''}</div>
-      <div><div class="notif-item-title">${n.title}</div><div class="notif-item-body">${n.body}</div><div class="notif-item-time">Just now</div></div>
-    </div>`).join('');
-  document.getElementById('notifCount').textContent = notifs.filter(n=>n.unread).length+' new';
+      <div class="notif-item-icon" style="background:${n.color||'#F97316'};">${iconMap[n.icon]||''}</div>
+      <div><div class="notif-item-title">${n.title}</div><div class="notif-item-body">${n.body||''}</div>
+      <div class="notif-item-time">${new Date(n.created_at).toLocaleString('en-ZA',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div></div>
+    </div>`).join('') : '<div style="padding:20px;text-align:center;color:var(--mu);font-size:12px;">No notifications</div>';
+  const cnt = document.getElementById('notifCount');
+  const unread = notifs.filter(n=>n.unread).length;
+  if (cnt) cnt.textContent = unread ? unread + ' new' : '';
 }
 
 /* ══ TOAST ══ */
@@ -3698,7 +3767,9 @@ function renderESSContent(){
   <div class="tp" id="essTabs-payslips">
     <div class="g2">
       <div class="card"><div class="ch2"><span class="ch2-title">Payslip History</span></div>
+        <div id="essPayslipsList">
         ${['January 2025','December 2024','November 2024','October 2024'].map((m,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--bd-l);background:${i===0?'var(--or-bg)':''};"><div style="width:28px;height:28px;border-radius:var(--r6);background:${i===0?'var(--or)':'var(--sf2)'};display:flex;align-items:center;justify-content:center;">${svgIcon('file','13px',i===0?'white':'var(--mid)')}</div><div style="flex:1;"><div style="font-size:12px;font-weight:700;">${m}</div><div style="font-size:10px;color:var(--mid);">Net: R 48,000.28</div></div>${i===0?'<span class="badge gn">New</span>':''}<button class="btn ${i===0?'bp':'bs'} btn-xs" onclick="toast('Downloading ${m} payslip PDF…','#16A34A')">PDF</button></div>`).join('')}
+        </div>
       </div>
       <div><div class="section-lbl">January 2025 Preview</div>
         <div class="ps-preview">
@@ -4740,10 +4811,14 @@ function initChatPage() {
   chatUserColor = u.avColor || u.avBg || '#F97316';
 
   renderChatChannels();
-  renderChatMessages('general');
+  renderChatMessages(currentChatChannel);
 
   const input = document.getElementById('chatInput');
   if (input) input.placeholder = 'Message #' + currentChatChannel + '…';
+
+  // Load live messages and start Realtime subscription
+  loadChatMessages(currentChatChannel);
+  subscribeChatRealtime(currentChatChannel);
 }
 
 function renderChatChannels() {
@@ -4786,6 +4861,9 @@ function switchChatChannel(channelId) {
   const found = CHAT_CHANNELS.find(c => c.id === channelId);
   if (found) found.unread = 0;
   renderChatChannels();
+  // Load live messages and re-subscribe Realtime to new channel
+  loadChatMessages(channelId);
+  subscribeChatRealtime(channelId);
 }
 
 function renderChatMessages(channelId) {
@@ -5991,7 +6069,20 @@ function supplierInvoices(id) {
   if(typeof toast==='function') toast(`Filtering invoices for ${s?.name}…`,'#3B82F6');
 }
 
-function payrollRunAll()         { if(typeof toast==='function') toast('Initiating full payroll run for January 2025…','#F97316'); }
+async function payrollRunAll() {
+  if(typeof toast==='function') toast('Initiating payroll run — processing…','#F97316');
+  const period = new Date().toISOString().slice(0,7); // YYYY-MM
+  const { data, error } = await callEdgeFunction('payroll-service', 'run_payroll', { period });
+  if (error && error !== 'no_client' && error !== 'not_authenticated') {
+    toast('Payroll run failed — check console', '#EF4444');
+    console.error('[run_payroll]', error);
+    return;
+  }
+  const count = data?.processed ?? '—';
+  toast(`Payroll run complete — ${count} employees processed for ${period}`, '#16A34A');
+  // Reload payroll overview to show updated state
+  setTimeout(() => renderEnhancedPayrollPage && renderEnhancedPayrollPage(), 800);
+}
 function payrollSubmit(dept)     { if(typeof toast==='function') toast(`Payroll submitted for ${dept.toUpperCase()} — awaiting approval`,'#3B82F6'); }
 function payrollApprove(dept)    {
   const p = PAYROLL.find(x=>x.dept===dept);
