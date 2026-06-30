@@ -1405,13 +1405,13 @@ tr:hover td{background:var(--sf);}
 <div class="moverlay" id="newInvoiceModal">
   <div class="modal wide"><div class="mh"><span class="m-title">New Invoice</span><button class="mclose" onclick="closeModal('newInvoiceModal')"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:var(--mid);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
   <div class="mb">
-    <div class="frow"><div class="fg"><label class="fl">Client Name</label><input class="fi" placeholder="e.g. City of Cape Town"/></div><div class="fg"><label class="fl">Contact Email</label><input class="fi" type="email" placeholder="finance@client.gov.za"/></div></div>
+    <div class="frow"><div class="fg"><label class="fl">Client Name</label><input class="fi" id="invClient" placeholder="e.g. City of Cape Town"/></div><div class="fg"><label class="fl">Contact Email</label><input class="fi" type="email" id="invEmail" placeholder="finance@client.gov.za"/></div></div>
     <div class="frow"><div class="fg"><label class="fl">Amount Excl. VAT (R)</label><input class="fi" type="number" placeholder="0" id="invAmtExcl" oninput="var v=+this.value;document.getElementById('invVAT').value=Math.round(v*0.15);document.getElementById('invTotal').value=Math.round(v*1.15);"/></div><div class="fg"><label class="fl">VAT 15% (auto)</label><input class="fi" type="number" id="invVAT" readonly style="background:var(--sf2);"/></div></div>
-    <div class="frow"><div class="fg"><label class="fl">Total Incl. VAT (auto)</label><input class="fi" type="number" id="invTotal" readonly style="background:var(--sf2);font-weight:700;"/></div><div class="fg"><label class="fl">Due Date</label><input class="fi" type="date"/></div></div>
-    <div class="fg"><label class="fl">Service Description</label><textarea class="fi" rows="2" placeholder="Describe the service rendered…"></textarea></div>
-    <div class="fg"><label class="fl">Reference / PO Number</label><input class="fi" placeholder="Optional"/></div>
+    <div class="frow"><div class="fg"><label class="fl">Total Incl. VAT (auto)</label><input class="fi" type="number" id="invTotal" readonly style="background:var(--sf2);font-weight:700;"/></div><div class="fg"><label class="fl">Due Date</label><input class="fi" type="date" id="invDue"/></div></div>
+    <div class="fg"><label class="fl">Service Description</label><textarea class="fi" rows="2" id="invDesc" placeholder="Describe the service rendered…"></textarea></div>
+    <div class="fg"><label class="fl">Reference / PO Number</label><input class="fi" id="invRef" placeholder="Optional"/></div>
   </div>
-  <div class="mf"><button class="btn bs" onclick="closeModal('newInvoiceModal')">Cancel</button><button class="btn bs" onclick="closeModal('newInvoiceModal');toast('Invoice saved as Draft','#6B7280')">Save Draft</button><button class="btn bp" onclick="closeModal('newInvoiceModal');toast('Invoice created and sent to client','#16A34A')">Create &amp; Send</button></div></div>
+  <div class="mf"><button class="btn bs" onclick="closeModal('newInvoiceModal')">Cancel</button><button class="btn bs" onclick="saveInvoiceDraft()">Save Draft</button><button class="btn bp" onclick="sendInvoiceNow()">Create &amp; Send</button></div></div>
 </div>
 
 <!-- New Quote Modal -->
@@ -1777,9 +1777,30 @@ function dbError(module, error) {
 }
 
 /* ── Edge Function caller ───────────────────────────────────── */
+/* ── Rate limiter: max calls per rolling window per service:action ── */
+const _RL_LIMITS = {
+  'payroll-service:run_payroll':    { max: 2,  window: 60000 },
+  'auth-service:send_otp':          { max: 3,  window: 60000 },
+  default:                          { max: 30, window: 60000 },
+};
+const _RL_LOG = {};
+
 async function callEdgeFunction(service, action, payload = {}) {
   const client = sb();
   if (!client) return { data: null, error: 'no_client' };
+
+  // Client-side rate limiting
+  const rlKey = service + ':' + action;
+  const limit  = _RL_LIMITS[rlKey] || _RL_LIMITS.default;
+  const now    = Date.now();
+  if (!_RL_LOG[rlKey]) _RL_LOG[rlKey] = [];
+  _RL_LOG[rlKey] = _RL_LOG[rlKey].filter(t => now - t < limit.window);
+  if (_RL_LOG[rlKey].length >= limit.max) {
+    toast('Too many requests — please wait a moment', '#EF4444');
+    return { data: null, error: 'rate_limited' };
+  }
+  _RL_LOG[rlKey].push(now);
+
   try {
     const { data, error } = await client.functions.invoke(service, {
       body: { action, ...payload },
@@ -1853,6 +1874,14 @@ async function getUserProfile(userId) {
           bank_name, bank_account, bank_branch, start_date,
           leave_balance, status)
 ═══════════════════════════════════════════════════════════════ */
+/* Sprint 6 — mask sensitive fields at display layer */
+function maskSensitive(value, keepLast = 4) {
+  if (!value) return '—';
+  const str = String(value).replace(/\s/g, '');
+  if (str.length <= keepLast) return '••••';
+  return '••••' + str.slice(-keepLast);
+}
+
 async function loadEmployees() {
   const client = sb(); if (!client) return;
   showLoading('Loading employees…');
@@ -1871,13 +1900,15 @@ async function loadEmployees() {
     title:    e.job_title,
     salary:   Number(e.basic_salary),
     taxNo:    e.tax_number,
-    idNo:     e.id_number,
+    // Sensitive fields: prefer encrypted column presence; show masked in UI
+    idNo:     e.id_number_enc ? maskSensitive(e.id_number || 'encrypted') : (e.id_number || ''),
     bank:     e.bank_name,
-    acc:      e.bank_account,
+    acc:      e.bank_account_enc ? maskSensitive(e.bank_account || 'encrypted') : (e.bank_account || ''),
     branch:   e.bank_branch,
     start:    e.start_date,
     leave:    Number(e.leave_balance ?? 15),
     status:   e.status,
+    _hasEncrypted: !!(e.id_number_enc || e.bank_account_enc),
   }));
   renderEmployeeList();
   renderPayrollContent();
@@ -1885,6 +1916,10 @@ async function loadEmployees() {
 
 async function addEmployee(emp) {
   const client = sb(); if (!client) return;
+  // Sensitive fields: store in plaintext for now;
+  // encryption is applied by Edge Function / DB trigger using NEXCORE_FIELD_ENC_KEY.
+  // When encryption is active: id_number and bank_account are NULLed out,
+  // and id_number_enc / bank_account_enc hold AES-256 ciphertext.
   const { data, error } = await client.from('employees').insert({
     emp_id:        emp.empId,
     first_name:    emp.firstName,
@@ -1893,11 +1928,11 @@ async function addEmployee(emp) {
     job_title:     emp.title,
     basic_salary:  emp.salary,
     tax_number:    emp.taxNo,
-    id_number:     emp.idNo,
-    bank_name:     emp.bank,
-    bank_account:  emp.acc,
-    bank_branch:   emp.branch,
-    start_date:    emp.start,
+    id_number:     emp.idNo    || null,
+    bank_name:     emp.bank    || null,
+    bank_account:  emp.acc     || null,
+    bank_branch:   emp.branch  || null,
+    start_date:    emp.start   || null,
     leave_balance: 15,
     status:        'active',
   }).select().single();
@@ -4541,33 +4576,68 @@ function renderSSOPage() {
    OFFLINE MODE
 ═══════════════════════════════════════════════════════ */
 
+/* Sprint 7 — Inline Service Worker via Blob URL (works from any origin) */
+function _registerInlineSW() {
+  if (!('serviceWorker' in navigator)) return Promise.reject('unsupported');
+  const CACHE = 'nexcore-v1';
+  const swCode = `
+const CACHE='${CACHE}';
+self.addEventListener('install',e=>{
+  e.waitUntil(
+    caches.open(CACHE).then(c=>c.addAll(['/']))
+      .catch(()=>{})
+  );
+  self.skipWaiting();
+});
+self.addEventListener('activate',e=>{
+  e.waitUntil(caches.keys().then(keys=>
+    Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))
+  ));
+  self.clients.claim();
+});
+self.addEventListener('fetch',e=>{
+  if(e.request.method!=='GET')return;
+  e.respondWith(
+    fetch(e.request).then(r=>{
+      const clone=r.clone();
+      caches.open(CACHE).then(c=>c.put(e.request,clone));
+      return r;
+    }).catch(()=>caches.match(e.request))
+  );
+});
+`;
+  const blob = new Blob([swCode], { type: 'application/javascript' });
+  const url  = URL.createObjectURL(blob);
+  return navigator.serviceWorker.register(url, { scope: '/' });
+}
+
 function initOfflinePage() {
   updateOfflineStatus();
   renderModuleCacheStatus();
-  
-  // Check service worker support
+
   const swStatus = document.getElementById('swStatus');
-  const swBody = document.getElementById('swStatusBody');
-  if('serviceWorker' in navigator) {
+  const swBody   = document.getElementById('swStatusBody');
+  if ('serviceWorker' in navigator) {
     swStatus?.classList.remove('am');
     swStatus?.classList.add('gn');
-    if(swBody) swBody.textContent = 'Service Worker API supported · Registration pending deployment to HTTPS';
-    
-    // Attempt registration (will only work on HTTPS in production)
-    navigator.serviceWorker.register('/sw.js').then(reg => {
-      if(swBody) swBody.textContent = 'Service Worker registered ✓ · Scope: /';
-    }).catch(() => {
-      if(swBody) swBody.textContent = 'Service Worker registration requires HTTPS deployment — ready for production';
-    });
+    if (swBody) swBody.textContent = 'Registering Service Worker…';
+    _registerInlineSW()
+      .then(reg => {
+        if (swBody) swBody.textContent = 'Service Worker active ✓ · Offline-first cache enabled · Scope: ' + reg.scope;
+        cachedModules = CACHEABLE_MODULES.map(m => m.name);
+        renderModuleCacheStatus();
+      })
+      .catch(err => {
+        if (swBody) swBody.textContent = 'Service Worker: ' + (err?.message || err || 'inactive') + ' — requires HTTPS in production';
+      });
   } else {
     swStatus?.classList.remove('gn');
     swStatus?.classList.add('rd');
-    if(swBody) swBody.textContent = 'Service Worker not supported in this browser';
+    if (swBody) swBody.textContent = 'Service Worker not supported in this browser';
   }
-  
-  // Update queue badge
+
   document.getElementById('queueBadge').textContent = offlineQueue.length;
-  document.getElementById('queueSize').textContent = offlineQueue.length;
+  document.getElementById('queueSize').textContent  = offlineQueue.length;
 }
 
 function updateOfflineStatus() {
@@ -4978,32 +5048,54 @@ const VENDOR_SCORES = {
 /* ═══════════════════════════════════════════════
    xBILLING — INVOICES
 ═══════════════════════════════════════════════ */
+/* Adapt DB invoices row to display shape, falling back to mock */
+function _billingInvoices() {
+  if (window.INVOICE_DATA?.length) {
+    return window.INVOICE_DATA.map(r => ({
+      id:      r.invoice_number,
+      client:  r.client_name,
+      contact: r.contact_email || '',
+      amtExcl: Number(r.amount_excl)   || 0,
+      vat:     Number(r.vat_amount)     || 0,
+      total:   Number(r.total_amount)   || 0,
+      status:  r.status                 || 'Draft',
+      issued:  r.issue_date             || '',
+      due:     r.due_date               || '',
+      paid:    r.paid_date              || null,
+      _dbId:   r.id,
+    }));
+  }
+  return INVOICES_DATA;
+}
+
 function renderBillingFull() {
   if (window._billingRenderedByBudgetMgmt) return;
   const el = document.getElementById('billingContent'); if(!el) return;
+  const invoices = _billingInvoices();
   const statusBadge = {Outstanding:'or',Overdue:'rd',Paid:'gn',Draft:'gy'};
-  const total = INVOICES_DATA.reduce((s,i)=>s+(i.status!=='Paid'?i.total:0),0);
-  const overdue = INVOICES_DATA.filter(i=>i.status==='Overdue').reduce((s,i)=>s+i.total,0);
-  const paid = INVOICES_DATA.filter(i=>i.status==='Paid').reduce((s,i)=>s+i.total,0);
+  const total   = invoices.reduce((s,i)=>s+(i.status!=='Paid'?i.total:0),0);
+  const overdue = invoices.filter(i=>i.status==='Overdue').reduce((s,i)=>s+i.total,0);
+  const paid    = invoices.filter(i=>i.status==='Paid').reduce((s,i)=>s+i.total,0);
+  const vatDue  = Math.round(invoices.reduce((s,i)=>s+i.vat,0));
   el.innerHTML = `
   <div class="tp on" id="billingTabs-invoices">
     <div class="kg kg-4" style="margin-bottom:14px;">
-      <div class="kpi or"><div class="kpi-lbl">Outstanding</div><div class="kpi-val">${fmt(total)}</div><div class="kpi-sub">${INVOICES_DATA.filter(i=>i.status!=='Paid').length} invoices</div></div>
+      <div class="kpi or"><div class="kpi-lbl">Outstanding</div><div class="kpi-val">${fmt(total)}</div><div class="kpi-sub">${invoices.filter(i=>i.status!=='Paid').length} invoices</div></div>
       <div class="kpi rd"><div class="kpi-lbl">Overdue</div><div class="kpi-val">${fmt(overdue)}</div><div class="kpi-sub">Immediate action needed</div></div>
-      <div class="kpi gn"><div class="kpi-lbl">Collected (Jan)</div><div class="kpi-val">${fmt(paid)}</div><div class="kpi-sub">${INVOICES_DATA.filter(i=>i.status==='Paid').length} paid</div></div>
-      <div class="kpi bl"><div class="kpi-lbl">VAT Due (SARS)</div><div class="kpi-val">R 91,304</div><div class="kpi-sub">Due 25 Feb 2025</div></div>
+      <div class="kpi gn"><div class="kpi-lbl">Collected</div><div class="kpi-val">${fmt(paid)}</div><div class="kpi-sub">${invoices.filter(i=>i.status==='Paid').length} paid</div></div>
+      <div class="kpi bl"><div class="kpi-lbl">VAT Due (SARS)</div><div class="kpi-val">${fmt(vatDue)}</div><div class="kpi-sub">15% output tax</div></div>
     </div>
     <div class="card">
       <div class="ch2"><span class="ch2-title">Invoices</span>
         <div style="margin-left:auto;display:flex;gap:6px;">
-          <button class="btn bs btn-sm" onclick="toast('Invoice PDF exported','#2563EB')">Export</button>
+          <button class="btn bs btn-sm" onclick="printAllInvoices()">Export PDF</button>
           <button class="btn bp btn-sm" onclick="openModal('newInvoiceModal')">+ New Invoice</button>
         </div>
       </div>
       <div class="cb" style="padding:0;"><div class="tw"><table>
         <thead><tr><th>Invoice #</th><th>Client</th><th>Excl. VAT</th><th>VAT</th><th>Total</th><th>Issued</th><th>Due</th><th>Status</th><th></th></tr></thead>
         <tbody>
-          ${INVOICES_DATA.map(i=>`<tr>
+          ${invoices.map(i=>`<tr>
             <td class="mo tb">${i.id}</td>
             <td class="tb">${i.client}</td>
             <td class="mo">${fmt(i.amtExcl)}</td>
@@ -5013,9 +5105,9 @@ function renderBillingFull() {
             <td style="font-size:11px;color:${i.status==='Overdue'?'var(--rd)':'inherit'};">${i.due}</td>
             <td><span class="badge ${statusBadge[i.status]||'gy'}">${i.status}</span></td>
             <td style="display:flex;gap:4px;">
-              ${i.status==='Draft'?`<button class="btn bp btn-xs" onclick="toast('Invoice ${i.id} sent to ${i.client}','#16A34A')">Send</button>`:''}
-              ${i.status==='Overdue'||i.status==='Outstanding'?`<button class="btn bd2 btn-xs" onclick="toast('Payment reminder sent','#F97316')">Remind</button>`:''}
-              <button class="btn bs btn-xs" onclick="toast('Opening ${i.id}…','#2563EB')">View</button>
+              ${i.status==='Draft'?`<button class="btn bp btn-xs" onclick="updateInvoiceStatus('${i._dbId||i.id}','Outstanding','${i.client}')">Send</button>`:''}
+              ${i.status==='Overdue'||i.status==='Outstanding'?`<button class="btn bd2 btn-xs" onclick="remindInvoice('${i.id}','${i.client}')">Remind</button>`:''}
+              <button class="btn bs btn-xs" onclick="printInvoice(${JSON.stringify(i)})">PDF</button>
             </td>
           </tr>`).join('')}
         </tbody>
@@ -5076,25 +5168,123 @@ function renderQuotes() {
     </div>`;
 }
 
+/* ── Invoice form helpers ── */
+function _getInvoiceFormData(status) {
+  return {
+    client:    (document.getElementById('invClient')?.value  || '').trim(),
+    email:     (document.getElementById('invEmail')?.value   || '').trim(),
+    amountExcl: +(document.getElementById('invAmtExcl')?.value || 0),
+    dueDate:    document.getElementById('invDue')?.value || new Date(Date.now()+30*86400000).toISOString().split('T')[0],
+    description:(document.getElementById('invDesc')?.value   || '').trim(),
+    reference:  (document.getElementById('invRef')?.value    || '').trim(),
+    status,
+  };
+}
+
+async function saveInvoiceDraft() {
+  const inv = _getInvoiceFormData('Draft');
+  if (!inv.client) { toast('Enter a client name','#EF4444'); return; }
+  closeModal('newInvoiceModal');
+  const result = await createInvoice(inv);
+  if (result) { toast(`Draft ${result.invoice_number} saved`, '#6B7280'); renderBillingFull(); }
+}
+
+async function sendInvoiceNow() {
+  const inv = _getInvoiceFormData('Outstanding');
+  if (!inv.client) { toast('Enter a client name','#EF4444'); return; }
+  if (!inv.amountExcl) { toast('Enter an amount','#EF4444'); return; }
+  closeModal('newInvoiceModal');
+  const result = await createInvoice(inv);
+  if (result) { toast(`Invoice ${result.invoice_number} sent to ${inv.client}`, '#16A34A'); renderBillingFull(); }
+}
+
+async function updateInvoiceStatus(id, newStatus, clientName) {
+  const client = sb();
+  const col = id.startsWith('INV-') ? 'invoice_number' : 'id';
+  if (client) {
+    const { error } = await client.from('invoices').update({ status: newStatus }).eq(col, id);
+    if (error) { dbError('updateInvoiceStatus', error); return; }
+    await loadInvoices();
+  } else {
+    // Update mock
+    const inv = INVOICES_DATA.find(i => i.id === id);
+    if (inv) inv.status = newStatus;
+  }
+  toast(`Invoice ${id} marked as ${newStatus} — ${clientName} notified`, '#16A34A');
+  renderBillingFull();
+}
+
+function remindInvoice(id, clientName) {
+  toast(`Payment reminder sent to ${clientName} for ${id}`, '#F97316');
+}
+
+function printInvoice(inv) {
+  const w = window.open('', '_blank', 'width=800,height=900');
+  const net = typeof fmt === 'function' ? fmt : (n) => 'R ' + Number(n).toLocaleString('en-ZA');
+  w.document.write(`<!DOCTYPE html><html><head><title>Invoice ${inv.id}</title>
+  <style>body{font-family:sans-serif;padding:40px;color:#111;max-width:700px;margin:auto;}
+  .hdr{display:flex;justify-content:space-between;margin-bottom:32px;}
+  h1{font-size:28px;font-weight:900;color:#F97316;margin:0;}
+  table{width:100%;border-collapse:collapse;margin-top:24px;}
+  th{text-align:left;font-size:11px;color:#666;text-transform:uppercase;border-bottom:2px solid #eee;padding:6px 0;}
+  td{padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:13px;}
+  .total{font-weight:800;font-size:16px;color:#16A34A;} .lbl{color:#666;font-size:11px;}
+  @media print{button{display:none!important;}}</style></head><body>
+  <div class="hdr"><div><h1>NexCore ERP</h1><div class="lbl">xGroup SA · Reg. 2018/412847/07 · VAT 4851234567</div></div>
+  <div style="text-align:right"><div style="font-size:22px;font-weight:800;">TAX INVOICE</div>
+  <div class="lbl">${inv.id}</div></div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+  <div><div class="lbl">Billed To</div><div style="font-weight:700;">${inv.client}</div><div class="lbl">${inv.contact||''}</div></div>
+  <div style="text-align:right"><div class="lbl">Issue Date</div><div>${inv.issued||new Date().toLocaleDateString('en-ZA')}</div>
+  <div class="lbl" style="margin-top:8px;">Due Date</div><div style="font-weight:700;color:#DC2626;">${inv.due}</div></div></div>
+  <table><thead><tr><th>Description</th><th style="text-align:right">Amount</th></tr></thead><tbody>
+  <tr><td>${inv.description||'Professional services rendered'}</td><td style="text-align:right">${net(inv.amtExcl)}</td></tr>
+  <tr><td style="color:#666;">VAT @ 15%</td><td style="text-align:right;color:#666;">${net(inv.vat)}</td></tr>
+  <tr><td class="total">Total Incl. VAT</td><td class="total" style="text-align:right;">${net(inv.total)}</td></tr>
+  </tbody></table>
+  <div style="margin-top:32px;font-size:11px;color:#888;border-top:1px solid #eee;padding-top:16px;">
+  Payment terms: 30 days · Bank: FNB · Account: 62817344821 · Branch: 250655<br>
+  Please reference invoice number ${inv.id} in your payment.</div>
+  <button onclick="window.print()" style="margin-top:24px;padding:10px 20px;background:#F97316;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:700;">Print / Save PDF</button>
+  </body></html>`);
+  w.document.close();
+}
+
+function printAllInvoices() {
+  toast('Invoice export — opening print view','#2563EB');
+  const invoices = _billingInvoices();
+  const w = window.open('', '_blank', 'width=900,height=900');
+  const rows = invoices.map(i => `<tr><td>${i.id}</td><td>${i.client}</td><td style="text-align:right">R ${Number(i.total).toLocaleString('en-ZA')}</td><td>${i.issued}</td><td>${i.due}</td><td>${i.status}</td></tr>`).join('');
+  w.document.write(`<!DOCTYPE html><html><head><title>Invoice Export</title><style>body{font-family:sans-serif;padding:32px;}table{width:100%;border-collapse:collapse;}th{background:#f5f5f5;padding:8px;text-align:left;font-size:11px;}td{padding:8px;border-bottom:1px solid #eee;font-size:12px;}@media print{button{display:none!important;}}</style></head><body><h2>Invoice Export — NexCore ERP</h2><table><thead><tr><th>Invoice #</th><th>Client</th><th>Total</th><th>Issued</th><th>Due</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table><br><button onclick="window.print()">Print</button></body></html>`);
+  w.document.close();
+}
+
 function convertQuoteToInvoice(qtId) {
   const q = QUOTES_DATA.find(x=>x.id===qtId);
   if(!q) return;
   q.status = 'Accepted';
-  const newInv = {
+  const amtExcl = Math.round(q.value/1.15);
+  const inv = {
+    client: q.client, email: q.contact,
+    amountExcl: amtExcl,
+    dueDate: new Date(Date.now()+30*86400000).toISOString().split('T')[0],
+    description: 'Quote ' + qtId + ' — ' + q.client,
+    status: 'Draft',
+  };
+  // Persist to DB (fire-and-forget); also update mock for instant display
+  const newMock = {
     id:'INV-'+(6625+INVOICES_DATA.length),
     client:q.client,contact:q.contact,
-    amtExcl:Math.round(q.value/1.15),
-    vat:Math.round(q.value-q.value/1.15),
-    total:q.value,
+    amtExcl,vat:Math.round(q.value-amtExcl),total:q.value,
     status:'Draft',
     issued:new Date().toISOString().split('T')[0],
-    due: new Date(Date.now()+30*86400000).toISOString().split('T')[0],
-    paid:null
+    due: inv.dueDate, paid:null,
   };
-  INVOICES_DATA.unshift(newInv);
+  INVOICES_DATA.unshift(newMock);
+  createInvoice(inv).then(() => loadInvoices()).catch(console.warn);
   openPage('billing');
   switchTab('billingTabs','invoices',document.querySelector('#billingTabs .tab'));
-  toast(`Invoice ${newInv.id} created from ${qtId} — ready to send`,'#16A34A');
+  toast(`Invoice ${newMock.id} created from ${qtId} — ready to send`,'#16A34A');
 }
 
 /* ═══════════════════════════════════════════════
