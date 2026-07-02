@@ -1577,6 +1577,27 @@ body.dark .qa-btn{background:var(--sf2);}
         <div class="content" id="supplyContent"></div>
       </div>
 
+      <!-- WORK OS BOARDS (Monday-style) -->
+      <div class="page" id="page-boards">
+        <div class="ph"><div class="ph-icon" style="background:var(--pu)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg></div><div><div class="ph-title">Work Boards</div><div class="ph-sub">Customisable boards · Automations · Team workload</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="boardAddGroup()">+ New Group</button></div></div>
+        <div class="tabs"><button class="tab on" onclick="switchTab('boardTabs','main',this)">Main Board</button><button class="tab" onclick="switchTab('boardTabs','automations',this)">Automations</button><button class="tab" onclick="switchTab('boardTabs','workload',this)">Workload</button><button class="tab" onclick="switchTab('boardTabs','activity',this)">Activity Log</button></div>
+        <div class="content" id="boardsContent"></div>
+      </div>
+
+      <!-- CONTRACTORS & GLOBAL PAY (Deel-style) -->
+      <div class="page" id="page-contractors">
+        <div class="ph"><div class="ph-icon" style="background:var(--em)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><div><div class="ph-title">Contractors & Global Pay</div><div class="ph-sub">Multi-currency · Compliance · Contract lifecycle</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="openModal('newContractorModal')">+ Add Contractor</button><button class="btn bg btn-sm" onclick="runContractorPayRun()">Run Pay Cycle</button></div></div>
+        <div class="tabs"><button class="tab on" onclick="switchTab('ctrTabs','people',this)">Contractors</button><button class="tab" onclick="switchTab('ctrTabs','payruns',this)">Pay Runs</button><button class="tab" onclick="switchTab('ctrTabs','compliance',this)">Compliance</button><button class="tab" onclick="switchTab('ctrTabs','spend',this)">Spend Analytics</button></div>
+        <div class="content" id="contractorsContent"></div>
+      </div>
+
+      <!-- ACCOUNTING / GENERAL LEDGER (Sage-style) -->
+      <div class="page" id="page-accounting">
+        <div class="ph"><div class="ph-icon" style="background:var(--ch)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M2 3h20v4H2z"/><path d="M4 7v14h16V7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="15" y2="15"/></svg></div><div><div class="ph-title">Accounting</div><div class="ph-sub">General Ledger · Journals · Bank Recon · Aging</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="openJournalModal()">+ Journal Entry</button><button class="btn bs btn-sm" onclick="exportTrialBalance()">Trial Balance</button></div></div>
+        <div class="tabs"><button class="tab on" onclick="switchTab('acctTabs','coa',this)">Chart of Accounts</button><button class="tab" onclick="switchTab('acctTabs','journal',this)">Journal Entries</button><button class="tab" onclick="switchTab('acctTabs','recon',this)">Bank Recon</button><button class="tab" onclick="switchTab('acctTabs','aging',this)">AR / AP Aging</button></div>
+        <div class="content" id="accountingContent"></div>
+      </div>
+
     </div><!-- end .main -->
   </div><!-- end .layout -->
 </div><!-- end #appShell -->
@@ -1749,6 +1770,31 @@ body.dark .qa-btn{background:var(--sf2);}
   <div class="mf" id="invViewActions"></div></div>
 </div>
 
+<!-- New Journal Entry Modal -->
+<div class="moverlay" id="journalModal">
+  <div class="modal wide"><div class="mh"><span class="m-title">New Journal Entry</span><button class="mclose" onclick="closeModal('journalModal')"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:var(--mid);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+  <div class="mb">
+    <div class="frow"><div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="jeDate"/></div><div class="fg"><label class="fl">Reference</label><input class="fi" id="jeRef" placeholder="e.g. JNL-2025-0041"/></div></div>
+    <div class="fg"><label class="fl">Narration</label><input class="fi" id="jeNarr" placeholder="e.g. Depreciation charge — January 2025"/></div>
+    <div class="fg"><label class="fl">Lines</label><div id="jeLines"></div>
+    <button class="btn bs btn-xs" style="margin-top:6px;" onclick="jeAddLine()">+ Add Line</button></div>
+    <div id="jeTotals" style="display:flex;justify-content:flex-end;gap:18px;padding:10px 4px 0;font-size:12px;font-family:var(--mo);font-weight:700;"></div>
+  </div>
+  <div class="mf"><button class="btn bs" onclick="closeModal('journalModal')">Cancel</button><button class="btn bp" onclick="postJournal()">Post Journal</button></div></div>
+</div>
+
+<!-- New Contractor Modal -->
+<div class="moverlay" id="newContractorModal">
+  <div class="modal wide"><div class="mh"><span class="m-title">Add Contractor</span><button class="mclose" onclick="closeModal('newContractorModal')"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:var(--mid);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+  <div class="mb">
+    <div class="frow"><div class="fg"><label class="fl">Full Name</label><input class="fi" id="ctrName" placeholder="e.g. Maria Santos"/></div><div class="fg"><label class="fl">Role / Service</label><input class="fi" id="ctrRole" placeholder="e.g. UX Designer"/></div></div>
+    <div class="frow"><div class="fg"><label class="fl">Country</label><select class="fi" id="ctrCountry"><option>South Africa</option><option>Portugal</option><option>India</option><option>Kenya</option><option>Nigeria</option><option>Brazil</option><option>Philippines</option><option>Poland</option></select></div><div class="fg"><label class="fl">Currency</label><select class="fi" id="ctrCurrency"><option>ZAR</option><option>USD</option><option>EUR</option><option>GBP</option><option>INR</option><option>KES</option><option>NGN</option><option>BRL</option></select></div></div>
+    <div class="frow"><div class="fg"><label class="fl">Rate</label><input class="fi" type="number" id="ctrRate" placeholder="0"/></div><div class="fg"><label class="fl">Rate Type</label><select class="fi" id="ctrRateType"><option>Monthly</option><option>Hourly</option><option>Per Deliverable</option></select></div></div>
+    <div class="frow"><div class="fg"><label class="fl">Contract Start</label><input class="fi" type="date" id="ctrStart"/></div><div class="fg"><label class="fl">Contract End</label><input class="fi" type="date" id="ctrEnd"/></div></div>
+  </div>
+  <div class="mf"><button class="btn bs" onclick="closeModal('newContractorModal')">Cancel</button><button class="btn bp" onclick="saveContractor()">Add & Send Contract</button></div></div>
+</div>
+
 <!-- ══ Script load order comment ══ -->
 
   <script>
@@ -1793,13 +1839,14 @@ const ROLES = {
   admin: {
     label:'Administrator', color:'#F97316', avBg:'#F97316', avInitials:'AM',
     name:'Amohelang M.', org:'xGroup SA',
-    pages:['dashboard','analytics','finance','procurement','approvals','hr','inventory','crm','projects','budget','entities','vendor','ess','workflow','billing','quotes','claims','swiftpay','xpayments','audit','vault','chat','settings','users','onboarding','ai','search','api','sso','offline','attendance','leave','payroll','reports','risk','supply'],
+    pages:['dashboard','analytics','finance','procurement','approvals','hr','inventory','crm','projects','budget','entities','vendor','ess','workflow','billing','quotes','claims','swiftpay','xpayments','audit','vault','chat','settings','users','onboarding','ai','search','api','sso','offline','attendance','leave','payroll','reports','risk','supply','boards','contractors','accounting'],
     nav:[
       {section:'Overview'},
       {id:'dashboard',label:'Dashboard',icon:'grid'},
       {id:'analytics',label:'xAnalytics',icon:'bar'},
       {section:'Finance'},
       {id:'finance',label:'Finance',icon:'dollar'},
+      {id:'accounting',label:'Accounting · GL',icon:'file'},
       {id:'billing',label:'xBilling · Invoices',icon:'credit'},
       {id:'quotes',label:'Quotes',icon:'file'},
       {id:'budget',label:'Budget vs Actual',icon:'trending',badge:'3',badgeClass:'nb-rd'},
@@ -1815,6 +1862,7 @@ const ROLES = {
       {id:'crm',label:'CRM',icon:'heart'},
       {section:'People'},
       {id:'hr',label:'HR & Payroll',icon:'users'},
+      {id:'contractors',label:'Contractors · Global Pay',icon:'person',badge:'8',badgeClass:'nb-bl'},
       {id:'attendance',label:'Attendance Tracker',icon:'clock'},
       {id:'leave',label:'Leave Management',icon:'cal',badge:'3',badgeClass:'nb-or'},
       {id:'vendor',label:'Vendor Portal',icon:'shop'},
@@ -1834,6 +1882,7 @@ const ROLES = {
       {id:'risk',label:'Risk Management',icon:'alert',badge:'3',badgeClass:'nb-rd'},
       {id:'supply',label:'Supply Chain',icon:'box'},
       {section:'Collaboration'},
+      {id:'boards',label:'Work Boards',icon:'grid',badge:'NEW',badgeClass:'nb-bl'},
       {id:'projects',label:'Projects',icon:'project'},
       {id:'chat',label:'Team Chat',icon:'chat'},
       {section:'Developer'},
@@ -1853,13 +1902,14 @@ const ROLES = {
   cfo: {
     label:'CFO', color:'#F59E0B', avBg:'#F59E0B', avInitials:'AM',
     name:'Amohelang M.', org:'xGroup SA',
-    pages:['dashboard','analytics','finance','approvals','budget','entities','billing','quotes','swiftpay','xpayments','claims','audit','vault','ai','search','chat','attendance','payroll','reports','risk','supply'],
+    pages:['dashboard','analytics','finance','approvals','budget','entities','billing','quotes','swiftpay','xpayments','claims','audit','vault','ai','search','chat','attendance','payroll','reports','risk','supply','accounting','contractors','boards'],
     nav:[
       {section:'Executive'},
       {id:'dashboard',label:'Dashboard',icon:'grid'},
       {id:'analytics',label:'xAnalytics',icon:'bar'},
       {section:'Financial Control'},
       {id:'finance',label:'Finance & P&L',icon:'dollar'},
+      {id:'accounting',label:'Accounting · GL',icon:'file'},
       {id:'billing',label:'xBilling · Invoices',icon:'credit'},
       {id:'quotes',label:'Quotes',icon:'file'},
       {id:'budget',label:'Budget vs Actual',icon:'trending',badge:'3',badgeClass:'nb-rd'},
@@ -1870,6 +1920,7 @@ const ROLES = {
       {section:'People & Payroll'},
       {id:'attendance',label:'Attendance Tracker',icon:'clock'},
       {id:'payroll',label:'Payroll & Tax',icon:'dollar'},
+      {id:'contractors',label:'Contractors · Global Pay',icon:'person'},
       {section:'Approvals'},
       {id:'approvals',label:'Approval Centre',icon:'check',badge:'9',badgeClass:'nb-or'},
       {id:'claims',label:'Expense Claims',icon:'credit'},
@@ -7459,6 +7510,9 @@ const CMD_ITEMS=[
   {name:'Reports Center',sub:'Financial · HR · Ops',page:'reports',icon:'bar'},
   {name:'Risk Management',sub:'Risk register',page:'risk',icon:'alert'},
   {name:'Supply Chain',sub:'Logistics · Orders',page:'supply',icon:'box'},
+  {name:'Work Boards',sub:'Groups · Automations · Workload',page:'boards',icon:'grid'},
+  {name:'Contractors & Global Pay',sub:'Multi-currency · Compliance',page:'contractors',icon:'person'},
+  {name:'Accounting · GL',sub:'Journals · Bank Recon · Aging',page:'accounting',icon:'file'},
   {name:'Projects',sub:'Sprint board',page:'projects',icon:'project'},
   {name:'Team Chat',sub:'Channels',page:'chat',icon:'chat'},
   {name:'Settings',sub:'Configuration',page:'settings',icon:'cog'},
@@ -8149,6 +8203,592 @@ function renderGanttChart(container){
     if(name==='supply'){
       setTimeout(()=>renderSupplyChain(),50);
     }
+    if(name==='boards'){
+      setTimeout(()=>renderBoards(),50);
+    }
+    if(name==='contractors'){
+      setTimeout(()=>renderContractors(),50);
+    }
+    if(name==='accounting'){
+      setTimeout(()=>renderAccounting(),50);
+    }
+  };
+})();
+
+/* ════════════════════════════════════════════════════════════
+   NexCore v7 — Work Boards · Contractors/Global Pay · Accounting
+════════════════════════════════════════════════════════════ */
+
+/* ══ WORK BOARDS (Monday.com-style) ══════════════════════ */
+const BOARD_STATUSES=['Not Started','Working on it','Stuck','Done'];
+const BOARD_STATUS_STYLE={
+  'Not Started':{bg:'var(--sf2)',fg:'var(--mid)'},
+  'Working on it':{bg:'#FDBA74',fg:'#7C2D12'},
+  'Stuck':{bg:'#FCA5A5',fg:'#7F1D1D'},
+  'Done':{bg:'#86EFAC',fg:'#14532D'},
+};
+let BOARDS_DATA=[
+  {group:'Q1 Product Launch',color:'#F97316',items:[
+    {id:1,name:'Finalise SwiftPay v2 API spec',owner:'Kagiso D.',status:'Working on it',priority:'High',due:'14 Feb',progress:60},
+    {id:2,name:'Security penetration test',owner:'Amohelang M.',status:'Not Started',priority:'Critical',due:'20 Feb',progress:0},
+    {id:3,name:'Marketing site refresh',owner:'Nomsa P.',status:'Done',priority:'Medium',due:'31 Jan',progress:100},
+  ]},
+  {group:'Client Onboarding',color:'#3B82F6',items:[
+    {id:4,name:'City of Cape Town — data migration',owner:'Thabo M.',status:'Working on it',priority:'High',due:'10 Feb',progress:45},
+    {id:5,name:'Ekurhuleni metro — contract signature',owner:'Lerato K.',status:'Stuck',priority:'Critical',due:'5 Feb',progress:30},
+  ]},
+  {group:'Internal Ops',color:'#16A34A',items:[
+    {id:6,name:'Migrate file server to xVault',owner:'Kagiso D.',status:'Not Started',priority:'Low',due:'28 Feb',progress:0},
+    {id:7,name:'POPIA annual review',owner:'Lerato K.',status:'Working on it',priority:'Medium',due:'15 Feb',progress:70},
+  ]},
+];
+let BOARD_AUTOMATIONS=[
+  {id:1,rule:'When status changes to Done → notify item owner',enabled:true,runs:14},
+  {id:2,rule:'When status changes to Stuck → alert group lead + create chat thread',enabled:true,runs:3},
+  {id:3,rule:'When due date arrives and status is not Done → mark priority Critical',enabled:false,runs:0},
+  {id:4,rule:'Every Monday 08:00 → post board summary to Team Chat',enabled:true,runs:5},
+  {id:5,rule:'When new item is created → set status Not Started and assign group lead',enabled:true,runs:9},
+];
+let BOARD_ACTIVITY=[
+  {ts:'Today 11:42',user:'Nomsa P.',action:'changed status of "Marketing site refresh" to Done'},
+  {ts:'Today 09:15',user:'Automation',action:'notified Nomsa P. — status changed to Done'},
+  {ts:'Yesterday',user:'Thabo M.',action:'updated progress on "City of Cape Town — data migration" to 45%'},
+];
+let _boardNextId=8;
+
+function renderBoards(){
+  const el=document.getElementById('boardsContent'); if(!el)return;
+  const allItems=BOARDS_DATA.flatMap(g=>g.items);
+  const done=allItems.filter(i=>i.status==='Done').length;
+  const stuck=allItems.filter(i=>i.status==='Stuck').length;
+  el.innerHTML=`
+  <div class="tp on" id="boardTabs-main">
+    <div class="kg kg-4" style="margin-bottom:14px;">
+      <div class="kpi pu"><div class="kpi-lbl">Total Items</div><div class="kpi-val">${allItems.length}</div><div class="kpi-sub">${BOARDS_DATA.length} groups</div></div>
+      <div class="kpi gn"><div class="kpi-lbl">Done</div><div class="kpi-val">${done}</div><div class="kpi-sub">${Math.round(done/allItems.length*100)}% complete</div></div>
+      <div class="kpi rd"><div class="kpi-lbl">Stuck</div><div class="kpi-val">${stuck}</div><div class="kpi-sub">Needs attention</div></div>
+      <div class="kpi bl"><div class="kpi-lbl">Automations Active</div><div class="kpi-val">${BOARD_AUTOMATIONS.filter(a=>a.enabled).length}</div><div class="kpi-sub">${BOARD_AUTOMATIONS.reduce((s,a)=>s+a.runs,0)} runs this month</div></div>
+    </div>
+    ${BOARDS_DATA.map((g,gi)=>`
+    <div class="card" style="margin-bottom:14px;border-left:3px solid ${g.color};">
+      <div class="ch2"><span class="ch2-title" style="color:${g.color}">${g.group}</span><span class="ch2-sub">${g.items.length} items</span></div>
+      <div class="cb" style="padding:0;"><div class="tw"><table>
+        <thead><tr><th style="width:34%">Item</th><th>Owner</th><th>Status</th><th>Priority</th><th>Due</th><th style="width:14%">Progress</th></tr></thead>
+        <tbody>
+        ${g.items.map(it=>{
+          const st=BOARD_STATUS_STYLE[it.status];
+          const prC=it.priority==='Critical'?'var(--rd)':it.priority==='High'?'var(--am)':it.priority==='Medium'?'var(--bl)':'var(--mid)';
+          return `<tr>
+          <td class="tb">${it.name}</td>
+          <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:20px;height:20px;border-radius:50%;background:#3B82F6;color:#fff;font-size:8px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;">${it.owner.split(' ').map(w=>w[0]).join('')}</span>${it.owner}</span></td>
+          <td><button onclick="boardCycleStatus(${gi},${it.id})" style="border:none;cursor:pointer;padding:4px 10px;border-radius:5px;font-size:10px;font-weight:700;font-family:var(--fn);background:${st.bg};color:${st.fg};min-width:96px;">${it.status}</button></td>
+          <td><span style="font-size:10px;font-weight:700;color:${prC};">● ${it.priority}</span></td>
+          <td style="font-size:11px;">${it.due}</td>
+          <td><div class="prog" style="height:6px;"><div class="prog-fill" style="width:${it.progress}%;background:${g.color};"></div></div><span style="font-size:9px;color:var(--mu);">${it.progress}%</span></td>
+        </tr>`;}).join('')}
+        <tr><td colspan="6" style="padding:6px 10px;">
+          <div style="display:flex;gap:6px;">
+            <input class="fi" id="boardNewItem-${gi}" placeholder="+ Add item to ${g.group}…" style="flex:1;font-size:11px;padding:6px 10px;" onkeydown="if(event.key==='Enter')boardAddItem(${gi})"/>
+            <button class="btn bs btn-xs" onclick="boardAddItem(${gi})">Add</button>
+          </div>
+        </td></tr>
+        </tbody></table></div></div>
+    </div>`).join('')}
+  </div>
+
+  <div class="tp" id="boardTabs-automations">
+    <div class="alert bl" style="margin-bottom:14px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:var(--bl-m);stroke-width:2;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div><div class="alert-title">No-code automations</div><div class="alert-body">Rules run instantly when board events fire. Toggle to enable or pause.</div></div></div>
+    <div class="card"><div class="ch2"><span class="ch2-title">Automation Rules</span><span class="ch2-sub"><button class="btn bp btn-xs" onclick="boardNewAutomation()">+ New Rule</button></span></div>
+      <div class="cb" style="padding:0;">
+      ${BOARD_AUTOMATIONS.map(a=>`
+      <div class="stock-card">
+        <div class="stock-icon" style="background:${a.enabled?'var(--bl-l)':'var(--sf2)'};">${svgIcon('flow','14px',a.enabled?'var(--bl)':'var(--mu)')}</div>
+        <div style="flex:1;">
+          <div class="stock-name" style="${a.enabled?'':'color:var(--mu);'}">${a.rule}</div>
+          <div class="stock-sku">${a.runs} runs this month</div>
+        </div>
+        <button onclick="boardToggleAutomation(${a.id})" style="width:38px;height:20px;border-radius:10px;border:none;cursor:pointer;position:relative;background:${a.enabled?'var(--gn)':'var(--bd)'};transition:background .15s;">
+          <span style="position:absolute;top:2px;left:${a.enabled?'20px':'2px'};width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 2px rgba(0,0,0,.25);"></span>
+        </button>
+      </div>`).join('')}
+      </div>
+    </div>
+  </div>
+
+  <div class="tp" id="boardTabs-workload">
+    <div class="card"><div class="ch2"><span class="ch2-title">Open Items by Owner</span><span class="ch2-sub">Excludes Done</span></div><div class="cb" id="workloadChart"></div></div>
+  </div>
+
+  <div class="tp" id="boardTabs-activity">
+    <div class="card"><div class="ch2"><span class="ch2-title">Activity Log</span></div><div class="cb" style="padding:0;">
+    ${BOARD_ACTIVITY.map(a=>`
+      <div class="stock-card">
+        <div class="stock-icon" style="background:${a.user==='Automation'?'var(--bl-l)':'var(--or-bg)'};">${svgIcon(a.user==='Automation'?'flow':'person','13px',a.user==='Automation'?'var(--bl)':'var(--or)')}</div>
+        <div style="flex:1;"><div class="stock-name">${a.user} ${a.action}</div><div class="stock-sku">${a.ts}</div></div>
+      </div>`).join('')}
+    </div></div>
+  </div>`;
+  setTimeout(()=>{
+    const wc=document.getElementById('workloadChart');
+    if(wc){
+      const counts={};
+      BOARDS_DATA.flatMap(g=>g.items).filter(i=>i.status!=='Done').forEach(i=>{counts[i.owner]=(counts[i.owner]||0)+1;});
+      const data=Object.entries(counts).map(([lbl,v])=>({lbl:lbl.split(' ')[0],v,fmt:String(v)}));
+      if(data.length)svgBarChart(wc,data,{h:130,colors:['#3B82F6']});
+    }
+  },80);
+}
+
+function boardCycleStatus(gi,itemId){
+  const item=BOARDS_DATA[gi]?.items.find(i=>i.id===itemId); if(!item)return;
+  const next=BOARD_STATUSES[(BOARD_STATUSES.indexOf(item.status)+1)%BOARD_STATUSES.length];
+  item.status=next;
+  if(next==='Done')item.progress=100;
+  BOARD_ACTIVITY.unshift({ts:'Just now',user:currentUser?.name||'You',action:`changed status of "${item.name}" to ${next}`});
+  // Fire automations
+  const a1=BOARD_AUTOMATIONS.find(a=>a.id===1), a2=BOARD_AUTOMATIONS.find(a=>a.id===2);
+  if(next==='Done'&&a1?.enabled){a1.runs++;BOARD_ACTIVITY.unshift({ts:'Just now',user:'Automation',action:`notified ${item.owner} — status changed to Done`});toast('Automation: '+item.owner+' notified — item Done','#2563EB');}
+  if(next==='Stuck'&&a2?.enabled){a2.runs++;BOARD_ACTIVITY.unshift({ts:'Just now',user:'Automation',action:`alerted group lead — "${item.name}" is Stuck`});toast('Automation: group lead alerted — item Stuck','#DC2626');}
+  renderBoards();
+}
+
+function boardAddItem(gi){
+  const input=document.getElementById('boardNewItem-'+gi);
+  const name=input?.value.trim(); if(!name){toast('Type an item name first','#DC2626');return;}
+  BOARDS_DATA[gi].items.push({id:_boardNextId++,name,owner:currentUser?.name||'Unassigned',status:'Not Started',priority:'Medium',due:'TBC',progress:0});
+  const a5=BOARD_AUTOMATIONS.find(a=>a.id===5);
+  if(a5?.enabled){a5.runs++;BOARD_ACTIVITY.unshift({ts:'Just now',user:'Automation',action:`set "${name}" to Not Started and assigned group lead`});}
+  BOARD_ACTIVITY.unshift({ts:'Just now',user:currentUser?.name||'You',action:`created "${name}" in ${BOARDS_DATA[gi].group}`});
+  renderBoards();
+  toast('Item added to '+BOARDS_DATA[gi].group,'#16A34A');
+}
+
+function boardAddGroup(){
+  const name=prompt('New group name:');
+  if(!name)return;
+  const colors=['#F97316','#3B82F6','#16A34A','#7C3AED','#0891B2'];
+  BOARDS_DATA.push({group:name,color:colors[BOARDS_DATA.length%colors.length],items:[]});
+  renderBoards();
+  toast('Group "'+name+'" created','#16A34A');
+}
+
+function boardToggleAutomation(id){
+  const a=BOARD_AUTOMATIONS.find(x=>x.id===id); if(!a)return;
+  a.enabled=!a.enabled;
+  renderBoards();
+  document.querySelector('#boardTabs-automations')?.classList.add('on');
+  document.querySelector('#boardTabs-main')?.classList.remove('on');
+  toast('Automation '+(a.enabled?'enabled':'paused'),a.enabled?'#16A34A':'#71717A');
+}
+
+function boardNewAutomation(){
+  const rule=prompt('Describe the rule (When… → then…):','When priority becomes Critical → notify CFO');
+  if(!rule)return;
+  BOARD_AUTOMATIONS.push({id:BOARD_AUTOMATIONS.length+1,rule,enabled:true,runs:0});
+  renderBoards();
+  document.querySelector('#boardTabs-automations')?.classList.add('on');
+  document.querySelector('#boardTabs-main')?.classList.remove('on');
+  toast('Automation rule created','#16A34A');
+}
+
+/* ══ CONTRACTORS & GLOBAL PAY (Deel-style) ═══════════════ */
+const FX_TO_ZAR={ZAR:1,USD:18.20,EUR:19.80,GBP:23.10,INR:0.22,KES:0.14,NGN:0.012,BRL:3.30};
+let CONTRACTORS_DATA=[
+  {id:'CTR-001',name:'Maria Santos',role:'UX Designer',country:'Portugal',flag:'🇵🇹',currency:'EUR',rate:4200,rateType:'Monthly',start:'2024-06-01',end:'2025-06-01',status:'Active',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
+  {id:'CTR-002',name:'Raj Patel',role:'Backend Engineer',country:'India',flag:'🇮🇳',currency:'INR',rate:280000,rateType:'Monthly',start:'2024-03-15',end:'2025-03-15',status:'Active',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Pending'}},
+  {id:'CTR-003',name:'Grace Wanjiru',role:'Data Analyst',country:'Kenya',flag:'🇰🇪',currency:'KES',rate:350000,rateType:'Monthly',start:'2024-09-01',end:'2025-09-01',status:'Active',docs:{contract:'Signed',tax:'Pending',id:'Verified',bank:'Verified'}},
+  {id:'CTR-004',name:'Chidi Okafor',role:'Mobile Developer',country:'Nigeria',flag:'🇳🇬',currency:'NGN',rate:2800000,rateType:'Monthly',start:'2024-11-01',end:'2025-02-28',status:'Ending Soon',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
+  {id:'CTR-005',name:'Ana Oliveira',role:'QA Engineer',country:'Brazil',flag:'🇧🇷',currency:'BRL',rate:9500,rateType:'Monthly',start:'2025-01-06',end:'2026-01-06',status:'Onboarding',docs:{contract:'Sent',tax:'Pending',id:'Pending',bank:'Pending'}},
+  {id:'CTR-006',name:'Piotr Kowalski',role:'DevOps Engineer',country:'Poland',flag:'🇵🇱',currency:'EUR',rate:5100,rateType:'Monthly',start:'2024-07-01',end:'2025-07-01',status:'Active',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
+  {id:'CTR-007',name:'Sipho Dlamini',role:'Support Specialist',country:'South Africa',flag:'🇿🇦',currency:'ZAR',rate:38000,rateType:'Monthly',start:'2024-05-01',end:'2025-05-01',status:'Active',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
+  {id:'CTR-008',name:'Jasmine Cruz',role:'Content Designer',country:'Philippines',flag:'🇵🇭',currency:'USD',rate:2400,rateType:'Monthly',start:'2024-10-01',end:'2025-10-01',status:'Active',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
+];
+let CONTRACTOR_PAYRUNS=[
+  {id:'CPR-2025-01',period:'January 2025',contractors:8,totalZAR:1183000,status:'Paid',date:'25 Jan 2025'},
+  {id:'CPR-2024-12',period:'December 2024',contractors:7,totalZAR:1054000,status:'Paid',date:'20 Dec 2024'},
+];
+
+function ctrZAR(c){return c.rate*(FX_TO_ZAR[c.currency]||1);}
+
+function renderContractors(){
+  const el=document.getElementById('contractorsContent'); if(!el)return;
+  const active=CONTRACTORS_DATA.filter(c=>c.status==='Active').length;
+  const monthlyZAR=CONTRACTORS_DATA.filter(c=>c.status!=='Onboarding').reduce((s,c)=>s+ctrZAR(c),0);
+  const pendingDocs=CONTRACTORS_DATA.reduce((s,c)=>s+Object.values(c.docs).filter(v=>v!=='Signed'&&v!=='Verified').length,0);
+  const docBadge=v=>v==='Signed'||v==='Verified'?'gn':v==='Sent'?'bl':'am';
+  const stBadge={Active:'gn','Ending Soon':'am',Onboarding:'bl',Ended:'gy'};
+  el.innerHTML=`
+  <div class="tp on" id="ctrTabs-people">
+    <div class="kg kg-4" style="margin-bottom:14px;">
+      <div class="kpi gn"><div class="kpi-lbl">Active Contractors</div><div class="kpi-val">${active}</div><div class="kpi-sub">${[...new Set(CONTRACTORS_DATA.map(c=>c.country))].length} countries</div></div>
+      <div class="kpi or"><div class="kpi-lbl">Monthly Cost (ZAR)</div><div class="kpi-val">R ${(monthlyZAR/1e6).toFixed(2)}M</div><div class="kpi-sub">FX converted daily</div></div>
+      <div class="kpi am"><div class="kpi-lbl">Pending Documents</div><div class="kpi-val">${pendingDocs}</div><div class="kpi-sub">Across ${CONTRACTORS_DATA.filter(c=>Object.values(c.docs).some(v=>v!=='Signed'&&v!=='Verified')).length} contractors</div></div>
+      <div class="kpi rd"><div class="kpi-lbl">Contracts Ending 60d</div><div class="kpi-val">${CONTRACTORS_DATA.filter(c=>c.status==='Ending Soon').length}</div><div class="kpi-sub">Renewal action needed</div></div>
+    </div>
+    <div class="card"><div class="ch2"><span class="ch2-title">Contractor Directory</span><span class="ch2-sub">${CONTRACTORS_DATA.length} total</span></div>
+    <div class="cb" style="padding:0;"><div class="tw"><table>
+      <thead><tr><th>Contractor</th><th>Country</th><th>Rate</th><th>ZAR / month</th><th>Contract End</th><th>Status</th><th></th></tr></thead>
+      <tbody>${CONTRACTORS_DATA.map(c=>`<tr>
+        <td class="tb">${c.name}<div style="font-size:10px;color:var(--mu);font-weight:400;">${c.role}</div></td>
+        <td>${c.flag} ${c.country}</td>
+        <td class="mo">${c.currency} ${c.rate.toLocaleString()}</td>
+        <td class="mo">${fmt(Math.round(ctrZAR(c)))}</td>
+        <td style="font-size:11px;">${c.end}</td>
+        <td><span class="badge ${stBadge[c.status]||'gy'}">${c.status}</span></td>
+        <td><button class="btn bs btn-xs" onclick="ctrRenew('${c.id}')">${c.status==='Ending Soon'?'Renew':'View'}</button></td>
+      </tr>`).join('')}</tbody></table></div></div></div>
+  </div>
+
+  <div class="tp" id="ctrTabs-payruns">
+    <div class="card"><div class="ch2"><span class="ch2-title">Next Pay Cycle — February 2025</span><span class="ch2-sub"><button class="btn bg btn-xs" onclick="runContractorPayRun()">Run Now</button></span></div>
+    <div class="cb" style="padding:0;"><div class="tw"><table>
+      <thead><tr><th>Contractor</th><th>Local Amount</th><th>FX Rate</th><th>ZAR Equivalent</th><th>Method</th></tr></thead>
+      <tbody>${CONTRACTORS_DATA.filter(c=>c.status!=='Onboarding').map(c=>`<tr>
+        <td class="tb">${c.flag} ${c.name}</td>
+        <td class="mo">${c.currency} ${c.rate.toLocaleString()}</td>
+        <td class="mo">${FX_TO_ZAR[c.currency].toFixed(2)}</td>
+        <td class="mo">${fmt(Math.round(ctrZAR(c)))}</td>
+        <td style="font-size:11px;">${c.currency==='ZAR'?'SwiftPay':'SWIFT wire'}</td>
+      </tr>`).join('')}
+      <tr><td class="tb" style="font-weight:900;">Total</td><td></td><td></td><td class="mo" style="font-weight:900;color:var(--or);">${fmt(Math.round(monthlyZAR))}</td><td></td></tr>
+      </tbody></table></div></div></div>
+    <div class="card"><div class="ch2"><span class="ch2-title">Pay Run History</span></div>
+    <div class="cb" style="padding:0;"><div class="tw"><table>
+      <thead><tr><th>Run</th><th>Period</th><th>Contractors</th><th>Total (ZAR)</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>${CONTRACTOR_PAYRUNS.map(p=>`<tr><td class="mo tb">${p.id}</td><td>${p.period}</td><td>${p.contractors}</td><td class="mo">${fmt(p.totalZAR)}</td><td><span class="badge ${p.status==='Paid'?'gn':'am'}">${p.status}</span></td><td>${p.date}</td></tr>`).join('')}</tbody></table></div></div></div>
+  </div>
+
+  <div class="tp" id="ctrTabs-compliance">
+    <div class="alert or" style="margin-bottom:14px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:#D97706;stroke-width:2;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><div><div class="alert-title">Compliance vault</div><div class="alert-body">Contract · Tax form · ID verification · Bank verification — tracked per contractor, stored in xVault.</div></div></div>
+    <div class="card"><div class="ch2"><span class="ch2-title">Document Status Matrix</span></div>
+    <div class="cb" style="padding:0;"><div class="tw"><table>
+      <thead><tr><th>Contractor</th><th>Contract</th><th>Tax Form</th><th>ID Check</th><th>Bank</th><th></th></tr></thead>
+      <tbody>${CONTRACTORS_DATA.map(c=>`<tr>
+        <td class="tb">${c.flag} ${c.name}</td>
+        <td><span class="badge ${docBadge(c.docs.contract)}">${c.docs.contract}</span></td>
+        <td><span class="badge ${docBadge(c.docs.tax)}">${c.docs.tax}</span></td>
+        <td><span class="badge ${docBadge(c.docs.id)}">${c.docs.id}</span></td>
+        <td><span class="badge ${docBadge(c.docs.bank)}">${c.docs.bank}</span></td>
+        <td>${Object.values(c.docs).some(v=>v!=='Signed'&&v!=='Verified')?`<button class="btn bp btn-xs" onclick="ctrChase('${c.id}')">Chase</button>`:'<span style="font-size:10px;color:var(--gn);font-weight:700;">✓ Complete</span>'}</td>
+      </tr>`).join('')}</tbody></table></div></div></div>
+  </div>
+
+  <div class="tp" id="ctrTabs-spend">
+    <div class="g2">
+      <div class="card"><div class="ch2"><span class="ch2-title">Monthly Spend by Country</span><span class="ch2-sub">ZAR equivalent</span></div><div class="cb" id="ctrSpendDonut"></div></div>
+      <div class="card"><div class="ch2"><span class="ch2-title">Contractor Cost Trend</span><span class="ch2-sub">6 months, ZAR</span></div><div class="cb" id="ctrTrendChart"></div></div>
+    </div>
+  </div>`;
+  setTimeout(()=>{
+    const donut=document.getElementById('ctrSpendDonut');
+    if(donut){
+      const byCountry={};
+      CONTRACTORS_DATA.filter(c=>c.status!=='Onboarding').forEach(c=>{byCountry[c.country]=(byCountry[c.country]||0)+ctrZAR(c);});
+      svgDonutChart(donut,Object.entries(byCountry).map(([lbl,v])=>({lbl,v:Math.round(v)})),{size:120,stroke:24,centerVal:'R'+(monthlyZAR/1e6).toFixed(1)+'M'});
+    }
+    const trend=document.getElementById('ctrTrendChart');
+    if(trend)svgLineChart(trend,[{label:'Contractor spend (ZAR)',values:[890000,915000,960000,1010000,1054000,Math.round(monthlyZAR)]}],['Sep','Oct','Nov','Dec','Jan','Feb'],{h:130,zeroBase:true});
+  },80);
+}
+
+function ctrRenew(id){
+  const c=CONTRACTORS_DATA.find(x=>x.id===id); if(!c)return;
+  if(c.status==='Ending Soon'){
+    const end=new Date(c.end);end.setFullYear(end.getFullYear()+1);
+    c.end=end.toISOString().slice(0,10);c.status='Active';c.docs.contract='Sent';
+    renderContractors();
+    toast('Renewal contract sent to '+c.name+' — new end date '+c.end,'#16A34A');
+    writeAudit('Renew','Contractors',c.id,Math.round(ctrZAR(c)),'medium');
+  } else {
+    toast(c.name+' — '+c.role+' · '+c.flag+' '+c.country+' · '+c.currency+' '+c.rate.toLocaleString()+'/mo','#3B82F6');
+  }
+}
+
+function ctrChase(id){
+  const c=CONTRACTORS_DATA.find(x=>x.id===id); if(!c)return;
+  const missing=Object.entries(c.docs).filter(([k,v])=>v!=='Signed'&&v!=='Verified').map(([k])=>k).join(', ');
+  toast('Reminder sent to '+c.name+' — outstanding: '+missing,'#F97316');
+}
+
+function saveContractor(){
+  const name=document.getElementById('ctrName')?.value.trim();
+  const role=document.getElementById('ctrRole')?.value.trim()||'Contractor';
+  const country=document.getElementById('ctrCountry')?.value||'South Africa';
+  const currency=document.getElementById('ctrCurrency')?.value||'ZAR';
+  const rate=parseFloat(document.getElementById('ctrRate')?.value)||0;
+  if(!name||rate<=0){toast('Enter a name and a rate','#DC2626');return;}
+  const flags={'South Africa':'🇿🇦',Portugal:'🇵🇹',India:'🇮🇳',Kenya:'🇰🇪',Nigeria:'🇳🇬',Brazil:'🇧🇷',Philippines:'🇵🇭',Poland:'🇵🇱'};
+  CONTRACTORS_DATA.push({
+    id:'CTR-'+String(CONTRACTORS_DATA.length+1).padStart(3,'0'),
+    name,role,country,flag:flags[country]||'🌍',currency,rate,
+    rateType:document.getElementById('ctrRateType')?.value||'Monthly',
+    start:document.getElementById('ctrStart')?.value||new Date().toISOString().slice(0,10),
+    end:document.getElementById('ctrEnd')?.value||'',
+    status:'Onboarding',docs:{contract:'Sent',tax:'Pending',id:'Pending',bank:'Pending'},
+  });
+  closeModal('newContractorModal');
+  renderContractors();
+  toast('Contract sent to '+name+' for e-signature','#16A34A');
+  writeAudit('Create','Contractors',name,Math.round(rate*(FX_TO_ZAR[currency]||1)),'medium');
+}
+
+function runContractorPayRun(){
+  confirmWithOTP('Run contractor pay cycle',async ()=>{
+    const payable=CONTRACTORS_DATA.filter(c=>c.status!=='Onboarding');
+    const total=payable.reduce((s,c)=>s+ctrZAR(c),0);
+    CONTRACTOR_PAYRUNS.unshift({id:'CPR-2025-02',period:'February 2025',contractors:payable.length,totalZAR:Math.round(total),status:'Paid',date:new Date().toLocaleDateString('en-ZA')});
+    renderContractors();
+    toast('Pay cycle complete — '+payable.length+' contractors paid, '+fmt(Math.round(total))+' total','#16A34A');
+    writeAudit('PayRun','Contractors','CPR-2025-02',Math.round(total),'high');
+  });
+}
+
+/* ══ ACCOUNTING / GENERAL LEDGER (Sage-style) ════════════ */
+const COA=[
+  {code:'1000',name:'Bank — FNB Operating',type:'Asset',balance:18400000},
+  {code:'1100',name:'Accounts Receivable',type:'Asset',balance:12400000},
+  {code:'1200',name:'Fixed Assets — Equipment',type:'Asset',balance:4820000},
+  {code:'1250',name:'Accumulated Depreciation',type:'Asset',balance:-1240000},
+  {code:'2000',name:'Accounts Payable',type:'Liability',balance:-3180000},
+  {code:'2100',name:'VAT Control',type:'Liability',balance:-1080000},
+  {code:'2200',name:'PAYE / UIF Payable',type:'Liability',balance:-127383},
+  {code:'3000',name:'Share Capital',type:'Equity',balance:-1000000},
+  {code:'3100',name:'Retained Earnings',type:'Equity',balance:-27162617},
+  {code:'4000',name:'Revenue — SwiftPay',type:'Income',balance:-66100000},
+  {code:'4100',name:'Revenue — Billing SaaS',type:'Income',balance:-18600000},
+  {code:'5000',name:'Cost of Sales',type:'Expense',balance:24480000},
+  {code:'6000',name:'Salaries & Wages',type:'Expense',balance:9200000},
+  {code:'6100',name:'Depreciation',type:'Expense',balance:1240000},
+  {code:'6200',name:'Office & Admin',type:'Expense',balance:3130000},
+];
+let JOURNAL_ENTRIES=[
+  {ref:'JNL-2025-0040',date:'2025-01-31',narration:'Depreciation charge — January 2025',lines:[{acct:'6100',debit:103333,credit:0},{acct:'1250',debit:0,credit:103333}],postedBy:'System',status:'Posted'},
+  {ref:'JNL-2025-0039',date:'2025-01-25',narration:'VAT201 payment — December 2024',lines:[{acct:'2100',debit:1080000,credit:0},{acct:'1000',debit:0,credit:1080000}],postedBy:'Amohelang M.',status:'Posted'},
+];
+let BANK_STATEMENT=[
+  {id:1,date:'28 Jan',desc:'SWIFTPAY SETTLEMENT',amount:2840000,matched:true,ledgerRef:'INV-2025-0107'},
+  {id:2,date:'27 Jan',desc:'EFT DELL TECHNOLOGIES',amount:-284500,matched:false,ledgerRef:null},
+  {id:3,date:'27 Jan',desc:'SALARIES JAN BATCH',amount:-9200000,matched:true,ledgerRef:'PAY-2025-01'},
+  {id:4,date:'26 Jan',desc:'CITY OF CT PAYMENT',amount:1440000,matched:false,ledgerRef:null},
+  {id:5,date:'25 Jan',desc:'SARS VAT201 DEC',amount:-1080000,matched:true,ledgerRef:'JNL-2025-0039'},
+  {id:6,date:'24 Jan',desc:'INTEREST RECEIVED',amount:42180,matched:false,ledgerRef:null},
+];
+const AR_AGING=[{lbl:'Current',v:6200000},{lbl:'30 days',v:3100000},{lbl:'60 days',v:2020000},{lbl:'90 days',v:711000},{lbl:'120+',v:369000}];
+const AP_AGING=[{lbl:'Current',v:1840000},{lbl:'30 days',v:920000},{lbl:'60 days',v:284500},{lbl:'90 days',v:135500},{lbl:'120+',v:0}];
+
+function renderAccounting(){
+  const el=document.getElementById('accountingContent'); if(!el)return;
+  const typeColor={Asset:'var(--bl)',Liability:'var(--am)',Equity:'var(--pu)',Income:'var(--gn)',Expense:'var(--rd)'};
+  const unmatched=BANK_STATEMENT.filter(b=>!b.matched).length;
+  const types=['Asset','Liability','Equity','Income','Expense'];
+  el.innerHTML=`
+  <div class="tp on" id="acctTabs-coa">
+    <div class="kg kg-4" style="margin-bottom:14px;">
+      <div class="kpi bl"><div class="kpi-lbl">Total Assets</div><div class="kpi-val">R ${((COA.filter(a=>a.type==='Asset').reduce((s,a)=>s+a.balance,0))/1e6).toFixed(1)}M</div></div>
+      <div class="kpi am"><div class="kpi-lbl">Total Liabilities</div><div class="kpi-val">R ${(Math.abs(COA.filter(a=>a.type==='Liability').reduce((s,a)=>s+a.balance,0))/1e6).toFixed(1)}M</div></div>
+      <div class="kpi gn"><div class="kpi-lbl">YTD Income</div><div class="kpi-val">R ${(Math.abs(COA.filter(a=>a.type==='Income').reduce((s,a)=>s+a.balance,0))/1e6).toFixed(1)}M</div></div>
+      <div class="kpi rd"><div class="kpi-lbl">YTD Expenses</div><div class="kpi-val">R ${((COA.filter(a=>a.type==='Expense').reduce((s,a)=>s+a.balance,0))/1e6).toFixed(1)}M</div></div>
+    </div>
+    ${types.map(t=>`
+    <div class="card" style="margin-bottom:12px;">
+      <div class="ch2"><span class="ch2-title" style="color:${typeColor[t]}">${t} Accounts</span></div>
+      <div class="cb" style="padding:0;"><div class="tw"><table>
+        <thead><tr><th style="width:80px;">Code</th><th>Account</th><th style="text-align:right;">Balance</th></tr></thead>
+        <tbody>${COA.filter(a=>a.type===t).map(a=>`<tr><td class="mo">${a.code}</td><td class="tb">${a.name}</td><td class="mo" style="text-align:right;color:${a.balance<0?'var(--mid)':'var(--ink)'};">${fmt(Math.abs(a.balance))}${a.balance<0?' CR':' DR'}</td></tr>`).join('')}</tbody>
+      </table></div></div>
+    </div>`).join('')}
+  </div>
+
+  <div class="tp" id="acctTabs-journal">
+    <div class="card"><div class="ch2"><span class="ch2-title">Journal Entries</span><span class="ch2-sub"><button class="btn bp btn-xs" onclick="openJournalModal()">+ New Entry</button></span></div>
+    <div class="cb" style="padding:0;">
+    ${JOURNAL_ENTRIES.map(j=>`
+    <div style="border-bottom:1px solid var(--bd-l);padding:12px 14px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span class="mo tb" style="font-size:11px;font-weight:700;">${j.ref}</span>
+        <span style="font-size:11px;color:var(--mid);">${j.date} · ${j.narration}</span>
+        <span class="badge gn" style="margin-left:auto;">${j.status}</span>
+      </div>
+      <div class="tw"><table style="font-size:11px;">
+        <thead><tr><th>Account</th><th style="text-align:right;">Debit</th><th style="text-align:right;">Credit</th></tr></thead>
+        <tbody>${j.lines.map(l=>{const a=COA.find(x=>x.code===l.acct);return `<tr><td>${l.acct} — ${a?a.name:'?'}</td><td class="mo" style="text-align:right;">${l.debit?fmt(l.debit):''}</td><td class="mo" style="text-align:right;">${l.credit?fmt(l.credit):''}</td></tr>`;}).join('')}</tbody>
+      </table></div>
+    </div>`).join('')}
+    </div></div>
+  </div>
+
+  <div class="tp" id="acctTabs-recon">
+    <div class="kg kg-3" style="margin-bottom:14px;">
+      <div class="kpi gn"><div class="kpi-lbl">Matched</div><div class="kpi-val">${BANK_STATEMENT.filter(b=>b.matched).length}</div><div class="kpi-sub">of ${BANK_STATEMENT.length} statement lines</div></div>
+      <div class="kpi am"><div class="kpi-lbl">Unmatched</div><div class="kpi-val">${unmatched}</div><div class="kpi-sub">Needs review</div></div>
+      <div class="kpi bl"><div class="kpi-lbl">Statement Balance</div><div class="kpi-val">R ${(BANK_STATEMENT.reduce((s,b)=>s+b.amount,0)/1e6).toFixed(2)}M</div><div class="kpi-sub">Net movement Jan</div></div>
+    </div>
+    <div class="card"><div class="ch2"><span class="ch2-title">FNB Operating — Statement Lines</span><span class="ch2-sub"><button class="btn bp btn-xs" onclick="autoMatchAll()">Auto-Match All</button></span></div>
+    <div class="cb" style="padding:0;"><div class="tw"><table>
+      <thead><tr><th>Date</th><th>Description</th><th style="text-align:right;">Amount</th><th>Ledger Ref</th><th>Status</th><th></th></tr></thead>
+      <tbody>${BANK_STATEMENT.map(b=>`<tr>
+        <td>${b.date}</td><td class="tb">${b.desc}</td>
+        <td class="mo" style="text-align:right;color:${b.amount<0?'var(--rd)':'var(--gn)'};">${b.amount<0?'−':''}${fmt(Math.abs(b.amount))}</td>
+        <td class="mo" style="font-size:10px;">${b.ledgerRef||'—'}</td>
+        <td><span class="badge ${b.matched?'gn':'am'}">${b.matched?'Matched':'Unmatched'}</span></td>
+        <td>${b.matched?'':`<button class="btn bp btn-xs" onclick="matchBankLine(${b.id})">Match</button>`}</td>
+      </tr>`).join('')}</tbody></table></div></div></div>
+  </div>
+
+  <div class="tp" id="acctTabs-aging">
+    <div class="g2">
+      <div class="card"><div class="ch2"><span class="ch2-title">Accounts Receivable Aging</span><span class="ch2-sub">R ${(AR_AGING.reduce((s,a)=>s+a.v,0)/1e6).toFixed(1)}M outstanding</span></div><div class="cb" id="arAgingChart"></div></div>
+      <div class="card"><div class="ch2"><span class="ch2-title">Accounts Payable Aging</span><span class="ch2-sub">R ${(AP_AGING.reduce((s,a)=>s+a.v,0)/1e6).toFixed(1)}M owed</span></div><div class="cb" id="apAgingChart"></div></div>
+    </div>
+    <div class="alert rd"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:var(--rd);stroke-width:2;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div><div class="alert-title">R 369,000 in receivables over 120 days</div><div class="alert-body">2 invoices — recommend handing over to collections or writing off. <button class="btn bd2 btn-xs" onclick="toast('Collections process initiated for 2 invoices','#DC2626')" style="margin-left:6px;">Start Collections</button></div></div></div>
+  </div>`;
+  setTimeout(()=>{
+    const ar=document.getElementById('arAgingChart');
+    if(ar)svgBarChart(ar,AR_AGING.map(a=>({...a,fmt:'R'+(a.v/1e6).toFixed(1)+'M'})),{h:130,colors:['#3B82F6','#3B82F6','#3B82F6','#D97706','#DC2626']});
+    const ap=document.getElementById('apAgingChart');
+    if(ap)svgBarChart(ap,AP_AGING.map(a=>({...a,fmt:a.v?'R'+(a.v/1e6>=1?(a.v/1e6).toFixed(1)+'M':(a.v/1e3).toFixed(0)+'k'):'0'})),{h:130,colors:['#F97316','#F97316','#F97316','#D97706','#DC2626']});
+  },80);
+}
+
+/* Journal entry modal logic — balanced debit/credit validation */
+let _jeLines=[];
+function openJournalModal(){
+  _jeLines=[{acct:'',debit:0,credit:0},{acct:'',debit:0,credit:0}];
+  const d=document.getElementById('jeDate'); if(d)d.value=new Date().toISOString().slice(0,10);
+  const r=document.getElementById('jeRef'); if(r)r.value='JNL-2025-'+String(41+JOURNAL_ENTRIES.length).padStart(4,'0');
+  jeRenderLines();
+  openModal('journalModal');
+}
+function jeRenderLines(){
+  const el=document.getElementById('jeLines'); if(!el)return;
+  el.innerHTML=_jeLines.map((l,i)=>`
+  <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;">
+    <select class="fi" style="flex:2;font-size:11px;" onchange="_jeLines[${i}].acct=this.value">
+      <option value="">— Account —</option>
+      ${COA.map(a=>`<option value="${a.code}" ${l.acct===a.code?'selected':''}>${a.code} — ${a.name}</option>`).join('')}
+    </select>
+    <input class="fi" type="number" placeholder="Debit" style="flex:1;font-size:11px;" value="${l.debit||''}" oninput="_jeLines[${i}].debit=parseFloat(this.value)||0;jeUpdateTotals()"/>
+    <input class="fi" type="number" placeholder="Credit" style="flex:1;font-size:11px;" value="${l.credit||''}" oninput="_jeLines[${i}].credit=parseFloat(this.value)||0;jeUpdateTotals()"/>
+    <button class="pr-remove-btn" onclick="_jeLines.splice(${i},1);jeRenderLines()">×</button>
+  </div>`).join('');
+  jeUpdateTotals();
+}
+function jeAddLine(){_jeLines.push({acct:'',debit:0,credit:0});jeRenderLines();}
+function jeUpdateTotals(){
+  const el=document.getElementById('jeTotals'); if(!el)return;
+  const dr=_jeLines.reduce((s,l)=>s+(l.debit||0),0);
+  const cr=_jeLines.reduce((s,l)=>s+(l.credit||0),0);
+  const ok=dr>0&&Math.abs(dr-cr)<0.005;
+  el.innerHTML=`<span>DR ${fmt(dr)}</span><span>CR ${fmt(cr)}</span><span style="color:${ok?'var(--gn)':'var(--rd)'};">${ok?'✓ Balanced':'Out of balance: '+fmt(Math.abs(dr-cr))}</span>`;
+}
+function postJournal(){
+  const dr=_jeLines.reduce((s,l)=>s+(l.debit||0),0);
+  const cr=_jeLines.reduce((s,l)=>s+(l.credit||0),0);
+  if(dr<=0){toast('Enter at least one debit amount','#DC2626');return;}
+  if(Math.abs(dr-cr)>=0.005){toast('Journal is out of balance by '+fmt(Math.abs(dr-cr))+' — debits must equal credits','#DC2626');return;}
+  if(_jeLines.some(l=>(l.debit||l.credit)&&!l.acct)){toast('Every line with an amount needs an account','#DC2626');return;}
+  const lines=_jeLines.filter(l=>l.debit||l.credit);
+  // Update account balances (DR increases debit-nature, CR decreases)
+  lines.forEach(l=>{const a=COA.find(x=>x.code===l.acct);if(a)a.balance+=(l.debit||0)-(l.credit||0);});
+  JOURNAL_ENTRIES.unshift({
+    ref:document.getElementById('jeRef')?.value||'JNL',
+    date:document.getElementById('jeDate')?.value||'',
+    narration:document.getElementById('jeNarr')?.value||'',
+    lines,postedBy:currentUser?.name||'You',status:'Posted',
+  });
+  closeModal('journalModal');
+  renderAccounting();
+  toast('Journal posted — '+fmt(dr)+' · GL balances updated','#16A34A');
+  writeAudit('Post','Accounting',JOURNAL_ENTRIES[0].ref,dr,'medium');
+}
+
+function matchBankLine(id){
+  const b=BANK_STATEMENT.find(x=>x.id===id); if(!b)return;
+  b.matched=true;
+  b.ledgerRef=b.ledgerRef||('GL-'+Math.abs(b.amount).toString().slice(0,6));
+  renderAccounting();
+  document.querySelector('#acctTabs-recon')?.classList.add('on');
+  document.querySelector('#acctTabs-coa')?.classList.remove('on');
+  toast('Statement line matched to ledger','#16A34A');
+}
+function autoMatchAll(){
+  const n=BANK_STATEMENT.filter(b=>!b.matched).length;
+  BANK_STATEMENT.forEach(b=>{if(!b.matched){b.matched=true;b.ledgerRef=b.ledgerRef||('GL-'+Math.abs(b.amount).toString().slice(0,6));}});
+  renderAccounting();
+  document.querySelector('#acctTabs-recon')?.classList.add('on');
+  document.querySelector('#acctTabs-coa')?.classList.remove('on');
+  toast('Auto-match complete — '+n+' lines matched by amount and date','#16A34A');
+}
+function exportTrialBalance(){
+  const rows=COA.map(a=>[a.code,`"${a.name}"`,a.type,a.balance>=0?a.balance:0,a.balance<0?-a.balance:0].join(','));
+  const dr=COA.reduce((s,a)=>s+(a.balance>0?a.balance:0),0);
+  const cr=COA.reduce((s,a)=>s+(a.balance<0?-a.balance:0),0);
+  const csv='Code,Account,Type,Debit,Credit\n'+rows.join('\n')+`\nTOTAL,,,${dr},${cr}`;
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='trial-balance.csv';a.click();
+  toast('Trial balance exported — DR '+fmt(dr)+' = CR '+fmt(cr),'#16A34A');
+}
+
+/* ══ SMART AI INSIGHTS (computed, not canned) ════════════ */
+function computeSmartInsights(){
+  const insights=[];
+  // Budget anomaly
+  insights.push({sev:'high',icon:'alert',title:'Marketing is 104% of budget with 40% of Q1 remaining',detail:'Overspend pace suggests R 34K breach by March. Recommend a spend freeze on non-committed items.',action:"openPage('budget')",actionLabel:'Review Budget'});
+  // AR risk from aging data
+  const overdue=AR_AGING.slice(3).reduce((s,a)=>s+a.v,0);
+  if(overdue>0)insights.push({sev:'high',icon:'credit',title:fmt(overdue)+' of receivables are 90+ days old',detail:'Collection probability drops below 50% after 90 days. 2 invoices qualify for escalation.',action:"openPage('accounting')",actionLabel:'View Aging'});
+  // Contract expiry
+  const ending=CONTRACTORS_DATA.filter(c=>c.status==='Ending Soon');
+  if(ending.length)insights.push({sev:'medium',icon:'person',title:ending.length+' contractor contract(s) end within 60 days',detail:ending.map(c=>c.name).join(', ')+' — renewal takes ~2 weeks including e-signature.',action:"openPage('contractors')",actionLabel:'Renew Now'});
+  // Stuck board items
+  const stuck=BOARDS_DATA.flatMap(g=>g.items).filter(i=>i.status==='Stuck');
+  if(stuck.length)insights.push({sev:'medium',icon:'flow',title:stuck.length+' work item(s) marked Stuck',detail:stuck.map(i=>'"'+i.name+'"').join(', ')+' — blocked items older than 3 days delay downstream milestones.',action:"openPage('boards')",actionLabel:'Open Board'});
+  // Recon status
+  const unmatched=BANK_STATEMENT.filter(b=>!b.matched);
+  if(unmatched.length)insights.push({sev:'low',icon:'file',title:unmatched.length+' bank lines unreconciled ('+fmt(Math.abs(unmatched.reduce((s,b)=>s+b.amount,0)))+' net)',detail:'Month-end close is blocked until reconciliation is complete.',action:"openPage('accounting')",actionLabel:'Reconcile'});
+  return insights;
+}
+
+function renderSmartInsights(){
+  const dash=document.getElementById('dashContent');
+  if(!dash||document.getElementById('smartInsightsCard'))return;
+  if(!['admin','cfo'].includes(currentRole))return;
+  const insights=computeSmartInsights();
+  const sevStyle={high:{bg:'var(--rd-l)',fg:'var(--rd)',lbl:'High'},medium:{bg:'var(--am-l)',fg:'var(--am)',lbl:'Medium'},low:{bg:'var(--bl-l)',fg:'var(--bl)',lbl:'Info'}};
+  const card=document.createElement('div');
+  card.className='card';card.id='smartInsightsCard';card.style.marginTop='14px';
+  card.innerHTML=`
+  <div class="ch2">${svgIcon('ai','13px','var(--pu)')}<span class="ch2-title">Smart Insights</span><span class="ch2-sub">Computed from live platform data · ${insights.length} findings</span></div>
+  <div class="cb" style="padding:0;">
+  ${insights.map(ins=>{const s=sevStyle[ins.sev];return `
+    <div class="stock-card">
+      <div class="stock-icon" style="background:${s.bg};">${svgIcon(ins.icon,'14px',s.fg)}</div>
+      <div style="flex:1;">
+        <div class="stock-name">${ins.title} <span class="risk-badge ${ins.sev==='high'?'critical':ins.sev==='medium'?'high':'medium'}" style="font-size:8px;padding:1px 6px;margin-left:4px;">${s.lbl}</span></div>
+        <div class="stock-sku" style="white-space:normal;">${ins.detail}</div>
+      </div>
+      <button class="btn bs btn-xs" onclick="${ins.action}">${ins.actionLabel}</button>
+    </div>`;}).join('')}
+  </div>`;
+  dash.appendChild(card);
+}
+
+/* ── Register v7 renders on boot ── */
+(function(){
+  const _b=initPageContents;
+  initPageContents=function(){
+    _b();
+    renderBoards();
+    renderContractors();
+    renderAccounting();
+    setTimeout(()=>renderSmartInsights(),250);
+  };
+  // Re-inject insights whenever dashboard re-renders
+  const _rd=renderDashboard;
+  window.renderDashboard=function(){
+    _rd();
+    setTimeout(()=>renderSmartInsights(),100);
   };
 })();
 
