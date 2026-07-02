@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const RESEND_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
-const FROM = Deno.env.get("EMAIL_FROM") ?? "NexCore ERP <onboarding@resend.dev>";
+const FROM = Deno.env.get("EMAIL_FROM") ?? "MORR ERP <onboarding@resend.dev>";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -78,10 +78,13 @@ Deno.serve(async (req: Request) => {
         user_id: user.id, code_hash: await sha256(code), purpose,
       });
       const email = user.email ?? "";
+      // Custom template support: client may send subject/html containing {{code}}
+      const subjectTpl = String(body.subject ?? "Your verification code: {{code}}").slice(0, 200);
+      const htmlTpl = String(body.html ?? `<div style="font-family:sans-serif"><h2>Verification</h2><p>Your one-time code is:</p><p style="font-size:32px;font-weight:800;letter-spacing:8px">{{code}}</p><p>It expires in 5 minutes.</p></div>`).slice(0, 20_000);
       const result = await sendViaResend(
         email,
-        `Your NexCore verification code: ${code}`,
-        `<div style="font-family:sans-serif"><h2>NexCore verification</h2><p>Your one-time code is:</p><p style="font-size:32px;font-weight:800;letter-spacing:8px">${code}</p><p>It expires in 5 minutes. If you didn't request this, ignore this email.</p></div>`,
+        subjectTpl.replaceAll("{{code}}", code),
+        htmlTpl.replaceAll("{{code}}", code),
       );
       await supabase.from("nx_email_log").insert({
         sent_by: user.id, recipient: email, subject: "OTP verification code",

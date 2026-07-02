@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <meta name="description" content="NexCore ERP — Enterprise Resource Platform · xGroup SA"/>
   <meta name="theme-color" content="#F97316"/>
-  <title>NexCore ERP — xGroup SA</title>
+  <title>MORR ERP — xGroup SA</title>
 
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -1072,7 +1072,7 @@ body.dark .perm-check.on{background:var(--gn);}
         <div class="lg-mark-icon">
           <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
         </div>
-        <div class="lg-mark-word">Nex<span>Core</span> ERP</div>
+        <div class="lg-mark-word">MORR<span> ERP</span></div>
       </div>
 
       <div class="lg-headline">Built for<br>South African<br><em>enterprise</em></div>
@@ -1120,7 +1120,7 @@ body.dark .perm-check.on{background:var(--gn);}
         <div class="lg-mob-icon">
           <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
         </div>
-        <div class="lg-mob-word">Nex<span>Core</span></div>
+        <div class="lg-mob-word">MORR<span> ERP</span></div>
       </div>
 
       <div class="lg-title">Welcome back</div>
@@ -1177,7 +1177,7 @@ body.dark .perm-check.on{background:var(--gn);}
       </div>
 
       <!-- Sign in button -->
-      <button id="loginBtn" class="lg-btn" onclick="doLogin()">Sign in to NexCore</button>
+      <button id="loginBtn" class="lg-btn" onclick="doLogin()">Sign in to MORR ERP</button>
 
       <!-- Links -->
       <div class="lg-links">
@@ -1262,7 +1262,7 @@ body.dark .perm-check.on{background:var(--gn);}
   <div class="topbar">
     <div class="tb-brand-zone">
       <div class="tb-logo"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:white;"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></div>
-      <div class="tb-wordmark">Nex<span>Core</span></div>
+      <div class="tb-wordmark">MORR<span> ERP</span></div>
     </div>
     <div class="tb-main">
       <span class="tb-module-label">Module /</span>
@@ -1723,7 +1723,7 @@ body.dark .perm-check.on{background:var(--gn);}
 
       <!-- WHITE LABEL / BRAND -->
       <div class="page" id="page-brand">
-        <div class="ph"><div class="ph-icon" style="background:var(--em)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><circle cx="13.5" cy="6.5" r="2.5"/><path d="M12 2l10 10-10 10L2 12z"/></svg></div><div><div class="ph-title">White Label & Branding</div><div class="ph-sub">Your logo · Your colours · Your domain</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="brandSave()">Apply Branding</button><button class="btn bs btn-sm" onclick="brandReset()">Reset to NexCore</button></div></div>
+        <div class="ph"><div class="ph-icon" style="background:var(--em)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><circle cx="13.5" cy="6.5" r="2.5"/><path d="M12 2l10 10-10 10L2 12z"/></svg></div><div><div class="ph-title">White Label & Branding</div><div class="ph-sub">Your logo · Your colours · Your domain</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="brandSave()">Apply Branding</button><button class="btn bs btn-sm" onclick="brandReset()">Reset Defaults</button></div></div>
         <div class="content" id="brandContent"></div>
       </div>
 
@@ -3258,14 +3258,14 @@ async function doLogin() {
       showLoginError('Incorrect email or password. Use the demo accounts below.');
       const panel = document.getElementById('lgInner');
       if (panel) { panel.style.animation = 'shake .4s ease'; setTimeout(() => panel.style.animation = '', 500); }
-      if (btn) { btn.disabled = false; btn.textContent = 'Sign in to NexCore'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'Sign in to MORR ERP'; }
       return;
     }
     currentRole = role;
     currentUser = ROLES[role];
   }
 
-  if (btn) { btn.disabled = false; btn.textContent = 'Sign in to NexCore'; }
+  if (btn) { btn.disabled = false; btn.textContent = 'Sign in to MORR ERP'; }
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appShell').classList.add('active');
   document.body.className = 'role-' + currentRole;
@@ -8255,8 +8255,10 @@ function viewInvoiceModal(inv){
   </div>`;
   actions.innerHTML=`
     <button class="btn bs" onclick="closeModal('invoiceViewModal')">Close</button>
-    ${inv.status!=='Paid'?`<button class="btn bg" onclick="closeModal('invoiceViewModal');invoicePay('${inv.invoice_number}')">Pay Now</button>`:''}
-    <button class="btn bp" onclick="printInvoice(${JSON.stringify(inv).replace(/"/g,'&quot;')})">Print PDF</button>`;
+    ${inv.status!=='Paid'?`<button class="btn bb" onclick='invoicePayOnline(${JSON.stringify(inv).replace(/'/g,"&#39;")})'>Pay Online</button>
+    <button class="btn bs" onclick='invoiceCopyPayLink(${JSON.stringify(inv).replace(/'/g,"&#39;")})'>Copy Pay Link</button>
+    <button class="btn bg" onclick="closeModal('invoiceViewModal');invoicePay('${inv.invoice_number}')">Mark Paid (EFT)</button>`:''}
+    <button class="btn bp" onclick='printInvoice(${JSON.stringify(inv).replace(/'/g,"&#39;")})'>Print PDF</button>`;
   openModal('invoiceViewModal');
 }
 
@@ -9361,8 +9363,8 @@ function renderBrand(){
   <div class="g2">
     <div class="card"><div class="ch2"><span class="ch2-title">Brand Settings</span></div>
     <div class="cb">
-      <div class="fg"><label class="fl">Company / Product Name</label><input class="fi" id="brName" value="${saved.name||'NexCore'}" placeholder="e.g. AcmeERP"/></div>
-      <div class="fg"><label class="fl">Logo Initials (2 max)</label><input class="fi" id="brInitials" maxlength="2" value="${saved.initials||'NC'}"/></div>
+      <div class="fg"><label class="fl">Company / Product Name</label><input class="fi" id="brName" value="${saved.name||'MORR ERP'}" placeholder="e.g. AcmeERP"/></div>
+      <div class="fg"><label class="fl">Logo Initials (2 max)</label><input class="fi" id="brInitials" maxlength="2" value="${saved.initials||'M'}"/></div>
       <div class="fg"><label class="fl">Accent Colour</label>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <input type="color" id="brColor" value="${saved.accent||'#F97316'}" style="width:44px;height:34px;border:1px solid var(--bd);border-radius:8px;background:var(--wh);cursor:pointer;padding:2px;"/>
@@ -9377,8 +9379,8 @@ function renderBrand(){
     <div class="cb">
       <div id="brPreview" style="border:1px solid var(--bd);border-radius:14px;overflow:hidden;">
         <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--bd);">
-          <div id="brPvLogo" style="width:32px;height:32px;border-radius:9px;background:${saved.accent||'#F97316'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;">${saved.initials||'NC'}</div>
-          <div style="font-size:15px;font-weight:900;" id="brPvName">${saved.name||'NexCore'}</div>
+          <div id="brPvLogo" style="width:32px;height:32px;border-radius:9px;background:${saved.accent||'#F97316'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;">${saved.initials||'M'}</div>
+          <div style="font-size:15px;font-weight:900;" id="brPvName">${saved.name||'MORR ERP'}</div>
         </div>
         <div style="padding:16px;">
           <div style="display:flex;gap:8px;margin-bottom:12px;">
@@ -9413,7 +9415,8 @@ function brandApply(brand){
   r.setProperty('--or',brand.accent);
   r.setProperty('--accent',brand.accent);
   r.setProperty('--or-d',brandDarken(brand.accent,.82));
-  document.querySelectorAll('.tb-wordmark').forEach(w=>{w.innerHTML=(brand.name||'NexCore').replace(/^(.{3})(.*)$/,'$1<span>$2</span>');});
+  const _nm=(brand.name||'MORR ERP').split(' ');
+  document.querySelectorAll('.tb-wordmark').forEach(w=>{w.innerHTML=_nm[0]+(_nm.length>1?'<span> '+_nm.slice(1).join(' ')+'</span>':'');});
   const logo=document.querySelector('.tb-logo');if(logo)logo.style.background=brand.accent;
   const org=document.getElementById('tbOrg');if(org&&brand.name)org.textContent=brand.name;
 }
@@ -9424,8 +9427,8 @@ function brandDarken(hex,f){
 }
 function brandSave(){
   const brand={
-    name:document.getElementById('brName')?.value||'NexCore',
-    initials:(document.getElementById('brInitials')?.value||'NC').toUpperCase(),
+    name:document.getElementById('brName')?.value||'MORR ERP',
+    initials:(document.getElementById('brInitials')?.value||'M').toUpperCase(),
     accent:document.getElementById('brColor')?.value||'#F97316',
     domain:document.getElementById('brDomain')?.value||'',
     hidePoweredBy:document.getElementById('brHidePb')?.classList.contains('on')||false,
@@ -9439,10 +9442,10 @@ function brandReset(){
   localStorage.removeItem('nexcore-brand');
   const r=document.documentElement.style;
   r.removeProperty('--or');r.removeProperty('--or-d');r.removeProperty('--accent');
-  document.querySelectorAll('.tb-wordmark').forEach(w=>{w.innerHTML='Nex<span>Core</span>';});
+  document.querySelectorAll('.tb-wordmark').forEach(w=>{w.innerHTML='MORR<span> ERP</span>';});
   const logo=document.querySelector('.tb-logo');if(logo)logo.style.background='';
   renderBrand();
-  toast('Reset to NexCore default branding','#71717A');
+  toast('Reset to MORR ERP default branding','#71717A');
 }
 /* apply saved brand on boot */
 (function(){try{const b=JSON.parse(localStorage.getItem('nexcore-brand')||'null');if(b)setTimeout(()=>brandApply(b),300);}catch(e){}})();
@@ -9938,7 +9941,7 @@ const NXDB={
 function payslipHTML(e){
   const c=payproCalc(e);
   const brand=JSON.parse(localStorage.getItem('nexcore-brand')||'{}');
-  const coName=brand.name||'xGroup SA';
+  const coName=brand.name||NX_TPL.company;
   const accent=brand.accent||'#F97316';
   const row=(l,v,neg)=>`<tr><td style="padding:6px 0;color:#555;">${l}</td><td style="padding:6px 0;text-align:right;font-family:monospace;font-weight:600;color:${neg?'#DC2626':'#111'};">${neg?'− ':''}${fmt(Math.round(v))}</td></tr>`;
   return `<!DOCTYPE html><html><head><title>Payslip — ${e.name}</title><style>
@@ -9947,7 +9950,7 @@ function payslipHTML(e){
   </style></head><body>
   <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid ${accent};padding-bottom:14px;">
     <div><div style="font-size:22px;font-weight:900;">${coName}</div><div style="font-size:11px;color:#777;">Payslip — February 2025 · Confidential</div></div>
-    <div style="text-align:right;font-size:11px;color:#777;">Reg 2018/412847/07<br>PAYE ref 7530778888</div>
+    <div style="text-align:right;font-size:11px;color:#777;">Reg ${NX_TPL.reg}<br>VAT ${NX_TPL.vat}</div>
   </div>
   <div style="display:flex;justify-content:space-between;margin:16px 0;font-size:13px;">
     <div><b>${e.name}</b><br>${e.id} · ${e.dept}<br>Leave balance: ${e.leaveBal} days</div>
@@ -9966,7 +9969,7 @@ function payslipHTML(e){
     ${row('Retirement fund',e.retirement,true)}
     <tr><td style="padding:10px 0;font-weight:900;font-size:16px;border-top:2px solid #111;">NET PAY</td><td style="padding:10px 0;text-align:right;font-family:monospace;font-weight:900;font-size:16px;border-top:2px solid #111;color:${accent};">${fmt(Math.round(c.net))}</td></tr>
   </table>
-  <div style="font-size:10px;color:#999;margin-top:18px;">Employer UIF contribution (1%): ${fmt(Math.round(c.uif))} · Generated by NexCore Payroll Engine · POPIA: this document contains personal information.</div>
+  <div style="font-size:10px;color:#999;margin-top:18px;">Employer UIF contribution (1%): ${fmt(Math.round(c.uif))} · Generated by ${coName} Payroll Engine · POPIA: this document contains personal information.</div>
   <button onclick="window.print()" style="margin-top:16px;padding:10px 18px;background:${accent};color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Print / Save as PDF</button>
   </body></html>`;
 }
@@ -10022,6 +10025,369 @@ async function payslipEmailAll(){
         last.appendChild(b);
       }
     });
+  };
+})();
+
+
+/* ════════════════════════════════════════════════════════════
+   MORR ERP v12 — NXDoc document engine + template customization
+════════════════════════════════════════════════════════════ */
+let NX_TPL={
+  company:'MORR ERP',legal:'xGroup SA (Pty) Ltd',reg:'2018/412847/07',vat:'4851234567',
+  address:'138 West Street, Sandton, 2196, South Africa',phone:'+27 11 234 5678',
+  emailFrom:'accounts@morr.co.za',
+  bankName:'FNB',bankAcc:'62817344821',bankBranch:'250655',
+  footer:'Thank you for your business.',
+  otpSubject:'Your {{company}} verification code',
+  otpBody:'Hi,\n\nYour one-time code is {{code}}. It expires in 5 minutes.\n\nIf you did not request this, please ignore this email.',
+  emailSignature:'Regards,\nThe {{company}} Team',
+};
+function tplMerge(str,extra={}){
+  const brand=JSON.parse(localStorage.getItem('nexcore-brand')||'{}');
+  const map={company:brand.name||NX_TPL.company,...NX_TPL,...extra};
+  return String(str).replace(/{{(\w+)}}/g,(_,k)=>map[k]!==undefined?map[k]:'{{'+k+'}}');
+}
+
+/* ── Shared branded document chrome ── */
+function nxDocChrome(docType,docNo,bodyHtml,opts={}){
+  const brand=JSON.parse(localStorage.getItem('nexcore-brand')||'{}');
+  const accent=brand.accent||'#F97316';
+  const name=brand.name||NX_TPL.company;
+  const initials=brand.initials||'M';
+  return `<!DOCTYPE html><html><head><title>${docType} ${docNo} — ${name}</title><style>
+    *{box-sizing:border-box;}
+    body{font-family:'Segoe UI',system-ui,sans-serif;max-width:720px;margin:28px auto;padding:0 24px;color:#18181B;font-size:13px;line-height:1.55;}
+    table{width:100%;border-collapse:collapse;}
+    th{text-align:left;font-size:10px;color:#71717A;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E4E4E7;padding:7px 8px;}
+    td{padding:8px;border-bottom:1px solid #F4F4F5;}
+    .mono{font-family:ui-monospace,monospace;}
+    .r{text-align:right;}
+    @media print{button{display:none!important;}body{margin:0 auto;}}
+  </style></head><body>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid ${accent};padding-bottom:16px;margin-bottom:18px;">
+    <div style="display:flex;gap:12px;align-items:center;">
+      <div style="width:46px;height:46px;border-radius:11px;background:${accent};display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:900;color:#fff;">${initials}</div>
+      <div>
+        <div style="font-size:21px;font-weight:900;letter-spacing:-.4px;">${name}</div>
+        <div style="font-size:10px;color:#71717A;">${NX_TPL.legal} · Reg ${NX_TPL.reg} · VAT ${NX_TPL.vat}</div>
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:19px;font-weight:900;color:${accent};text-transform:uppercase;">${docType}</div>
+      <div style="font-size:11px;color:#71717A;" class="mono">${docNo}</div>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#71717A;margin-bottom:18px;">
+    <div>${NX_TPL.address}</div><div>${NX_TPL.phone} · ${NX_TPL.emailFrom}</div>
+  </div>
+  ${bodyHtml}
+  <div style="margin-top:30px;border-top:1px solid #E4E4E7;padding-top:14px;font-size:10px;color:#A1A1AA;">
+    ${opts.footer!==undefined?opts.footer:NX_TPL.footer}
+    ${opts.banking!==false?`<br>Banking: ${NX_TPL.bankName} · Acc ${NX_TPL.bankAcc} · Branch ${NX_TPL.bankBranch} · Reference: ${docNo}`:''}
+    <br>Generated by ${name} · POPIA: this document may contain personal information.
+  </div>
+  <button onclick="window.print()" style="margin-top:18px;padding:10px 20px;background:${accent};color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Print / Save as PDF</button>
+  </body></html>`;
+}
+function nxDocOpen(html){
+  const w=window.open('','_blank');
+  if(!w){toast('Pop-up blocked — allow pop-ups to view documents','#DC2626');return;}
+  w.document.write(html);w.document.close();
+}
+
+/* ── INVOICE document (handles both invoice shapes) ── */
+function invoiceHTML(inv){
+  const no=inv.id||inv.invoice_number||'INV';
+  const client=inv.client||inv.client_name||'Client';
+  const total=Number(inv.total||inv.total_amount||0);
+  const excl=Number(inv.amtExcl||total/1.15);
+  const vat=Number(inv.vat||total-excl);
+  const body=`
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:20px;">
+    <div><div style="font-size:10px;color:#71717A;text-transform:uppercase;">Billed To</div>
+      <div style="font-weight:800;font-size:14px;">${client}</div>
+      <div style="font-size:11px;color:#71717A;">${inv.contact||inv.contact_email||''}</div></div>
+    <div style="text-align:right;">
+      <div style="font-size:10px;color:#71717A;text-transform:uppercase;">Issue Date</div><div>${inv.issued||inv.issue_date||new Date().toLocaleDateString('en-ZA')}</div>
+      <div style="font-size:10px;color:#71717A;text-transform:uppercase;margin-top:6px;">Due Date</div><div style="font-weight:800;color:#DC2626;">${inv.due||inv.due_date||'30 days'}</div></div>
+  </div>
+  <table><thead><tr><th>Description</th><th class="r">Amount</th></tr></thead><tbody>
+    <tr><td>${inv.description||'Professional services rendered'}</td><td class="r mono">${fmt(Math.round(excl))}</td></tr>
+    <tr><td style="color:#71717A;">VAT @ 15%</td><td class="r mono" style="color:#71717A;">${fmt(Math.round(vat))}</td></tr>
+    <tr><td style="font-weight:900;font-size:15px;border-bottom:none;">TOTAL DUE</td><td class="r mono" style="font-weight:900;font-size:15px;border-bottom:none;">${fmt(Math.round(total))}</td></tr>
+  </tbody></table>
+  <div style="margin-top:14px;font-size:11px;color:#71717A;">Payment terms: 30 days from date of invoice. Please use the invoice number as your payment reference.</div>`;
+  return nxDocChrome('Tax Invoice',no,body);
+}
+/* replace legacy print with branded doc */
+window.printInvoice=function(inv){nxDocOpen(invoiceHTML(inv));};
+
+/* ── QUOTE document ── */
+function quoteHTML(q){
+  const excl=q.value/1.15;
+  const body=`
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:20px;">
+    <div><div style="font-size:10px;color:#71717A;text-transform:uppercase;">Prepared For</div>
+      <div style="font-weight:800;font-size:14px;">${q.client}</div>
+      <div style="font-size:11px;color:#71717A;">${q.contact||''}</div></div>
+    <div style="text-align:right;">
+      <div style="font-size:10px;color:#71717A;text-transform:uppercase;">Issued</div><div>${q.issued}</div>
+      <div style="font-size:10px;color:#71717A;text-transform:uppercase;margin-top:6px;">Valid Until</div><div style="font-weight:800;">${q.expires}</div></div>
+  </div>
+  <table><thead><tr><th>Item</th><th class="r">Amount</th></tr></thead><tbody>
+    <tr><td>Enterprise platform licence, implementation & support<br><span style="font-size:10px;color:#71717A;">Account executive: ${q.owner}</span></td><td class="r mono">${fmt(Math.round(excl))}</td></tr>
+    <tr><td style="color:#71717A;">VAT @ 15%</td><td class="r mono" style="color:#71717A;">${fmt(Math.round(q.value-excl))}</td></tr>
+    <tr><td style="font-weight:900;font-size:15px;border-bottom:none;">QUOTED TOTAL</td><td class="r mono" style="font-weight:900;font-size:15px;border-bottom:none;">${fmt(q.value)}</td></tr>
+  </tbody></table>
+  <div style="margin-top:16px;padding:12px;background:#FAFAFA;border-radius:8px;font-size:11px;color:#52525B;">
+    <b>Terms:</b> This quotation is valid until ${q.expires}. Pricing excludes travel and third-party licence escalations.
+    Acceptance in writing (or via the acceptance link) constitutes an order under our standard terms of service.
+  </div>
+  <div style="display:flex;gap:40px;margin-top:34px;">
+    <div style="flex:1;border-top:1px solid #A1A1AA;padding-top:6px;font-size:10px;color:#71717A;">Accepted by (name & signature)</div>
+    <div style="width:130px;border-top:1px solid #A1A1AA;padding-top:6px;font-size:10px;color:#71717A;">Date</div>
+  </div>`;
+  return nxDocChrome('Quotation',q.id,body);
+}
+function quoteOpen(i){const q=QUOTES_DATA[i];if(q){nxDocOpen(quoteHTML(q));writeAudit('QuotePDF','Quotes',q.id,q.value,'low');}}
+
+/* ── CONTRACT document (employee or contractor) ── */
+function contractHTML(party){
+  const isCtr=!!party.currency;
+  const rate=isCtr?party.currency+' '+party.rate.toLocaleString()+' per '+(party.rateType||'Month').toLowerCase():fmt(party.basic)+' per month';
+  const clauses=[
+    ['Appointment',`${NX_TPL.legal} ("the Company") engages ${party.name} ("the ${isCtr?'Contractor':'Employee'}") as ${party.role||party.dept||'a member of staff'}${isCtr?' on an independent-contractor basis':''}, effective ${party.start||party.startDate||'the commencement date'}.`],
+    ['Remuneration',`The ${isCtr?'Contractor':'Employee'} will be paid ${rate}, payable monthly in arrears${isCtr?' upon receipt of a valid invoice':' less statutory deductions (PAYE, UIF)'} via EFT.`],
+    ['Duration',isCtr?`This agreement runs from ${party.start||'commencement'} to ${party.end||'termination'} unless renewed in writing.`:'This is a permanent appointment subject to a 3-month probation period.'],
+    ['Confidentiality','The parties shall keep confidential all business, client and personal information accessed in the course of this engagement, in accordance with POPIA.'],
+    ['Intellectual Property','All work product created in the course of this engagement vests in the Company.'],
+    ['Termination',`Either party may terminate on ${isCtr?'30':'30'} days written notice, or immediately for material breach.`],
+    ['Governing Law','This agreement is governed by the laws of the Republic of South Africa.'],
+  ];
+  const body=`
+  <div style="margin-bottom:16px;font-size:12px;">Entered into between <b>${NX_TPL.legal}</b> (Reg ${NX_TPL.reg}) and <b>${party.name}</b>${isCtr?' of '+(party.country||''):''} ("the ${isCtr?'Contractor':'Employee'}").</div>
+  ${clauses.map(([h,t],i)=>`<div style="margin-bottom:12px;"><div style="font-weight:800;font-size:12px;">${i+1}. ${h}</div><div style="font-size:12px;color:#3F3F46;">${t}</div></div>`).join('')}
+  <div style="display:flex;gap:40px;margin-top:38px;">
+    <div style="flex:1;"><div style="border-top:1px solid #A1A1AA;padding-top:6px;font-size:10px;color:#71717A;">For ${NX_TPL.legal}</div></div>
+    <div style="flex:1;"><div style="border-top:1px solid #A1A1AA;padding-top:6px;font-size:10px;color:#71717A;">${party.name}</div></div>
+    <div style="width:110px;"><div style="border-top:1px solid #A1A1AA;padding-top:6px;font-size:10px;color:#71717A;">Date</div></div>
+  </div>`;
+  return nxDocChrome(isCtr?'Contractor Agreement':'Employment Contract',(party.id||'CT')+'-AGR',body,{banking:false});
+}
+function ctrContractOpen(i){const c=CONTRACTORS_DATA[i];if(c){nxDocOpen(contractHTML(c));writeAudit('ContractPDF','Contractors',c.id,0,'low');}}
+function empContractOpen(i){const e=PAYPRO_EMPS[i];if(e){nxDocOpen(contractHTML(e));writeAudit('ContractPDF','HR',e.id,0,'low');}}
+
+/* ── Add PDF buttons to Quotes + Contractors rows ── */
+(function(){
+  if(typeof renderQuotes==='function'){
+    const _rq=renderQuotes;
+    window.renderQuotes=function(){
+      _rq.apply(this,arguments);
+      const el=document.getElementById('quotesContent'); if(!el)return;
+      el.querySelectorAll('tbody tr').forEach((tr,i)=>{
+        if(i>=QUOTES_DATA.length)return;
+        const last=tr.querySelector('td:last-child');
+        if(last&&!last.querySelector('.qt-pdf')){
+          const b=document.createElement('button');
+          b.className='btn bs btn-xs qt-pdf';b.style.marginLeft='4px';b.textContent='PDF';
+          b.onclick=(e)=>{e.stopPropagation();quoteOpen(i);};
+          last.appendChild(b);
+        }
+      });
+    };
+  }
+  if(typeof renderContractors==='function'){
+    const _rc=renderContractors;
+    window.renderContractors=function(){
+      _rc.apply(this,arguments);
+      const tab=document.getElementById('ctrTabs-people'); if(!tab)return;
+      tab.querySelectorAll('tbody tr').forEach((tr,i)=>{
+        if(i>=CONTRACTORS_DATA.length)return;
+        const last=tr.querySelector('td:last-child');
+        if(last&&!last.querySelector('.ctr-pdf')){
+          const b=document.createElement('button');
+          b.className='btn bs btn-xs ctr-pdf';b.style.marginLeft='4px';b.textContent='Contract';
+          b.onclick=()=>ctrContractOpen(i);
+          last.appendChild(b);
+        }
+      });
+    };
+  }
+})();
+
+/* ── Template customization UI (in White Label page) ── */
+function tplField(id,label,val,wide){
+  return `<div class="fg" ${wide?'style="grid-column:1/-1;"':''}><label class="fl">${label}</label><input class="fi" id="${id}" value="${String(val).replace(/"/g,'&quot;')}"/></div>`;
+}
+function renderTplEditor(){
+  const host=document.getElementById('brandContent'); if(!host||document.getElementById('tplCard'))return;
+  const card=document.createElement('div');
+  card.id='tplCard';
+  card.innerHTML=`
+  <div class="card" style="margin-top:14px;"><div class="ch2"><span class="ch2-title">Documents & Email Templates</span><span class="ch2-sub">Used on payslips, invoices, quotes, contracts, OTP mails</span></div>
+  <div class="cb">
+    <div class="frow">${tplField('tplLegal','Legal Entity',NX_TPL.legal)}${tplField('tplReg','Company Reg No',NX_TPL.reg)}</div>
+    <div class="frow">${tplField('tplVat','VAT Number',NX_TPL.vat)}${tplField('tplPhone','Phone',NX_TPL.phone)}</div>
+    ${tplField('tplAddress','Address',NX_TPL.address,true)}
+    <div class="frow">${tplField('tplBankName','Bank',NX_TPL.bankName)}${tplField('tplBankAcc','Account No',NX_TPL.bankAcc)}</div>
+    <div class="frow">${tplField('tplBankBranch','Branch Code',NX_TPL.bankBranch)}${tplField('tplEmailFrom','Accounts Email',NX_TPL.emailFrom)}</div>
+    ${tplField('tplFooter','Document Footer Line',NX_TPL.footer,true)}
+    <div class="fg"><label class="fl">OTP Email Subject <span style="color:var(--mu);font-weight:400;">(placeholders: {{company}}, {{code}})</span></label><input class="fi" id="tplOtpSubject" value="${NX_TPL.otpSubject.replace(/"/g,'&quot;')}"/></div>
+    <div class="fg"><label class="fl">OTP Email Body</label><textarea class="fi" id="tplOtpBody" rows="3">${NX_TPL.otpBody}</textarea></div>
+    <div class="fg"><label class="fl">Email Signature</label><textarea class="fi" id="tplSignature" rows="2">${NX_TPL.emailSignature}</textarea></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn bp" onclick="tplSave()">Save Templates</button>
+      <button class="btn bs" onclick="nxDocOpen(invoiceHTML({id:'INV-PREVIEW',client:'Preview Client (Pty) Ltd',total:114998,due:'30 days'}))">Preview Invoice</button>
+      <button class="btn bs" onclick="nxDocOpen(contractHTML(PAYPRO_EMPS[0]))">Preview Contract</button>
+    </div>
+  </div></div>`;
+  host.appendChild(card);
+}
+function tplSave(){
+  const g=id=>document.getElementById(id)?.value||'';
+  NX_TPL.legal=g('tplLegal');NX_TPL.reg=g('tplReg');NX_TPL.vat=g('tplVat');NX_TPL.phone=g('tplPhone');
+  NX_TPL.address=g('tplAddress');NX_TPL.bankName=g('tplBankName');NX_TPL.bankAcc=g('tplBankAcc');
+  NX_TPL.bankBranch=g('tplBankBranch');NX_TPL.emailFrom=g('tplEmailFrom');NX_TPL.footer=g('tplFooter');
+  NX_TPL.otpSubject=g('tplOtpSubject');NX_TPL.otpBody=g('tplOtpBody');NX_TPL.emailSignature=g('tplSignature');
+  NXDB.save('templates');
+  toast('Templates saved — all documents and OTP emails now use these values','#16A34A');
+  writeAudit('Templates','WhiteLabel','doc-templates',0,'medium');
+}
+/* register in NXDB */
+NXDB.registry.templates={
+  get:()=>({tpl:NX_TPL,emailTemplates:EMAIL_TEMPLATES}),
+  set:(st)=>{if(st.tpl)Object.assign(NX_TPL,st.tpl);if(st.emailTemplates)st.emailTemplates.forEach((t,i)=>{if(EMAIL_TEMPLATES[i])Object.assign(EMAIL_TEMPLATES[i],t);});},
+  render:()=>{},
+};
+(function(){
+  const _rb=renderBrand;
+  window.renderBrand=function(){
+    _rb.apply(this,arguments);
+    setTimeout(renderTplEditor,50);
+  };
+})();
+
+/* ── OTP mail uses custom template (server substitutes {{code}}) ── */
+(function(){
+  const _os=_otpSend;
+  window._otpSend=async function(){
+    /* build custom subject/body and stash for callEdgeFunction wrapper */
+    window._otpTplPayload={
+      subject:tplMerge(NX_TPL.otpSubject,{code:'{{code}}'}),
+      html:'<div style="font-family:sans-serif;white-space:pre-line">'+tplMerge(NX_TPL.otpBody,{code:'<b style="font-size:26px;letter-spacing:6px">{{code}}</b>'})+'</div>',
+    };
+    return _os.apply(this,arguments);
+  };
+  const _ce=callEdgeFunction;
+  window.callEdgeFunction=async function(service,action,payload={}){
+    if(service==='email-relay'&&action==='send_otp'&&window._otpTplPayload){
+      payload={...payload,...window._otpTplPayload};
+      window._otpTplPayload=null;
+    }
+    return _ce.call(this,service,action,payload);
+  };
+})();
+
+
+/* ════════════════════════════════════════════════════════════
+   MORR ERP v13 — Sprint C: online payments (PayFast) + reconciliation
+════════════════════════════════════════════════════════════ */
+const PAYFAST_CFG={
+  mode:'sandbox',
+  merchant_id:'10000100',      // PayFast sandbox credentials
+  merchant_key:'46f0cd694581a',
+  notify_url:'https://anncqmypbgxuzkvxpptk.supabase.co/functions/v1/payment-webhook',
+};
+
+function payfastURL(inv){
+  const no=inv.id||inv.invoice_number||'INV';
+  const client=inv.client||inv.client_name||'Client';
+  const total=Number(inv.total||inv.total_amount||0);
+  const host=PAYFAST_CFG.mode==='live'?'www.payfast.co.za':'sandbox.payfast.co.za';
+  const params=new URLSearchParams({
+    merchant_id:PAYFAST_CFG.merchant_id,
+    merchant_key:PAYFAST_CFG.merchant_key,
+    return_url:location.origin+location.pathname+'?paid='+encodeURIComponent(no),
+    cancel_url:location.origin+location.pathname+'?cancelled='+encodeURIComponent(no),
+    notify_url:PAYFAST_CFG.notify_url,
+    m_payment_id:no,
+    amount:total.toFixed(2),
+    item_name:('Invoice '+no+' — '+client).slice(0,100),
+  });
+  return 'https://'+host+'/eng/process?'+params.toString();
+}
+
+function invoicePayOnline(inv){
+  const no=inv.id||inv.invoice_number||'INV';
+  const total=Number(inv.total||inv.total_amount||0);
+  if(total<=0){toast('Invoice has no amount to pay','#DC2626');return;}
+  const url=payfastURL(inv);
+  PAYMENTS_DATA.unshift({id:'PAY-LINK-'+no,payee:inv.client||inv.client_name||'Client',method:'PayFast',ref:no,amount:total,status:'Awaiting gateway',scheduled:new Date().toLocaleDateString('en-ZA'),bank:'PayFast '+PAYFAST_CFG.mode});
+  if(typeof renderXPayments==='function')renderXPayments();
+  window.open(url,'_blank');
+  toast('PayFast '+PAYFAST_CFG.mode+' checkout opened for '+no+' — webhook will reconcile on completion','#2563EB');
+  writeAudit('PayLink','Billing',no,total,'medium');
+}
+
+function invoiceCopyPayLink(inv){
+  const url=payfastURL(inv);
+  navigator.clipboard?.writeText(url).then(
+    ()=>toast('Payment link copied — send it to your client','#16A34A'),
+    ()=>toast(url,'#2563EB'));
+}
+
+/* ── Reconciliation: pull gateway payments, mark invoices paid, post GL ── */
+async function nxReconcilePayments(){
+  const client=typeof sb==='function'?sb():null;
+  if(!client||!currentUser?.id)return;
+  try{
+    const {data,error}=await client.from('nx_payments')
+      .select('id,invoice_no,amount,status,provider')
+      .eq('status','complete').eq('reconciled',false).limit(20);
+    if(error||!data||!data.length)return;
+    for(const p of data){
+      const amt=Number(p.amount)||0;
+      /* GL: Bank DR, Accounts Receivable CR */
+      JOURNAL_ENTRIES.unshift({
+        ref:'JNL-PAY-'+p.invoice_no,date:new Date().toISOString().slice(0,10),
+        narration:'Online payment received — '+p.invoice_no+' via '+p.provider,
+        lines:[{acct:'1000',debit:amt,credit:0},{acct:'1100',debit:0,credit:amt}],
+        postedBy:'Payment webhook',status:'Posted',
+      });
+      const pd=PAYMENTS_DATA.find(x=>x.ref===p.invoice_no&&x.status==='Awaiting gateway');
+      if(pd)pd.status='Processed';
+      if(currentUser?.notifs)currentUser.notifs.unshift({title:'Payment received — '+p.invoice_no,body:fmt(amt)+' via '+p.provider+' · invoice marked Paid',color:'#16A34A',icon:'done',unread:true,time:'Just now'});
+      await client.from('nx_payments').update({reconciled:true}).eq('id',p.id);
+      NXSync.emit('payment:received',{invoice:p.invoice_no,amount:amt});
+    }
+    renderNotifs();
+    if(typeof renderAccounting==='function')renderAccounting();
+    if(typeof renderXPayments==='function')renderXPayments();
+    NXDB.save('accounting');
+    toast(data.length+' online payment(s) reconciled → GL posted, invoices marked Paid','#16A34A');
+  }catch(e){}
+}
+
+/* return-from-gateway banner */
+(function(){
+  const q=new URLSearchParams(location.search);
+  const paid=q.get('paid'), cancelled=q.get('cancelled');
+  if(paid||cancelled){
+    setTimeout(()=>{
+      if(paid)toast('Welcome back — payment for '+paid+' is processing. Reconciliation runs automatically.','#16A34A');
+      if(cancelled)toast('Payment for '+cancelled+' was cancelled at the gateway','#D97706');
+      history.replaceState(null,'',location.pathname);
+    },1800);
+  }
+})();
+
+/* run reconciliation after boot + every 5 min while signed in */
+(function(){
+  const _b=initPageContents;
+  initPageContents=function(){
+    _b();
+    setTimeout(nxReconcilePayments,1500);
+    setInterval(nxReconcilePayments,300000);
   };
 })();
 
