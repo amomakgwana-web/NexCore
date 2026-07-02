@@ -9733,6 +9733,191 @@ function renderSyncMonitor(){
   };
 })();
 
+
+/* ════════════════════════════════════════════════════════════
+   NexCore v10 — Sprint A: dual-layer persistence (NXDB)
+   localStorage always (instant, demo-safe) + Supabase
+   nx_module_state when a real session exists.
+════════════════════════════════════════════════════════════ */
+const NXDB={
+  _timers:{},
+  _loaded:false,
+  registry:{
+    boards:{
+      get:()=>({groups:BOARDS_DATA,automations:BOARD_AUTOMATIONS,activity:BOARD_ACTIVITY.slice(0,30),nextId:_boardNextId}),
+      set:(st)=>{if(st.groups)BOARDS_DATA=st.groups;if(st.automations)BOARD_AUTOMATIONS=st.automations;if(st.activity)BOARD_ACTIVITY=st.activity;if(st.nextId)_boardNextId=st.nextId;},
+      render:()=>typeof renderBoards==='function'&&renderBoards(),
+    },
+    contractors:{
+      get:()=>({people:CONTRACTORS_DATA,payruns:CONTRACTOR_PAYRUNS}),
+      set:(st)=>{if(st.people)CONTRACTORS_DATA=st.people;if(st.payruns)CONTRACTOR_PAYRUNS=st.payruns;},
+      render:()=>typeof renderContractors==='function'&&renderContractors(),
+    },
+    accounting:{
+      get:()=>({coa:COA.map(a=>({code:a.code,balance:a.balance})),journals:JOURNAL_ENTRIES.slice(0,60),bank:BANK_STATEMENT}),
+      set:(st)=>{
+        if(st.coa)st.coa.forEach(x=>{const a=COA.find(c=>c.code===x.code);if(a)a.balance=x.balance;});
+        if(st.journals)JOURNAL_ENTRIES=st.journals;
+        if(st.bank)BANK_STATEMENT=st.bank;
+      },
+      render:()=>typeof renderAccounting==='function'&&renderAccounting(),
+    },
+    paypro:{
+      get:()=>({emps:PAYPRO_EMPS,posted:_payproPosted}),
+      set:(st)=>{if(st.emps)PAYPRO_EMPS=st.emps;if(typeof st.posted==='boolean')_payproPosted=st.posted;},
+      render:()=>typeof renderPaypro==='function'&&renderPaypro(),
+    },
+    fleet:{
+      get:()=>({vehicles:FLEET_VEHICLES,fuel:FUEL_LOG.slice(0,60)}),
+      set:(st)=>{if(st.vehicles)FLEET_VEHICLES=st.vehicles;if(st.fuel)FUEL_LOG=st.fuel;},
+      render:()=>typeof renderFleet==='function'&&renderFleet(),
+    },
+    access:{
+      get:()=>({creds:ACCESS_CREDS,events:ACCESS_EVENTS.slice(0,40)}),
+      set:(st)=>{if(st.creds)ACCESS_CREDS=st.creds;if(st.events)ACCESS_EVENTS=st.events;},
+      render:()=>typeof renderAccess==='function'&&renderAccess(),
+    },
+    iam:{
+      get:()=>({matrix:IAM_MATRIX,policy:IAM_POLICY}),
+      set:(st)=>{if(st.matrix)IAM_MATRIX=st.matrix;if(st.policy)IAM_POLICY=st.policy;},
+      render:()=>typeof renderIAM==='function'&&renderIAM(),
+    },
+    integrations:{
+      get:()=>({list:INTEGRATIONS.map(i=>({name:i.name,connected:i.connected}))}),
+      set:(st)=>{if(st.list)st.list.forEach(x=>{const i=INTEGRATIONS.find(y=>y.name===x.name);if(i)i.connected=x.connected;});},
+      render:()=>typeof renderIntegrations==='function'&&renderIntegrations(),
+    },
+    risk:{
+      get:()=>({register:RISK_REGISTER}),
+      set:(st)=>{if(st.register)RISK_REGISTER=st.register;},
+      render:()=>typeof renderRisk==='function'&&renderRisk(),
+    },
+    supply:{
+      get:()=>({orders:SUPPLY_ORDERS}),
+      set:(st)=>{if(st.orders){SUPPLY_ORDERS.length=0;st.orders.forEach(o=>SUPPLY_ORDERS.push(o));}},
+      render:()=>typeof renderSupplyChain==='function'&&renderSupplyChain(),
+    },
+    email:{
+      get:()=>({log:EMAIL_LOG.slice(0,50)}),
+      set:(st)=>{if(st.log)EMAIL_LOG=st.log;},
+      render:()=>typeof renderEmail==='function'&&renderEmail(),
+    },
+    leave:{
+      get:()=>({requests:NX_LEAVE_REQUESTS,attendance:NX_ATTENDANCE}),
+      set:(st)=>{if(st.requests)NX_LEAVE_REQUESTS=st.requests;if(st.attendance)NX_ATTENDANCE=st.attendance;},
+      render:()=>{},
+    },
+  },
+
+  save(module){
+    clearTimeout(this._timers[module]);
+    this._timers[module]=setTimeout(()=>this._flush(module),400);
+  },
+  _flush(module){
+    const reg=this.registry[module]; if(!reg)return;
+    let state;
+    try{state=reg.get();}catch(e){return;}
+    try{localStorage.setItem('nxdb-'+module,JSON.stringify(state));}catch(e){}
+    const client=typeof sb==='function'?sb():null;
+    if(client&&currentUser?.id){
+      client.from('nx_module_state')
+        .upsert({module,state},{onConflict:'module'})
+        .then(({error})=>{if(error)console.warn('NXDB remote save',module,error.message);});
+    }
+    this._markSynced(module);
+  },
+  saveAll(){Object.keys(this.registry).forEach(m=>this._flush(m));},
+
+  async loadAll(){
+    if(this._loaded)return; this._loaded=true;
+    let remote={};
+    const client=typeof sb==='function'?sb():null;
+    if(client&&currentUser?.id){
+      try{
+        const {data,error}=await client.from('nx_module_state').select('module,state');
+        if(!error&&data)data.forEach(r=>{remote[r.module]=r.state;});
+      }catch(e){}
+    }
+    Object.entries(this.registry).forEach(([m,reg])=>{
+      let st=remote[m];
+      if(!st){
+        try{const raw=localStorage.getItem('nxdb-'+m);if(raw)st=JSON.parse(raw);}catch(e){}
+      }
+      if(st){try{reg.set(st);reg.render();}catch(e){console.warn('NXDB load',m,e);}}
+    });
+    this._updateBadge(Object.keys(remote).length>0);
+  },
+  _markSynced(){this._updateBadge(!!(typeof sb==='function'&&sb()&&currentUser?.id));},
+  _updateBadge(remoteOK){
+    let el=document.getElementById('nxdbBadge');
+    if(!el){
+      const tb=document.querySelector('.tb-right');
+      if(!tb)return;
+      el=document.createElement('span');
+      el.id='nxdbBadge';
+      el.style.cssText='display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:var(--mid);border:1px solid var(--bd);border-radius:20px;padding:2px 8px;';
+      tb.insertBefore(el,tb.firstChild);
+    }
+    el.innerHTML='<span class="status-dot '+(remoteOK?'live':'warn')+'" style="width:6px;height:6px;"></span>'+(remoteOK?'DB synced':'Local only');
+    el.title=remoteOK?'State persisted to Supabase + this browser':'Demo session — state persisted to this browser only. Sign in with a Supabase account for cloud sync.';
+  },
+
+  reset(){
+    Object.keys(this.registry).forEach(m=>localStorage.removeItem('nxdb-'+m));
+    toast('Local state cleared — reload to get factory demo data','#D97706');
+  },
+};
+
+/* ── Hook every known mutator: after it runs, persist its module ── */
+(function(){
+  const hooks={
+    boards:['boardCycleStatus','boardAddItem','boardAddGroup','boardToggleAutomation','boardNewAutomation'],
+    contractors:['saveContractor','ctrRenew','runContractorPayRun'],
+    accounting:['postJournal','matchBankLine','autoMatchAll'],
+    paypro:['payproPostToGL','payproRun'],
+    fleet:['fleetLogFuel','fleetBookService'],
+    access:['accessIssue','accessRevoke','accessReissue'],
+    iam:['iamToggle'],
+    integrations:['intgToggle'],
+    risk:['saveRisk'],
+    supply:['receiveOrder'],
+    email:['emailSend'],
+  };
+  Object.entries(hooks).forEach(([module,fns])=>{
+    fns.forEach(fn=>{
+      if(typeof window[fn]!=='function')return;
+      const orig=window[fn];
+      window[fn]=function(){
+        const r=orig.apply(this,arguments);
+        NXDB.save(module);
+        if(r&&typeof r.then==='function')r.then(()=>NXDB.save(module));
+        return r;
+      };
+    });
+  });
+  /* paypro inline commission/bonus edits re-render — debounce-save on render */
+  if(typeof renderPaypro==='function'){
+    const _rp=renderPaypro;
+    window.renderPaypro=function(){_rp.apply(this,arguments);if(NXDB._loaded)NXDB.save('paypro');};
+  }
+  /* leave + attendance sync events persist too */
+  NXSync.on('leave:created',()=>NXDB.save('leave'));
+  NXSync.on('leave:decided',()=>{NXDB.save('leave');NXDB.save('paypro');});
+  NXSync.on('attendance:clockin',()=>NXDB.save('leave'));
+  NXSync.on('claim:approved',()=>{NXDB.save('accounting');NXDB.save('email');});
+  NXSync.on('approval:decided',()=>NXDB.save('supply'));
+  NXSync.on('payroll:run',()=>NXDB.save('email'));
+})();
+
+/* ── Load persisted state after app boot ── */
+(function(){
+  const _b=initPageContents;
+  initPageContents=function(){
+    _b();
+    setTimeout(()=>NXDB.loadAll(),400);
+  };
+})();
+
 </script>
 
 </body>
