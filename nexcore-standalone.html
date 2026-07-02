@@ -6931,15 +6931,22 @@ function confirmWithOTP(label, action) {
 async function _otpSend() {
   const btn = document.getElementById('otpSendBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
-  const { error } = await callEdgeFunction('auth-service', 'send_otp', {});
-  if (error === 'no_client' || error === 'not_authenticated' || error) {
-    // Demo mode — surface OTP in a toast so the user can proceed
+  const { data, error } = await callEdgeFunction('email-relay', 'send_otp', { purpose: 'confirm' });
+  if (error) {
+    // Demo mode (no session) — surface OTP in a toast so the user can proceed
     window._mockOtp = String(Math.floor(100000 + Math.random() * 900000));
     toast('Demo OTP: ' + window._mockOtp, '#F97316');
     if (btn) { btn.textContent = 'Resend OTP'; btn.disabled = false; }
     return;
   }
-  toast('OTP sent to your email', '#16A34A');
+  if (data?.demo_code) {
+    // Relay reachable but no email provider key configured — server returns the code
+    window._mockOtp = data.demo_code;
+    toast('Email relay in simulated mode — OTP: ' + data.demo_code, '#F97316');
+  } else {
+    window._mockOtp = null;
+    toast('OTP sent to your email — check your inbox', '#16A34A');
+  }
   if (btn) { btn.textContent = 'Resend OTP'; btn.disabled = false; }
 }
 
@@ -6954,8 +6961,8 @@ async function _otpVerify() {
     _otpPendingAction = null;
     return;
   }
-  const { data, error } = await callEdgeFunction('auth-service', 'verify_otp', { code });
-  if (error || data?.valid === false) { toast('Invalid or expired OTP', '#EF4444'); return; }
+  const { data, error } = await callEdgeFunction('email-relay', 'verify_otp', { code });
+  if (error || data?.ok === false) { toast('Invalid or expired OTP', '#EF4444'); return; }
   closeModal('otpModal');
   if (typeof _otpPendingAction === 'function') await _otpPendingAction();
   _otpPendingAction = null;
@@ -9496,14 +9503,20 @@ function emailCompose(){
   openPage('email');
   setTimeout(()=>document.getElementById('emTo')?.focus(),150);
 }
-function emailSend(scheduled){
+async function emailSend(scheduled){
   const to=document.getElementById('emTo')?.value.trim();
   const subject=document.getElementById('emSubject')?.value.trim();
+  const bodyTxt=document.getElementById('emBody')?.value||'';
   if(!to||!subject){toast('Recipient and subject are required','#DC2626');return;}
-  EMAIL_LOG.unshift({ts:scheduled?'Scheduled 08:00':'Just now',to,subject,status:scheduled?'Queued':'Delivered',opens:0});
+  let status=scheduled?'Queued':'Delivered', provider='simulated';
+  if(!scheduled){
+    const {data,error}=await callEdgeFunction('email-relay','send_email',{to,subject,html:'<div style="font-family:sans-serif;white-space:pre-line">'+bodyTxt.replace(/</g,'&lt;')+'</div>'});
+    if(!error&&data?.ok){provider=data.simulated?'relay (simulated)':'resend';status=data.simulated?'Simulated':'Sent';}
+  }
+  EMAIL_LOG.unshift({ts:scheduled?'Scheduled 08:00':'Just now',to,subject,status,opens:0,provider});
   ['emTo','emSubject','emBody'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   renderEmail();
-  toast(scheduled?'Email scheduled for 08:00 tomorrow':'Email delivered to '+to,'#16A34A');
+  toast(scheduled?'Email scheduled for 08:00 tomorrow':(provider==='resend'?'Email sent via relay to '+to:'Email logged ('+provider+') to '+to),'#16A34A');
   writeAudit('Send','Email',to,0,'low');
 }
 
@@ -9915,6 +9928,100 @@ const NXDB={
   initPageContents=function(){
     _b();
     setTimeout(()=>NXDB.loadAll(),400);
+  };
+})();
+
+
+/* ════════════════════════════════════════════════════════════
+   NexCore v11 — Sprint B: payslip PDFs + email delivery
+════════════════════════════════════════════════════════════ */
+function payslipHTML(e){
+  const c=payproCalc(e);
+  const brand=JSON.parse(localStorage.getItem('nexcore-brand')||'{}');
+  const coName=brand.name||'xGroup SA';
+  const accent=brand.accent||'#F97316';
+  const row=(l,v,neg)=>`<tr><td style="padding:6px 0;color:#555;">${l}</td><td style="padding:6px 0;text-align:right;font-family:monospace;font-weight:600;color:${neg?'#DC2626':'#111'};">${neg?'− ':''}${fmt(Math.round(v))}</td></tr>`;
+  return `<!DOCTYPE html><html><head><title>Payslip — ${e.name}</title><style>
+    body{font-family:'Segoe UI',sans-serif;max-width:640px;margin:24px auto;padding:0 20px;color:#111;}
+    @media print{button{display:none!important;}}
+  </style></head><body>
+  <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid ${accent};padding-bottom:14px;">
+    <div><div style="font-size:22px;font-weight:900;">${coName}</div><div style="font-size:11px;color:#777;">Payslip — February 2025 · Confidential</div></div>
+    <div style="text-align:right;font-size:11px;color:#777;">Reg 2018/412847/07<br>PAYE ref 7530778888</div>
+  </div>
+  <div style="display:flex;justify-content:space-between;margin:16px 0;font-size:13px;">
+    <div><b>${e.name}</b><br>${e.id} · ${e.dept}<br>Leave balance: ${e.leaveBal} days</div>
+    <div style="text-align:right;">Pay date: 25 Feb 2025<br>Method: SwiftPay EFT<br>Tax method: PAYE monthly</div>
+  </div>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <tr><th colspan="2" style="text-align:left;background:#f5f5f5;padding:8px;border-radius:4px;">Earnings</th></tr>
+    ${row('Basic salary',e.basic)}
+    ${e.commission?row('Commission',e.commission):''}
+    ${e.bonus?row('Bonus',e.bonus):''}
+    <tr><td style="padding:8px 0;font-weight:800;border-top:1px solid #ddd;">Gross pay</td><td style="padding:8px 0;text-align:right;font-family:monospace;font-weight:800;border-top:1px solid #ddd;">${fmt(Math.round(c.gross))}</td></tr>
+    <tr><th colspan="2" style="text-align:left;background:#f5f5f5;padding:8px;border-radius:4px;">Deductions</th></tr>
+    ${row('PAYE (income tax)',c.paye,true)}
+    ${row('UIF (1%)',c.uif,true)}
+    ${row('Medical aid',e.medical,true)}
+    ${row('Retirement fund',e.retirement,true)}
+    <tr><td style="padding:10px 0;font-weight:900;font-size:16px;border-top:2px solid #111;">NET PAY</td><td style="padding:10px 0;text-align:right;font-family:monospace;font-weight:900;font-size:16px;border-top:2px solid #111;color:${accent};">${fmt(Math.round(c.net))}</td></tr>
+  </table>
+  <div style="font-size:10px;color:#999;margin-top:18px;">Employer UIF contribution (1%): ${fmt(Math.round(c.uif))} · Generated by NexCore Payroll Engine · POPIA: this document contains personal information.</div>
+  <button onclick="window.print()" style="margin-top:16px;padding:10px 18px;background:${accent};color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Print / Save as PDF</button>
+  </body></html>`;
+}
+
+function payslipOpen(i){
+  const e=PAYPRO_EMPS[i]; if(!e)return;
+  const w=window.open('','_blank');
+  if(!w){toast('Pop-up blocked — allow pop-ups to view payslips','#DC2626');return;}
+  w.document.write(payslipHTML(e));
+  w.document.close();
+  writeAudit('Payslip','Payroll',e.id,0,'low');
+}
+
+async function payslipEmailAll(){
+  confirmWithOTP('Email payslips to all employees', async ()=>{
+    let sent=0, simulated=false;
+    for(const e of PAYPRO_EMPS){
+      const addr=e.name.toLowerCase().replace(/[^a-z]+/g,'.')+'@xgroup.co.za';
+      const {data,error}=await callEdgeFunction('email-relay','send_email',{
+        to:addr,subject:'Your payslip for February 2025',html:payslipHTML(e)});
+      if(!error&&data?.ok){sent++;if(data.simulated)simulated=true;}
+      EMAIL_LOG.unshift({ts:'Just now',to:addr,subject:'Your payslip for February 2025',status:(!error&&data?.ok)?(data.simulated?'Simulated':'Sent'):'Queued (demo)',opens:0});
+    }
+    if(typeof renderEmail==='function')renderEmail();
+    NXDB.save('email');
+    toast(sent?('Payslips dispatched — '+sent+' of '+PAYPRO_EMPS.length+(simulated?' (relay simulated: add RESEND_API_KEY for live delivery)':' via Resend')):'Demo mode — '+PAYPRO_EMPS.length+' payslips logged locally','#16A34A');
+    writeAudit('PayslipBatch','Payroll','FEB-2025',0,'medium');
+  });
+}
+
+/* Add payslip buttons into the Payroll Engine table */
+(function(){
+  const _rp=renderPaypro;
+  window.renderPaypro=function(){
+    _rp.apply(this,arguments);
+    const el=document.getElementById('payproContent'); if(!el)return;
+    /* header button */
+    const hdr=el.querySelector('.ch2 .ch2-sub');
+    if(hdr&&!document.getElementById('psEmailAllBtn')){
+      const b=document.createElement('button');
+      b.id='psEmailAllBtn';b.className='btn bp btn-xs';b.style.marginLeft='8px';
+      b.textContent='Email All Payslips';b.onclick=payslipEmailAll;
+      hdr.appendChild(b);
+    }
+    /* per-row payslip buttons */
+    el.querySelectorAll('tbody tr').forEach((tr,i)=>{
+      if(i>=PAYPRO_EMPS.length)return;
+      const last=tr.querySelector('td:last-child');
+      if(last&&!last.querySelector('.ps-btn')){
+        const b=document.createElement('button');
+        b.className='btn bs btn-xs ps-btn';b.style.marginLeft='6px';b.textContent='Payslip';
+        b.onclick=()=>payslipOpen(i);
+        last.appendChild(b);
+      }
+    });
   };
 })();
 
