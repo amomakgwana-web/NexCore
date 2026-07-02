@@ -800,7 +800,7 @@ body.dark .cmd-box{background:#18181B;border-color:#27272A;}
 .cmd-kbd{font-size:10px;color:var(--mu);background:var(--sf2);border:1px solid var(--bd);border-radius:4px;padding:1px 6px;font-family:var(--mo);}
 
 /* ═══ SVG CHARTS ══════════════════════════════════════════ */
-.chart-wrap{width:100%;overflow:hidden;}
+.chart-wrap{width:100%;max-width:560px;margin:0 auto;overflow:hidden;}
 .chart-wrap svg{display:block;width:100%;height:auto;}
 .chart-bar{transition:opacity .12s;}
 .chart-bar:hover{opacity:.8;}
@@ -808,7 +808,7 @@ body.dark .cmd-box{background:#18181B;border-color:#27272A;}
 .chart-legend{display:flex;gap:14px;flex-wrap:wrap;padding:8px 0 4px;}
 .chart-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--mid);}
 .chart-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.donut-wrap{display:flex;align-items:center;gap:20px;}
+.donut-wrap{display:flex;align-items:center;gap:20px;flex-wrap:wrap;justify-content:center;}
 .donut-legend{display:flex;flex-direction:column;gap:8px;}
 .donut-item{display:flex;align-items:center;gap:8px;}
 .donut-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
@@ -996,6 +996,8 @@ body.dark .ni.on{background:linear-gradient(90deg,rgba(249,115,22,.18),rgba(249,
 .ns{padding:14px 18px 4px;}
 
 /* Topbar — glass */
+.tb-wordmark{color:var(--ink);}
+body.dark .tb-wordmark{color:#fff;}
 .topbar{backdrop-filter:blur(12px);background:rgba(255,255,255,.85);}
 body.dark .topbar{background:rgba(9,9,11,.85);}
 
@@ -1558,7 +1560,7 @@ body.dark .perm-check.on{background:var(--gn);}
         <div class="content">
           <div class="tp on" id="apiTabs-keys"><div class="card"><div class="ch2"><span class="ch2-title">API Keys</span></div><div class="cb" style="padding:0;"><div class="tw"><table><thead><tr><th>Key</th><th>Environment</th><th>Permissions</th><th>Last Used</th><th></th></tr></thead><tbody><tr><td class="mo tb">nx_live_••••••8f2a</td><td><span class="badge gn">Production</span></td><td>read · write · webhooks</td><td>Today 14:22</td><td><button class="btn bs btn-xs" onclick="toast('Key revoked','#DC2626')">Revoke</button></td></tr><tr><td class="mo tb">nx_test_••••••7e9b</td><td><span class="badge am">Sandbox</span></td><td>read · write</td><td>Yesterday</td><td><button class="btn bs btn-xs">Revoke</button></td></tr></tbody></table></div></div></div></div>
           <div class="tp" id="apiTabs-webhooks"><div class="card"><div class="ch2"><span class="ch2-title">Webhook Endpoints</span></div><div id="webhookList"></div></div></div>
-          <div class="tp" id="apiTabs-logs"><div class="card"><div class="ch2"><span class="ch2-title">API Request Log</span></div><div class="cb" style="padding:0;"><div class="tw"><table><thead><tr><th>Method</th><th>Endpoint</th><th>Key</th><th>Status</th><th>Latency</th><th>Timestamp</th></tr></thead><tbody id="apiLogRows"></tbody></table></div></div></div>
+          <div class="tp" id="apiTabs-logs"><div class="card"><div class="ch2"><span class="ch2-title">API Request Log</span></div><div class="cb" style="padding:0;"><div class="tw"><table><thead><tr><th>Method</th><th>Endpoint</th><th>Key</th><th>Status</th><th>Latency</th><th>Timestamp</th></tr></thead><tbody id="apiLogRows"></tbody></table></div></div></div></div>
           <div class="tp" id="apiTabs-integrations"><div class="g2"><div class="card"><div class="ch2"><span class="ch2-title">Connected</span></div><div id="integrationsList"></div></div><div class="card"><div class="ch2"><span class="ch2-title">Available</span></div><div id="connectorsAvail"></div></div></div></div>
         </div>
       </div>
@@ -2202,6 +2204,11 @@ const PAGE_LABELS = {
   audit:'Audit Trail',vault:'xVault',settings:'Settings',users:'User Management',
   onboarding:'Onboarding',ai:'AI Assistant',search:'Global Search',
   api:'API & Webhooks',sso:'SSO / Identity',offline:'Offline Mode',projects:'Projects',chat:'Team Chat',
+  reports:'Reports Center',risk:'Risk Management',supply:'Supply Chain',boards:'Work Boards',
+  contractors:'Contractors & Global Pay',accounting:'Accounting · GL',paypro:'Payroll Engine',
+  fleet:'Fleet Management',access:'Access Control',iam:'IAM Configuration',
+  integrations:'Integrations',brand:'White Label',email:'Email Center',
+  attendance:'Attendance Tracker',leave:'Leave Management',payroll:'Payroll & Tax',
   attendance:'Attendance Tracker',leave:'Leave Management',payroll:'Payroll & Tax'
 };
 
@@ -7707,77 +7714,83 @@ function cmdKey(e){
 
 /* ── SVG Chart System ── */
 function svgBarChart(container, data, opts={}){
-  if(!container)return;
-  const w=container.offsetWidth||320, h=opts.h||140;
+  if(!container||!data||!data.length)return;
+  const w=opts.w||420, h=opts.h||150;
+  const padL=46, padR=14, padT=18, padB=26;
+  const cw=w-padL-padR, ch=h-padT-padB;
   const max=Math.max(...data.map(d=>d.v),1);
-  const barW=Math.floor((w-40)/(data.length*1.5));
-  const gap=Math.floor(barW*0.5);
-  const totalW=data.length*(barW+gap)-gap;
-  const startX=Math.floor((w-40-totalW)/2)+32;
+  const n=data.length;
+  const slot=cw/n;
+  const barW=Math.max(10,Math.min(slot*0.55,46));
   const colors=opts.colors||['#F97316','#3B82F6','#16A34A','#D97706','#7C3AED','#0891B2','#EF4444'];
+  const baseline=padT+ch;
+  let gridLines='';
+  [0,.25,.5,.75,1].forEach(r=>{
+    const gy=baseline-r*ch;
+    const lv=max*r;
+    const lbl=lv>=1e6?'R'+(lv/1e6).toFixed(1)+'M':lv>=1000?'R'+(lv/1000).toFixed(0)+'k':Math.round(lv);
+    gridLines+=`<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${w-padR}" y2="${gy.toFixed(1)}" stroke="var(--bd-l)" stroke-width="1"/>`+
+      (r>0?`<text x="${padL-5}" y="${(gy+3).toFixed(1)}" text-anchor="end" font-size="8.5" fill="var(--mu)" font-family="inherit">${lbl}</text>`:'');
+  });
   let bars='',labels='',vals='';
   data.forEach((d,i)=>{
-    const bh=Math.max(4,Math.round((d.v/max)*(h-50)));
-    const x=startX+i*(barW+gap);
-    const y=h-30-bh;
-    const c=Array.isArray(opts.colors)?colors[i%colors.length]:colors[i%colors.length];
-    bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${bh}" rx="3" fill="${c}" opacity=".9" class="chart-bar"><title>${d.lbl}: ${d.fmt||d.v}</title></rect>`;
-    labels+=`<text x="${x+barW/2}" y="${h-14}" text-anchor="middle" font-size="9" fill="var(--mu)" font-family="var(--fn)">${d.lbl}</text>`;
-    vals+=`<text x="${x+barW/2}" y="${y-4}" text-anchor="middle" font-size="9" font-weight="700" fill="var(--mid)" font-family="var(--fn)">${d.fmt||''}</text>`;
+    const bh=Math.max(3,(d.v/max)*ch);
+    const x=padL+i*slot+(slot-barW)/2;
+    const y=baseline-bh;
+    const c=colors[i%colors.length];
+    bars+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="3" fill="${c}" opacity=".92" class="chart-bar"><title>${d.lbl}: ${d.fmt||d.v}</title></rect>`;
+    const cx=padL+i*slot+slot/2;
+    labels+=`<text x="${cx.toFixed(1)}" y="${h-8}" text-anchor="middle" font-size="9" fill="var(--mu)" font-family="inherit">${d.lbl}</text>`;
+    if(d.fmt)vals+=`<text x="${cx.toFixed(1)}" y="${(y-4).toFixed(1)}" text-anchor="middle" font-size="8.5" font-weight="700" fill="var(--mid)" font-family="inherit">${d.fmt}</text>`;
   });
-  const gridLines=[0.25,0.5,0.75,1].map(r=>{
-    const gy=h-30-Math.round(r*(h-50));
-    const lv=(max*r);
-    const lbl=lv>=1e6?'R'+(lv/1e6).toFixed(1)+'M':lv>=1000?'R'+(lv/1000).toFixed(0)+'k':Math.round(lv);
-    return `<line x1="28" y1="${gy}" x2="${w}" y2="${gy}" stroke="var(--bd-l)" stroke-width="1"/>
-    <text x="26" y="${gy+3}" text-anchor="end" font-size="8" fill="var(--mu)" font-family="var(--fn)">${lbl}</text>`;
-  }).join('');
-  container.innerHTML=`<div class="chart-wrap"><svg viewBox="0 0 ${w} ${h}" style="overflow:visible">${gridLines}${bars}${vals}${labels}</svg></div>`;
+  container.innerHTML=`<div class="chart-wrap"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">${gridLines}${bars}${vals}${labels}</svg></div>`;
 }
 
 function svgLineChart(container, datasets, labels, opts={}){
-  if(!container)return;
-  const w=container.offsetWidth||320, h=opts.h||130;
+  if(!container||!datasets||!datasets.length)return;
+  const w=opts.w||420, h=opts.h||150;
+  const padL=46, padR=14, padT=12, padB=26;
+  const cw=w-padL-padR, ch=h-padT-padB;
   const allVals=datasets.flatMap(d=>d.values);
   const max=Math.max(...allVals,1);
   const min=opts.zeroBase?0:Math.min(...allVals,0);
   const range=max-min||1;
-  const padL=32, padR=10, padT=10, padB=28;
-  const cw=w-padL-padR, ch=h-padT-padB;
   const n=labels.length;
   const xStep=cw/(n-1||1);
   const colors=['#F97316','#3B82F6','#16A34A','#D97706'];
-  let paths='',dots='',xLabels='',gridLines='';
+  let gridLines='',xLabels='',paths='',dots='';
   [0,.25,.5,.75,1].forEach(r=>{
-    const gy=padT+Math.round((1-r)*ch);
+    const gy=padT+(1-r)*ch;
     const lv=min+range*r;
     const lbl=lv>=1e6?'R'+(lv/1e6).toFixed(1)+'M':lv>=1000?'R'+(lv/1000).toFixed(0)+'k':Math.round(lv);
-    gridLines+=`<line x1="${padL}" y1="${gy}" x2="${w-padR}" y2="${gy}" stroke="var(--bd-l)" stroke-width="1"/>
-    <text x="${padL-3}" y="${gy+3}" text-anchor="end" font-size="8" fill="var(--mu)">${lbl}</text>`;
+    gridLines+=`<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${w-padR}" y2="${gy.toFixed(1)}" stroke="var(--bd-l)" stroke-width="1"/>
+    <text x="${padL-5}" y="${(gy+3).toFixed(1)}" text-anchor="end" font-size="8.5" fill="var(--mu)" font-family="inherit">${lbl}</text>`;
   });
+  const skip=Math.ceil(n/8);
   labels.forEach((lbl,i)=>{
+    if(i%skip!==0&&i!==n-1)return;
     const x=padL+i*xStep;
-    xLabels+=`<text x="${x}" y="${h-6}" text-anchor="middle" font-size="8" fill="var(--mu)">${lbl}</text>`;
+    xLabels+=`<text x="${x.toFixed(1)}" y="${h-8}" text-anchor="middle" font-size="9" fill="var(--mu)" font-family="inherit">${lbl}</text>`;
   });
   datasets.forEach((ds,di)=>{
     const c=colors[di%colors.length];
     const pts=ds.values.map((v,i)=>{
       const x=padL+i*xStep;
-      const y=padT+Math.round((1-(v-min)/range)*ch);
-      return `${x},${y}`;
+      const y=padT+(1-(v-min)/range)*ch;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
     });
-    const area='M'+pts.join(' L');
     paths+=`<polyline points="${pts.join(' ')}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
     ds.values.forEach((v,i)=>{
       const x=padL+i*xStep;
-      const y=padT+Math.round((1-(v-min)/range)*ch);
-      dots+=`<circle cx="${x}" cy="${y}" r="3" fill="${c}" stroke="white" stroke-width="1.5"><title>${ds.label}: ${v}</title></circle>`;
+      const y=padT+(1-(v-min)/range)*ch;
+      dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="${c}" stroke="var(--wh)" stroke-width="1.5"><title>${ds.label}: ${v>=1e6?'R'+(v/1e6).toFixed(2)+'M':v.toLocaleString()}</title></circle>`;
     });
   });
-  container.innerHTML=`<div class="chart-wrap"><svg viewBox="0 0 ${w} ${h}">${gridLines}${paths}${dots}${xLabels}</svg></div>`;
+  let html=`<div class="chart-wrap"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">${gridLines}${paths}${dots}${xLabels}</svg></div>`;
   if(datasets.length>1){
-    container.innerHTML+=`<div class="chart-legend">${datasets.map((d,i)=>`<div class="chart-legend-item"><div class="chart-legend-dot" style="background:${colors[i%colors.length]}"></div>${d.label}</div>`).join('')}</div>`;
+    html+=`<div class="chart-legend">${datasets.map((d,i)=>`<div class="chart-legend-item"><div class="chart-legend-dot" style="background:${colors[i%colors.length]}"></div>${d.label}</div>`).join('')}</div>`;
   }
+  container.innerHTML=html;
 }
 
 function svgDonutChart(container, data, opts={}){
@@ -7823,11 +7836,6 @@ function enhanceDashboard(){
     if(finBudEl){
       const data=[{lbl:'Jan',v:7200000,fmt:'7.2M'},{lbl:'Feb',v:7800000,fmt:'7.8M'},{lbl:'Mar',v:8100000,fmt:'8.1M'},{lbl:'Apr',v:7600000,fmt:'7.6M'},{lbl:'May',v:8400000,fmt:'8.4M'},{lbl:'Jun',v:9100000,fmt:'9.1M'}];
       svgLineChart(finBudEl,[{label:'Revenue (R)',values:data.map(d=>d.v)}],data.map(d=>d.lbl),{h:120,zeroBase:true});
-    }
-    const revByProdEl=document.getElementById('revByProduct');
-    if(revByProdEl&&!revByProdEl.querySelector('svg')){
-      const data=[{lbl:'SwiftPay',v:66100000,fmt:'R66.1M'},{lbl:'Billing',v:10200000,fmt:'R10.2M'},{lbl:'xPay',v:5900000,fmt:'R5.9M'},{lbl:'NexCore',v:2500000,fmt:'R2.5M'}];
-      svgBarChart(revByProdEl,data,{h:120});
     }
   },200);
 }
@@ -9519,8 +9527,209 @@ CMD_ITEMS.push(
   const _o=openPage;
   window.openPage=function(name){
     _o(name);
-    const m={paypro:renderPaypro,fleet:renderFleet,access:renderAccess,iam:renderIAM,integrations:renderIntegrations,brand:renderBrand,email:renderEmail};
+    const m={paypro:renderPaypro,fleet:renderFleet,access:renderAccess,iam:renderIAM,integrations:renderIntegrations,brand:renderBrand,email:renderEmail,analytics:renderAnalytics,finance:enhanceDashboard};
     if(m[name])setTimeout(m[name],50);
+  };
+})();
+
+
+/* ════════════════════════════════════════════════════════════
+   NexCore v9 — NXSync cross-module data bus
+   One event bus; every module publishes and subscribes, so an
+   action by staff is instantly visible to manager, HR and CFO.
+════════════════════════════════════════════════════════════ */
+const NXSync={
+  _subs:{},
+  log:[],
+  on(evt,fn){(this._subs[evt]=this._subs[evt]||[]).push(fn);return this;},
+  emit(evt,data){
+    this.log.unshift({ts:new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}),evt,data});
+    if(this.log.length>50)this.log.pop();
+    (this._subs[evt]||[]).forEach(fn=>{try{fn(data);}catch(e){console.warn('NXSync handler',evt,e);}});
+    (this._subs['*']||[]).forEach(fn=>{try{fn(evt,data);}catch(e){}});
+  }
+};
+
+/* ── Canonical shared datasets ── */
+let NX_ATTENDANCE={present:641,remote:12,onLeave:9,sick:7,late:5,total:674,lastEvent:'Sipho Nkosi clocked in 08:02 (HQ biometric)'};
+let NX_LEAVE_REQUESTS=[
+  {id:'LV-0028',emp:'Sipho Nkosi',type:'Annual',dates:'20–24 Jan',days:5,status:'Pending',stage:'Manager'},
+  {id:'LV-0029',emp:'Thabo Mokoena',type:'Annual',dates:'27–28 Jan',days:2,status:'Pending',stage:'Manager'},
+  {id:'LV-0030',emp:'Nomsa Petersen',type:'Family',dates:'15 Jan',days:1,status:'Approved',stage:'Complete'},
+];
+
+/* ── Helper: refresh whichever modules exist ── */
+function nxRefresh(){
+  ['renderDashboard','renderApprovalContent','renderProcurementTable','renderLeaveManagementPage','renderAttendancePage','renderXPayments','renderAccounting','renderPaypro']
+    .forEach(fn=>{try{if(typeof window[fn]==='function')window[fn]();}catch(e){}});
+}
+
+/* ── Attendance card — same data, three audiences ── */
+function renderAttendanceSyncCard(){
+  const dash=document.getElementById('dashContent');
+  if(!dash||document.getElementById('attSyncCard'))return;
+  if(!['admin','cfo','manager','hr'].includes(currentRole))return;
+  const a=NX_ATTENDANCE;
+  const pct=Math.round(a.present/a.total*100);
+  const card=document.createElement('div');
+  card.className='card';card.id='attSyncCard';card.style.marginTop='14px';
+  card.innerHTML=`
+  <div class="ch2">${svgIcon('clock','13px','var(--bl)')}<span class="ch2-title">Attendance Today</span><span class="ch2-sub"><span class="status-dot live"></span> synced live · ${a.lastEvent}</span></div>
+  <div class="cb">
+    <div class="kg kg-4" style="margin-bottom:0;">
+      <div class="kpi gn"><div class="kpi-lbl">Present On-site</div><div class="kpi-val">${a.present}</div><div class="kpi-sub">${pct}% of ${a.total}</div></div>
+      <div class="kpi bl"><div class="kpi-lbl">Remote</div><div class="kpi-val">${a.remote}</div><div class="kpi-sub">Logged via portal</div></div>
+      <div class="kpi am"><div class="kpi-lbl">On Leave / Sick</div><div class="kpi-val">${a.onLeave+a.sick}</div><div class="kpi-sub">${a.onLeave} leave · ${a.sick} sick</div></div>
+      <div class="kpi rd"><div class="kpi-lbl">Late Arrivals</div><div class="kpi-val">${a.late}</div><div class="kpi-sub">After 09:00</div></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+      <button class="btn bs btn-xs" onclick="openPage('attendance')">Open Attendance Tracker</button>
+      <button class="btn bs btn-xs" onclick="nxSimulateClockIn()">Simulate Clock-in Event</button>
+      ${currentRole==='cfo'||currentRole==='admin'?'<button class="btn bs btn-xs" onclick="openPage(\'paypro\')">Impact on Payroll →</button>':''}
+    </div>
+  </div>`;
+  dash.appendChild(card);
+}
+function nxSimulateClockIn(){
+  const names=['Zanele Sithole','Bongani Zulu','Kagiso Dube','Thandi Mabaso'];
+  const n=names[Math.floor(Math.random()*names.length)];
+  NX_ATTENDANCE.present++;NX_ATTENDANCE.lastEvent=n+' clocked in '+new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'})+' (HQ biometric)';
+  NXSync.emit('attendance:clockin',{name:n});
+}
+
+/* ── Wire cross-module flows ── */
+
+/* 1. Attendance events → dashboards (admin/CFO/manager/HR see same numbers) */
+NXSync.on('attendance:clockin',()=>{
+  const c=document.getElementById('attSyncCard');if(c)c.remove();
+  renderAttendanceSyncCard();
+  toast('Attendance synced → dashboards, HR tracker and payroll engine','#2563EB');
+  writeAudit('ClockIn','Attendance',NX_ATTENDANCE.lastEvent,0,'low');
+});
+
+/* 2. Leave: staff submits → manager approval queue + HR list + dashboards */
+NXSync.on('leave:created',(lv)=>{
+  NX_LEAVE_REQUESTS.unshift(lv);
+  if(window.APPROVALS_DATA)APPROVALS_DATA.unshift({id:lv.id,label:'Leave — '+lv.emp+' ('+lv.days+'d '+lv.type+')',amount:0,status:'Pending',requester:lv.emp,age:Date.now()});
+  NX_ATTENDANCE.onLeave+=0; // reserved until approved
+  if(currentUser?.notifs)currentUser.notifs.unshift({title:'New leave request '+lv.id,body:lv.emp+' · '+lv.days+' days '+lv.type,color:'#3B82F6',icon:'cal',unread:true,time:'Just now',action:"openPage('leave');closeNotif()",actionLabel:'Review'});
+  renderNotifs();nxRefresh();
+  toast('Leave request routed → manager approvals, HR queue and dashboards','#2563EB');
+});
+
+/* 3. Leave decided → attendance forecast + ESS + payroll leave balance */
+NXSync.on('leave:decided',({id,decision})=>{
+  const lv=NX_LEAVE_REQUESTS.find(x=>x.id===id);
+  if(lv){lv.status=decision;lv.stage='Complete';}
+  if(decision==='Approved'&&lv){
+    NX_ATTENDANCE.onLeave++;
+    const emp=PAYPRO_EMPS.find(e=>e.name===lv.emp);
+    if(emp)emp.leaveBal=Math.max(0,emp.leaveBal-lv.days);
+  }
+  const c=document.getElementById('attSyncCard');if(c)c.remove();
+  renderAttendanceSyncCard();nxRefresh();
+  writeAudit(decision,'Leave',id,0,'low');
+});
+
+/* 4. Approval decided → procurement + supply chain + budget + audit */
+NXSync.on('approval:decided',({ref,decision,amount})=>{
+  if(window.PO_DATA){const po=PO_DATA.find(p=>p.po_number===ref||p.id===ref);if(po)po.status=decision==='Approved'?'Approved':'Rejected';}
+  if(decision==='Approved'&&amount>0){
+    SUPPLY_ORDERS.unshift({id:'SO-2025-'+String(42+SUPPLY_ORDERS.length).padStart(4,'0'),supplier:'Per PO '+ref,items:'Goods per '+ref,qty:1,value:amount,status:'Processing',eta:'TBC',carrier:'TBC',tracking:''});
+    if(typeof renderSupplyChain==='function')renderSupplyChain();
+  }
+  nxRefresh();
+  toast(ref+' '+decision.toLowerCase()+' → procurement, supply chain and budget updated','#16A34A');
+});
+
+/* 5. Claim approved → xPayments queue + email + GL expense */
+NXSync.on('claim:approved',({id,emp,amount})=>{
+  EMAIL_LOG.unshift({ts:'Just now',to:emp.toLowerCase().replace(/[^a-z]/g,'.')+'@xgroup.co.za',subject:'Claim '+id+' approved — '+fmt(amount)+' paying out via SwiftPay',status:'Delivered',opens:0});
+  JOURNAL_ENTRIES.unshift({ref:'JNL-CLM-'+id,date:new Date().toISOString().slice(0,10),narration:'Expense claim '+id+' — '+emp,lines:[{acct:'6200',debit:amount,credit:0},{acct:'1000',debit:0,credit:amount}],postedBy:'NXSync',status:'Posted'});
+  if(typeof renderEmail==='function')renderEmail();
+  if(typeof renderAccounting==='function')renderAccounting();
+  toast('Claim '+id+' synced → SwiftPay payout, GL journal and email sent','#16A34A');
+});
+
+/* 6. Payroll run → payslip emails + notifications + accounting (GL already posts) */
+NXSync.on('payroll:run',({count,total})=>{
+  EMAIL_LOG.unshift({ts:'Just now',to:'all-staff@xgroup.co.za',subject:'Your payslip for February is ready',status:'Delivered',opens:0});
+  if(currentUser?.notifs)currentUser.notifs.unshift({title:'Payroll complete — '+count+' employees',body:fmt(total)+' released via SwiftPay',color:'#16A34A',icon:'done',unread:true,time:'Just now'});
+  renderNotifs();
+  if(typeof renderEmail==='function')renderEmail();
+});
+
+/* ── Patch existing entry points to publish events ── */
+(function(){
+  if(typeof submitLeaveRequest==='function'){
+    const _slr=submitLeaveRequest;
+    window.submitLeaveRequest=async function(){
+      const r=await _slr.apply(this,arguments);
+      NXSync.emit('leave:created',{id:'LV-'+String(31+NX_LEAVE_REQUESTS.length).padStart(4,'0'),emp:currentUser?.name||'You',type:document.getElementById('lvType')?.value||'Annual',dates:'TBC',days:parseInt(document.getElementById('lvDays')?.value)||1,status:'Pending',stage:'Manager'});
+      return r;
+    };
+  }
+  if(typeof submitApproval==='function'){
+    const _sa=submitApproval;
+    window.submitApproval=async function(approvalId,decision,comment){
+      const r=await _sa.apply(this,arguments);
+      NXSync.emit('approval:decided',{ref:approvalId,decision:decision==='approve'||decision==='Approved'?'Approved':'Rejected',amount:window._lastApprovalAmount||0});
+      return r;
+    };
+  }
+  if(typeof approveClaim==='function'){
+    const _ac=approveClaim;
+    window.approveClaim=function(claimId,approver){
+      const r=_ac.apply(this,arguments);
+      NXSync.emit('claim:approved',{id:claimId,emp:approver||'Employee',amount:1840});
+      return r;
+    };
+  }
+  if(typeof payproRun==='function'){
+    const _pr=payproRun;
+    window.payproRun=function(){
+      _pr.apply(this,arguments);
+      const total=PAYPRO_EMPS.reduce((s,e)=>s+payproCalc(e).net,0);
+      NXSync.emit('payroll:run',{count:PAYPRO_EMPS.length,total:Math.round(total)});
+    };
+  }
+  /* leave approve/reject row buttons */
+  if(typeof approveLeaveRow==='function'){
+    const _al=approveLeaveRow;
+    window.approveLeaveRow=function(empName,rowEl){
+      _al.apply(this,arguments);
+      const lv=NX_LEAVE_REQUESTS.find(x=>x.emp===empName&&x.status==='Pending');
+      NXSync.emit('leave:decided',{id:lv?lv.id:'LV-????',decision:'Approved'});
+    };
+  }
+  if(typeof rejectLeaveRow==='function'){
+    const _rl=rejectLeaveRow;
+    window.rejectLeaveRow=function(empName,rowEl){
+      _rl.apply(this,arguments);
+      const lv=NX_LEAVE_REQUESTS.find(x=>x.emp===empName&&x.status==='Pending');
+      NXSync.emit('leave:decided',{id:lv?lv.id:'LV-????',decision:'Rejected'});
+    };
+  }
+})();
+
+/* ── Sync monitor in Settings-style card on dashboard bottom (admin only) ── */
+function renderSyncMonitor(){
+  const dash=document.getElementById('dashContent');
+  if(!dash||document.getElementById('syncMonitorCard')||currentRole!=='admin')return;
+  const card=document.createElement('div');
+  card.className='card';card.id='syncMonitorCard';card.style.marginTop='14px';
+  const rows=NXSync.log.slice(0,5).map(l=>`<div class="stat-row"><span class="stat-lbl">${l.ts} · <b>${l.evt}</b></span><span class="stat-val" style="font-size:10px;color:var(--gn);">delivered</span></div>`).join('')
+    ||'<div style="padding:10px 0;font-size:11px;color:var(--mu);">No sync events yet this session — try approving a leave request or running payroll.</div>';
+  card.innerHTML=`<div class="ch2">${svgIcon('flow','13px','var(--cy)')}<span class="ch2-title">Module Sync Monitor</span><span class="ch2-sub">${NXSync.log.length} events this session</span></div><div class="cb" style="padding:6px 14px;">${rows}</div>`;
+  dash.appendChild(card);
+}
+
+/* ── Register attendance card + monitor on dashboard renders ── */
+(function(){
+  const _rd2=renderDashboard;
+  window.renderDashboard=function(){
+    _rd2.apply(this,arguments);
+    setTimeout(()=>{renderAttendanceSyncCard();renderSyncMonitor();},150);
   };
 })();
 
