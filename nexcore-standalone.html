@@ -958,6 +958,102 @@ body.dark .qa-btn{background:var(--sf2);}
   </style>
 <style>
 #appShell.active { display: flex !important; flex:1; min-height:0; }
+
+/* ═══ v8 UI MODERNIZATION — Monday/Deel/Sage-grade polish ═══ */
+:root{
+  --accent:#F97316;--accent-d:#C2410C;
+  --sh1:0 1px 2px rgba(16,24,40,.04),0 1px 3px rgba(16,24,40,.06);
+  --sh2:0 4px 8px -2px rgba(16,24,40,.08),0 2px 4px -2px rgba(16,24,40,.04);
+  --sh3:0 12px 24px -6px rgba(16,24,40,.14),0 4px 8px -4px rgba(16,24,40,.06);
+}
+body{font-size:13.5px;-webkit-font-smoothing:antialiased;}
+
+/* Cards — softer, layered */
+.card{border-radius:14px;box-shadow:var(--sh1);border-color:var(--bd);transition:box-shadow .18s;}
+.card:hover{box-shadow:var(--sh2);}
+.kpi{border-radius:14px;box-shadow:var(--sh1);padding:15px 17px;transition:box-shadow .18s,transform .18s;}
+.kpi:hover{box-shadow:var(--sh2);transform:translateY(-1px);}
+.kpi-val{font-size:23px;letter-spacing:-.6px;}
+.kpi::after{height:3px;border-radius:0 0 3px 3px;}
+
+/* Buttons — modern, tactile */
+.btn{border-radius:8px;font-weight:600;letter-spacing:.01em;box-shadow:var(--sh1);}
+.btn:active{transform:translateY(1px);}
+.bp{background:linear-gradient(180deg,var(--or) 0%,#EA580C 100%);}
+.bp:hover{background:linear-gradient(180deg,#EA580C,#C2410C);box-shadow:0 4px 12px rgba(249,115,22,.32);}
+.bg{background:linear-gradient(180deg,#16A34A,#15803D);}
+.bb{background:linear-gradient(180deg,#3B82F6,#2563EB);}
+.bd2{background:linear-gradient(180deg,#DC2626,#B91C1C);}
+.bs{box-shadow:var(--sh1);}
+.bs:hover{border-color:var(--mu);}
+
+/* Sidebar — Monday-style rounded nav */
+.sidebar{border-right:1px solid var(--bd);}
+.ni{border-radius:8px;margin:1px 8px;padding:7px 10px;transition:background .12s,color .12s;}
+.ni:hover{background:var(--sf2);}
+.ni.on{background:linear-gradient(90deg,rgba(249,115,22,.12),rgba(249,115,22,.05));color:var(--or-d);font-weight:700;box-shadow:inset 3px 0 0 var(--or);}
+body.dark .ni.on{background:linear-gradient(90deg,rgba(249,115,22,.18),rgba(249,115,22,.06));color:#FDBA74;}
+.ns{padding:14px 18px 4px;}
+
+/* Topbar — glass */
+.topbar{backdrop-filter:blur(12px);background:rgba(255,255,255,.85);}
+body.dark .topbar{background:rgba(9,9,11,.85);}
+
+/* Tables — refined */
+.tw table th{font-size:10px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--mu);padding:9px 14px;}
+.tw table td{padding:10px 14px;}
+.tw tbody tr{transition:background .1s;}
+.tw tbody tr:hover{background:var(--sf);}
+body.dark .tw tbody tr:hover{background:#1f1f23;}
+
+/* Tabs — pill underline */
+.tab{border-radius:8px 8px 0 0;font-size:11.5px;}
+.tab:hover{background:var(--sf);color:var(--ink);}
+.tab.on{font-weight:700;}
+
+/* Inputs — focus rings */
+.fi{border-radius:8px;transition:border-color .12s,box-shadow .12s;}
+.fi:focus{outline:none;border-color:var(--or);box-shadow:0 0 0 3px rgba(249,115,22,.14);}
+
+/* Badges — pills */
+.badge{border-radius:20px;padding:3px 9px;font-weight:700;}
+
+/* Modals — elevated */
+.modal{border-radius:16px;box-shadow:var(--sh3),0 32px 80px rgba(0,0,0,.22);}
+
+/* Page header */
+.ph-title{font-size:17px;letter-spacing:-.4px;}
+.ph-icon{border-radius:10px;box-shadow:var(--sh1);}
+
+/* Scrollbars */
+*::-webkit-scrollbar{width:6px;height:6px;}
+*::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px;}
+*::-webkit-scrollbar-thumb:hover{background:var(--mu);}
+
+/* Progress bars */
+.prog{border-radius:4px;height:7px;background:var(--bd-l);overflow:hidden;}
+.prog-fill{border-radius:4px;transition:width .4s cubic-bezier(.22,.68,0,1);}
+
+/* Toggle switch (reusable) */
+.tgl{width:38px;height:20px;border-radius:10px;border:none;cursor:pointer;position:relative;background:var(--bd);transition:background .15s;flex-shrink:0;}
+.tgl.on{background:var(--gn);}
+.tgl span{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 2px rgba(0,0,0,.25);}
+.tgl.on span{left:20px;}
+
+/* Integration connector cards */
+.intg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;}
+.intg-card{background:var(--wh);border:1px solid var(--bd);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--sh1);transition:box-shadow .15s;}
+.intg-card:hover{box-shadow:var(--sh2);}
+body.dark .intg-card{background:var(--sf2);}
+.intg-logo{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#fff;flex-shrink:0;}
+.intg-name{font-size:13px;font-weight:800;color:var(--ink);}
+.intg-desc{font-size:11px;color:var(--mid);line-height:1.45;flex:1;}
+
+/* IAM permission matrix */
+.perm-check{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--bd);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;background:var(--wh);transition:all .12s;font-size:11px;color:#fff;}
+.perm-check.on{background:var(--gn);border-color:var(--gn);}
+body.dark .perm-check{background:var(--sf2);}
+body.dark .perm-check.on{background:var(--gn);}
 </style>
 </head>
 <body>
@@ -1591,6 +1687,51 @@ body.dark .qa-btn{background:var(--sf2);}
         <div class="content" id="contractorsContent"></div>
       </div>
 
+      <!-- PAYROLL ENGINE (employer/manager view) -->
+      <div class="page" id="page-paypro">
+        <div class="ph"><div class="ph-icon" style="background:var(--gn)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div><div class="ph-title">Payroll Engine</div><div class="ph-sub">PAYE · UIF · Benefits · Commission · Bonuses · GL Posting</div></div><div class="ph-right"><button class="btn bg btn-sm" onclick="payproPostToGL()">Post to GL</button><button class="btn bp btn-sm" onclick="payproRun()">Approve & Pay Run</button></div></div>
+        <div class="content" id="payproContent"></div>
+      </div>
+
+      <!-- FLEET (fuel + servicing) -->
+      <div class="page" id="page-fleet">
+        <div class="ph"><div class="ph-icon" style="background:var(--bl)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M5 17H3v-6l2-5h12l2 5v6h-2"/><circle cx="7.5" cy="17.5" r="2"/><circle cx="16.5" cy="17.5" r="2"/></svg></div><div><div class="ph-title">Fleet Management</div><div class="ph-sub">Fuel Tracker · Service Schedule · Cost per KM</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="fleetLogFuel()">+ Log Fuel</button></div></div>
+        <div class="tabs"><button class="tab on" onclick="switchTab('fleetTabs','vehicles',this)">Vehicles</button><button class="tab" onclick="switchTab('fleetTabs','fuel',this)">Fuel Log</button><button class="tab" onclick="switchTab('fleetTabs','service',this)">Servicing</button></div>
+        <div class="content" id="fleetContent"></div>
+      </div>
+
+      <!-- ACCESS CONTROL -->
+      <div class="page" id="page-access">
+        <div class="ph"><div class="ph-icon" style="background:var(--pu)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div><div class="ph-title">Access Control</div><div class="ph-sub">Card · Fingerprint · Site & Door Management</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="accessIssue()">+ Issue Credential</button></div></div>
+        <div class="tabs"><button class="tab on" onclick="switchTab('accTabs','credentials',this)">Credentials</button><button class="tab" onclick="switchTab('accTabs','sites',this)">Sites & Doors</button><button class="tab" onclick="switchTab('accTabs','events',this)">Access Events</button></div>
+        <div class="content" id="accessContent"></div>
+      </div>
+
+      <!-- IAM -->
+      <div class="page" id="page-iam">
+        <div class="ph"><div class="ph-icon" style="background:var(--ch)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div><div><div class="ph-title">IAM Configuration</div><div class="ph-sub">Roles · Permission Matrix · MFA Policy</div></div><div class="ph-right"><button class="btn bs btn-sm" onclick="iamExport()">Export Policy</button></div></div>
+        <div class="content" id="iamContent"></div>
+      </div>
+
+      <!-- INTEGRATIONS -->
+      <div class="page" id="page-integrations">
+        <div class="ph"><div class="ph-icon" style="background:var(--cy)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div><div><div class="ph-title">Integrations Marketplace</div><div class="ph-sub">Connect NexCore to your stack — accounting, comms, payments</div></div></div>
+        <div class="content" id="integrationsContent"></div>
+      </div>
+
+      <!-- WHITE LABEL / BRAND -->
+      <div class="page" id="page-brand">
+        <div class="ph"><div class="ph-icon" style="background:var(--em)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><circle cx="13.5" cy="6.5" r="2.5"/><path d="M12 2l10 10-10 10L2 12z"/></svg></div><div><div class="ph-title">White Label & Branding</div><div class="ph-sub">Your logo · Your colours · Your domain</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="brandSave()">Apply Branding</button><button class="btn bs btn-sm" onclick="brandReset()">Reset to NexCore</button></div></div>
+        <div class="content" id="brandContent"></div>
+      </div>
+
+      <!-- EMAIL CENTER -->
+      <div class="page" id="page-email">
+        <div class="ph"><div class="ph-icon" style="background:var(--bl)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div><div><div class="ph-title">Email Center</div><div class="ph-sub">Compose · Templates · Delivery Log</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="emailCompose()">+ Compose</button></div></div>
+        <div class="tabs"><button class="tab on" onclick="switchTab('emlTabs','compose',this)">Compose</button><button class="tab" onclick="switchTab('emlTabs','templates',this)">Templates</button><button class="tab" onclick="switchTab('emlTabs','log',this)">Sent Log</button></div>
+        <div class="content" id="emailContent"></div>
+      </div>
+
       <!-- ACCOUNTING / GENERAL LEDGER (Sage-style) -->
       <div class="page" id="page-accounting">
         <div class="ph"><div class="ph-icon" style="background:var(--ch)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M2 3h20v4H2z"/><path d="M4 7v14h16V7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="15" y2="15"/></svg></div><div><div class="ph-title">Accounting</div><div class="ph-sub">General Ledger · Journals · Bank Recon · Aging</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="openJournalModal()">+ Journal Entry</button><button class="btn bs btn-sm" onclick="exportTrialBalance()">Trial Balance</button></div></div>
@@ -1839,7 +1980,7 @@ const ROLES = {
   admin: {
     label:'Administrator', color:'#F97316', avBg:'#F97316', avInitials:'AM',
     name:'Amohelang M.', org:'xGroup SA',
-    pages:['dashboard','analytics','finance','procurement','approvals','hr','inventory','crm','projects','budget','entities','vendor','ess','workflow','billing','quotes','claims','swiftpay','xpayments','audit','vault','chat','settings','users','onboarding','ai','search','api','sso','offline','attendance','leave','payroll','reports','risk','supply','boards','contractors','accounting'],
+    pages:['dashboard','analytics','finance','procurement','approvals','hr','inventory','crm','projects','budget','entities','vendor','ess','workflow','billing','quotes','claims','swiftpay','xpayments','audit','vault','chat','settings','users','onboarding','ai','search','api','sso','offline','attendance','leave','payroll','reports','risk','supply','boards','contractors','accounting','paypro','fleet','access','iam','integrations','brand','email'],
     nav:[
       {section:'Overview'},
       {id:'dashboard',label:'Dashboard',icon:'grid'},
@@ -1859,10 +2000,12 @@ const ROLES = {
       {id:'approvals',label:'Approvals',icon:'check',badge:'9',badgeClass:'nb-or'},
       {id:'claims',label:'Expense Claims',icon:'credit'},
       {id:'inventory',label:'Inventory & Assets',icon:'package',badge:'2',badgeClass:'nb-rd'},
+      {id:'fleet',label:'Fleet & Fuel',icon:'box'},
       {id:'crm',label:'CRM',icon:'heart'},
       {section:'People'},
       {id:'hr',label:'HR & Payroll',icon:'users'},
       {id:'contractors',label:'Contractors · Global Pay',icon:'person',badge:'8',badgeClass:'nb-bl'},
+      {id:'paypro',label:'Payroll Engine',icon:'dollar',badge:'NEW',badgeClass:'nb-gn'},
       {id:'attendance',label:'Attendance Tracker',icon:'clock'},
       {id:'leave',label:'Leave Management',icon:'cal',badge:'3',badgeClass:'nb-or'},
       {id:'vendor',label:'Vendor Portal',icon:'shop'},
@@ -1873,6 +2016,9 @@ const ROLES = {
       {id:'audit',label:'Audit Trail',icon:'file'},
       {id:'vault',label:'xVault',icon:'shield'},
       {id:'users',label:'User Management',icon:'manage'},
+      {id:'iam',label:'IAM Configuration',icon:'lock'},
+      {id:'access',label:'Access Control',icon:'shield'},
+      {id:'brand',label:'White Label',icon:'cog',badge:'NEW',badgeClass:'nb-bl'},
       {id:'settings',label:'Settings',icon:'cog'},
       {section:'Intelligence'},
       {id:'ai',label:'AI Assistant',icon:'ai',badge:'NEW',badgeClass:'nb-bl'},
@@ -1883,9 +2029,11 @@ const ROLES = {
       {id:'supply',label:'Supply Chain',icon:'box'},
       {section:'Collaboration'},
       {id:'boards',label:'Work Boards',icon:'grid',badge:'NEW',badgeClass:'nb-bl'},
+      {id:'email',label:'Email Center',icon:'chat'},
       {id:'projects',label:'Projects',icon:'project'},
       {id:'chat',label:'Team Chat',icon:'chat'},
       {section:'Developer'},
+      {id:'integrations',label:'Integrations',icon:'flow',badge:'12',badgeClass:'nb-bl'},
       {id:'api',label:'API & Webhooks',icon:'api'},
       {id:'sso',label:'SSO / Identity',icon:'lock'},
       {id:'offline',label:'Offline Mode',icon:'wifi'},
@@ -1902,7 +2050,7 @@ const ROLES = {
   cfo: {
     label:'CFO', color:'#F59E0B', avBg:'#F59E0B', avInitials:'AM',
     name:'Amohelang M.', org:'xGroup SA',
-    pages:['dashboard','analytics','finance','approvals','budget','entities','billing','quotes','swiftpay','xpayments','claims','audit','vault','ai','search','chat','attendance','payroll','reports','risk','supply','accounting','contractors','boards'],
+    pages:['dashboard','analytics','finance','approvals','budget','entities','billing','quotes','swiftpay','xpayments','claims','audit','vault','ai','search','chat','attendance','payroll','reports','risk','supply','accounting','contractors','boards','paypro','integrations','email'],
     nav:[
       {section:'Executive'},
       {id:'dashboard',label:'Dashboard',icon:'grid'},
@@ -1921,6 +2069,7 @@ const ROLES = {
       {id:'attendance',label:'Attendance Tracker',icon:'clock'},
       {id:'payroll',label:'Payroll & Tax',icon:'dollar'},
       {id:'contractors',label:'Contractors · Global Pay',icon:'person'},
+      {id:'paypro',label:'Payroll Engine',icon:'dollar',badge:'NEW',badgeClass:'nb-gn'},
       {section:'Approvals'},
       {id:'approvals',label:'Approval Centre',icon:'check',badge:'9',badgeClass:'nb-or'},
       {id:'claims',label:'Expense Claims',icon:'credit'},
@@ -1942,7 +2091,7 @@ const ROLES = {
   manager: {
     label:'Manager', color:'#3B82F6', avBg:'#3B82F6', avInitials:'TM',
     name:'Thabo Mokoena', org:'xGroup SA',
-    pages:['dashboard','procurement','approvals','hr','crm','projects','inventory','ess','claims','vault','chat','ai','search','attendance'],
+    pages:['dashboard','procurement','approvals','hr','crm','projects','inventory','ess','claims','vault','chat','ai','search','attendance','paypro','fleet','boards','email'],
     nav:[
       {section:'Overview'},
       {id:'dashboard',label:'Dashboard',icon:'grid'},
@@ -1953,6 +2102,8 @@ const ROLES = {
       {id:'crm',label:'CRM',icon:'heart'},
       {section:'Team'},
       {id:'hr',label:'HR & Leave',icon:'users'},
+      {id:'paypro',label:'Payroll Engine',icon:'dollar'},
+      {id:'fleet',label:'Fleet & Fuel',icon:'box'},
       {id:'attendance',label:'Attendance Tracker',icon:'clock'},
       {id:'inventory',label:'Inventory',icon:'package'},
       {section:'Self-Service'},
@@ -1972,15 +2123,17 @@ const ROLES = {
   hr: {
     label:'HR Manager', color:'#16A34A', avBg:'#16A34A', avInitials:'LK',
     name:'Lerato Khumalo', org:'xGroup SA',
-    pages:['dashboard','hr','onboarding','ess','vault','users','chat','search','leave','attendance'],
+    pages:['dashboard','hr','onboarding','ess','vault','users','chat','search','leave','attendance','paypro','access','email'],
     nav:[
       {section:'Overview'},
       {id:'dashboard',label:'Dashboard',icon:'grid'},
       {section:'People'},
       {id:'hr',label:'HR & Payroll',icon:'users'},
+      {id:'paypro',label:'Payroll Engine',icon:'dollar',badge:'NEW',badgeClass:'nb-gn'},
       {id:'attendance',label:'Attendance Tracker',icon:'clock'},
       {id:'leave',label:'Leave Management',icon:'cal',badge:'3',badgeClass:'nb-or'},
       {id:'onboarding',label:'Onboarding',icon:'useradd',badge:'2',badgeClass:'nb-gn'},
+      {id:'access',label:'Access Control',icon:'shield'},
       {id:'users',label:'User Management',icon:'manage'},
       {section:'Self-Service'},
       {id:'ess',label:'My Portal',icon:'person'},
@@ -8789,6 +8942,585 @@ function renderSmartInsights(){
   window.renderDashboard=function(){
     _rd();
     setTimeout(()=>renderSmartInsights(),100);
+  };
+})();
+
+/* ════════════════════════════════════════════════════════════
+   NexCore v8 — Payroll Engine · Fleet · Access · IAM ·
+   Integrations · White Label · Email Center
+════════════════════════════════════════════════════════════ */
+
+/* ══ PAYROLL ENGINE (employer/manager view) ══════════════ */
+let PAYPRO_EMPS=[
+  {id:'EMP-001',name:'Sipho Nkosi',dept:'Engineering',basic:52000,commission:0,bonus:0,medical:2800,retirement:3900,leaveBal:13},
+  {id:'EMP-002',name:'Thandi Mabaso',dept:'Sales',basic:38000,commission:14200,bonus:0,medical:2100,retirement:2850,leaveBal:9},
+  {id:'EMP-003',name:'Kagiso Dube',dept:'IT Support',basic:34000,commission:0,bonus:5000,medical:2100,retirement:2550,leaveBal:16},
+  {id:'EMP-004',name:'Nomsa Petersen',dept:'Marketing',basic:41000,commission:3800,bonus:0,medical:2800,retirement:3075,leaveBal:11},
+  {id:'EMP-005',name:'Lerato Khumalo',dept:'HR',basic:48000,commission:0,bonus:0,medical:2800,retirement:3600,leaveBal:18},
+  {id:'EMP-006',name:'Thabo Mokoena',dept:'Operations',basic:56000,commission:0,bonus:8000,medical:3400,retirement:4200,leaveBal:7},
+  {id:'EMP-007',name:'Zanele Sithole',dept:'Finance',basic:44000,commission:0,bonus:0,medical:2100,retirement:3300,leaveBal:14},
+  {id:'EMP-008',name:'Bongani Zulu',dept:'Sales',basic:36000,commission:19600,bonus:2500,medical:2100,retirement:2700,leaveBal:5},
+];
+let _payproPosted=false;
+
+function payproPAYE(monthly){
+  // 2024/25 SARS tables, monthly equivalent with primary rebate
+  const annual=monthly*12;
+  let tax=0;
+  const brackets=[[237100,.18],[370500,.26],[512800,.31],[673000,.36],[857900,.39],[1817000,.41],[Infinity,.45]];
+  let prev=0,cum=0;
+  for(const [cap,rate] of brackets){
+    if(annual>cap){cum+=(cap-prev)*rate;prev=cap;}
+    else{cum+=(annual-prev)*rate;break;}
+  }
+  tax=cum-17235; // primary rebate
+  return Math.max(0,tax/12);
+}
+function payproUIF(monthly){return Math.min(monthly,17712)*.01;}
+
+function payproCalc(e){
+  const gross=e.basic+e.commission+e.bonus;
+  const retDeductible=Math.min(e.retirement,gross*.275);
+  const paye=payproPAYE(gross-retDeductible);
+  const uif=payproUIF(gross);
+  const net=gross-paye-uif-e.medical-e.retirement;
+  return {gross,paye,uif,net};
+}
+
+function renderPaypro(){
+  const el=document.getElementById('payproContent'); if(!el)return;
+  let tGross=0,tPaye=0,tUif=0,tNet=0,tComm=0,tBonus=0,tBen=0;
+  const rows=PAYPRO_EMPS.map((e,i)=>{
+    const c=payproCalc(e);
+    tGross+=c.gross;tPaye+=c.paye;tUif+=c.uif;tNet+=c.net;tComm+=e.commission;tBonus+=e.bonus;tBen+=e.medical+e.retirement;
+    return `<tr>
+      <td class="tb">${e.name}<div style="font-size:10px;color:var(--mu);font-weight:400;">${e.id} · ${e.dept} · Leave ${e.leaveBal}d</div></td>
+      <td class="mo">${fmt(e.basic)}</td>
+      <td><input class="fi" type="number" value="${e.commission}" style="width:86px;font-size:11px;padding:4px 8px;" oninput="PAYPRO_EMPS[${i}].commission=parseFloat(this.value)||0;renderPaypro()"/></td>
+      <td><input class="fi" type="number" value="${e.bonus}" style="width:78px;font-size:11px;padding:4px 8px;" oninput="PAYPRO_EMPS[${i}].bonus=parseFloat(this.value)||0;renderPaypro()"/></td>
+      <td class="mo" style="font-size:10px;">${fmt(e.medical)}<br>${fmt(e.retirement)}</td>
+      <td class="mo" style="font-weight:700;">${fmt(Math.round(c.gross))}</td>
+      <td class="mo" style="color:var(--rd);">${fmt(Math.round(c.paye))}</td>
+      <td class="mo" style="color:var(--am);">${fmt(Math.round(c.uif))}</td>
+      <td class="mo" style="font-weight:800;color:var(--gn);">${fmt(Math.round(c.net))}</td>
+    </tr>`;
+  }).join('');
+  el.innerHTML=`
+  <div class="kg kg-4" style="margin-bottom:14px;">
+    <div class="kpi gn"><div class="kpi-lbl">Total Gross</div><div class="kpi-val">${fmt(Math.round(tGross))}</div><div class="kpi-sub">${PAYPRO_EMPS.length} employees · Feb 2025</div></div>
+    <div class="kpi rd"><div class="kpi-lbl">PAYE Due to SARS</div><div class="kpi-val">${fmt(Math.round(tPaye))}</div><div class="kpi-sub">EMP201 by 7 Mar</div></div>
+    <div class="kpi am"><div class="kpi-lbl">UIF (1% + 1%)</div><div class="kpi-val">${fmt(Math.round(tUif*2))}</div><div class="kpi-sub">Employee + employer</div></div>
+    <div class="kpi bl"><div class="kpi-lbl">Net Payout</div><div class="kpi-val">${fmt(Math.round(tNet))}</div><div class="kpi-sub">Commission ${fmt(tComm)} · Bonus ${fmt(tBonus)}</div></div>
+  </div>
+  <div class="alert bl" style="margin-bottom:14px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:var(--bl-m);stroke-width:2;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><div><div class="alert-title">Commission and bonus columns are editable</div><div class="alert-body">PAYE recalculates live using 2024/25 SARS tables with the primary rebate and a 27.5% retirement deduction cap. UIF is capped at the R 17,712 earnings ceiling.</div></div></div>
+  <div class="card"><div class="ch2"><span class="ch2-title">February 2025 Pay Run</span><span class="ch2-sub" id="payproStatus">${_payproPosted?'Posted to GL ✓':'Draft — not yet posted'}</span></div>
+  <div class="cb" style="padding:0;"><div class="tw"><table>
+    <thead><tr><th>Employee</th><th>Basic</th><th>Commission</th><th>Bonus</th><th>Med / Ret</th><th>Gross</th><th>PAYE</th><th>UIF</th><th>Net Pay</th></tr></thead>
+    <tbody>${rows}
+    <tr style="font-weight:900;background:var(--sf);"><td class="tb">TOTALS</td><td class="mo">${fmt(PAYPRO_EMPS.reduce((s,e)=>s+e.basic,0))}</td><td class="mo">${fmt(tComm)}</td><td class="mo">${fmt(tBonus)}</td><td class="mo">${fmt(tBen)}</td><td class="mo">${fmt(Math.round(tGross))}</td><td class="mo" style="color:var(--rd);">${fmt(Math.round(tPaye))}</td><td class="mo" style="color:var(--am);">${fmt(Math.round(tUif))}</td><td class="mo" style="color:var(--gn);">${fmt(Math.round(tNet))}</td></tr>
+    </tbody></table></div></div></div>`;
+}
+
+function payproPostToGL(){
+  if(_payproPosted){toast('This pay run is already posted to the GL','#D97706');return;}
+  let tGross=0,tPaye=0,tUif=0,tNet=0;
+  PAYPRO_EMPS.forEach(e=>{const c=payproCalc(e);tGross+=c.gross;tPaye+=c.paye;tUif+=c.uif;tNet+=c.net;});
+  const ben=PAYPRO_EMPS.reduce((s,e)=>s+e.medical+e.retirement,0);
+  JOURNAL_ENTRIES.unshift({
+    ref:'JNL-2025-'+String(41+JOURNAL_ENTRIES.length).padStart(4,'0'),
+    date:new Date().toISOString().slice(0,10),
+    narration:'Payroll — February 2025 ('+PAYPRO_EMPS.length+' employees)',
+    lines:[
+      {acct:'6000',debit:Math.round(tGross+tUif),credit:0},
+      {acct:'2200',debit:0,credit:Math.round(tPaye+tUif*2)},
+      {acct:'1000',debit:0,credit:Math.round(tNet+ben-tUif)},
+    ],
+    postedBy:currentUser?.name||'You',status:'Posted',
+  });
+  _payproPosted=true;
+  renderPaypro();
+  if(typeof renderAccounting==='function')renderAccounting();
+  toast('Payroll journal posted — Salaries DR '+fmt(Math.round(tGross+tUif)),'#16A34A');
+  writeAudit('Post','Payroll','FEB-2025',Math.round(tGross),'high');
+}
+
+function payproRun(){
+  confirmWithOTP('Approve payroll & release payments',async ()=>{
+    const tNet=PAYPRO_EMPS.reduce((s,e)=>s+payproCalc(e).net,0);
+    toast('Pay run approved — '+fmt(Math.round(tNet))+' released via SwiftPay to '+PAYPRO_EMPS.length+' accounts','#16A34A');
+    writeAudit('PayRun','Payroll','FEB-2025',Math.round(tNet),'high');
+    if(!_payproPosted)payproPostToGL();
+  });
+}
+
+/* ══ FLEET — fuel & servicing ════════════════════════════ */
+let FLEET_VEHICLES=[
+  {id:'FL-01',reg:'JX 42 HG GP',model:'Toyota Hilux 2.4 GD-6',driver:'Thabo M.',odo:84200,serviceDueKm:90000,serviceDueDate:'2025-04-15',status:'OK'},
+  {id:'FL-02',reg:'KZ 18 PL GP',model:'VW Polo Vivo 1.4',driver:'Nomsa P.',odo:118400,serviceDueKm:120000,serviceDueDate:'2025-02-20',status:'Due Soon'},
+  {id:'FL-03',reg:'HT 77 WC CA',model:'Ford Ranger 2.0 BiT',driver:'Kagiso D.',odo:64100,serviceDueKm:60000,serviceDueDate:'2025-01-10',status:'Overdue'},
+  {id:'FL-04',reg:'LM 03 KN ZN',model:'Nissan NP200 1.6',driver:'Pool vehicle',odo:41900,serviceDueKm:45000,serviceDueDate:'2025-06-01',status:'OK'},
+];
+let FUEL_LOG=[
+  {id:1,vehicle:'FL-01',date:'28 Jan',odo:84200,litres:68,cost:1577,station:'Engen Rivonia'},
+  {id:2,vehicle:'FL-02',date:'27 Jan',odo:118400,litres:42,cost:974,station:'Shell Sandton'},
+  {id:3,vehicle:'FL-01',date:'21 Jan',odo:83480,litres:65,cost:1508,station:'BP Midrand'},
+  {id:4,vehicle:'FL-03',date:'20 Jan',odo:64100,litres:74,cost:1716,station:'Sasol Centurion'},
+  {id:5,vehicle:'FL-02',date:'18 Jan',odo:117820,litres:40,cost:928,station:'Engen Rosebank'},
+];
+
+function fleetConsumption(vehId){
+  const entries=FUEL_LOG.filter(f=>f.vehicle===vehId).sort((a,b)=>a.odo-b.odo);
+  if(entries.length<2)return null;
+  const dist=entries[entries.length-1].odo-entries[0].odo;
+  const litres=entries.slice(1).reduce((s,e)=>s+e.litres,0);
+  return dist>0?litres/dist*100:null;
+}
+
+function renderFleet(){
+  const el=document.getElementById('fleetContent'); if(!el)return;
+  const stBadge={OK:'gn','Due Soon':'am',Overdue:'rd'};
+  const mtdFuel=FUEL_LOG.reduce((s,f)=>s+f.cost,0);
+  el.innerHTML=`
+  <div class="tp on" id="fleetTabs-vehicles">
+    <div class="kg kg-4" style="margin-bottom:14px;">
+      <div class="kpi bl"><div class="kpi-lbl">Fleet Size</div><div class="kpi-val">${FLEET_VEHICLES.length}</div><div class="kpi-sub">All operational</div></div>
+      <div class="kpi or"><div class="kpi-lbl">Fuel Spend (MTD)</div><div class="kpi-val">${fmt(mtdFuel)}</div><div class="kpi-sub">${FUEL_LOG.reduce((s,f)=>s+f.litres,0)} litres</div></div>
+      <div class="kpi am"><div class="kpi-lbl">Services Due</div><div class="kpi-val">${FLEET_VEHICLES.filter(v=>v.status!=='OK').length}</div><div class="kpi-sub">1 overdue</div></div>
+      <div class="kpi gn"><div class="kpi-lbl">Avg Consumption</div><div class="kpi-val">${(FLEET_VEHICLES.map(v=>fleetConsumption(v.id)).filter(Boolean).reduce((s,v,_,a)=>s+v/a.length,0)||9.4).toFixed(1)} L/100km</div><div class="kpi-sub">Fleet-wide</div></div>
+    </div>
+    <div class="card"><div class="ch2"><span class="ch2-title">Vehicle Register</span></div>
+    <div class="cb" style="padding:0;"><div class="tw"><table>
+      <thead><tr><th>Reg</th><th>Vehicle</th><th>Driver</th><th>Odometer</th><th>Consumption</th><th>Service Status</th><th></th></tr></thead>
+      <tbody>${FLEET_VEHICLES.map(v=>{
+        const cons=fleetConsumption(v.id);
+        return `<tr>
+        <td class="mo tb">${v.reg}</td><td class="tb">${v.model}</td><td>${v.driver}</td>
+        <td class="mo">${v.odo.toLocaleString()} km</td>
+        <td class="mo">${cons?cons.toFixed(1)+' L/100km':'—'}</td>
+        <td><span class="badge ${stBadge[v.status]}">${v.status}</span></td>
+        <td>${v.status!=='OK'?`<button class="btn bp btn-xs" onclick="fleetBookService('${v.id}')">Book Service</button>`:''}</td>
+      </tr>`;}).join('')}</tbody></table></div></div></div>
+  </div>
+  <div class="tp" id="fleetTabs-fuel">
+    <div class="card"><div class="ch2"><span class="ch2-title">Fuel Log</span><span class="ch2-sub"><button class="btn bp btn-xs" onclick="fleetLogFuel()">+ Log Fill-up</button></span></div>
+    <div class="cb" style="padding:0;"><div class="tw"><table>
+      <thead><tr><th>Date</th><th>Vehicle</th><th>Odometer</th><th>Litres</th><th>Cost</th><th>R / litre</th><th>Station</th></tr></thead>
+      <tbody>${FUEL_LOG.map(f=>{
+        const v=FLEET_VEHICLES.find(x=>x.id===f.vehicle);
+        return `<tr><td>${f.date}</td><td class="tb">${v?v.reg:f.vehicle}</td><td class="mo">${f.odo.toLocaleString()}</td><td class="mo">${f.litres}L</td><td class="mo">${fmt(f.cost)}</td><td class="mo">${(f.cost/f.litres).toFixed(2)}</td><td style="font-size:11px;">${f.station}</td></tr>`;}).join('')}</tbody></table></div></div></div>
+    <div class="card"><div class="ch2"><span class="ch2-title">Monthly Fuel Spend</span></div><div class="cb" id="fuelChart"></div></div>
+  </div>
+  <div class="tp" id="fleetTabs-service">
+    <div class="card"><div class="ch2"><span class="ch2-title">Service Schedule</span></div>
+    <div class="cb" style="padding:0;">${FLEET_VEHICLES.map(v=>{
+      const kmLeft=v.serviceDueKm-v.odo;
+      return `<div class="stock-card">
+      <div class="stock-icon" style="background:${v.status==='OK'?'var(--gn-l)':v.status==='Due Soon'?'var(--am-l)':'var(--rd-l)'};">${svgIcon('cog','14px',v.status==='OK'?'var(--gn)':v.status==='Due Soon'?'var(--am)':'var(--rd)')}</div>
+      <div style="flex:1;">
+        <div class="stock-name">${v.reg} — ${v.model}</div>
+        <div class="stock-sku">Next service: ${v.serviceDueKm.toLocaleString()} km (${kmLeft>0?kmLeft.toLocaleString()+' km away':'OVERDUE by '+Math.abs(kmLeft).toLocaleString()+' km'}) or ${v.serviceDueDate}</div>
+      </div>
+      <span class="badge ${stBadge[v.status]}">${v.status}</span>
+      ${v.status!=='OK'?`<button class="btn bp btn-xs" onclick="fleetBookService('${v.id}')">Book</button>`:''}
+    </div>`;}).join('')}</div></div>
+  </div>`;
+  setTimeout(()=>{
+    const fc=document.getElementById('fuelChart');
+    if(fc)svgBarChart(fc,[{lbl:'Sep',v:5100,fmt:'R5.1k'},{lbl:'Oct',v:5900,fmt:'R5.9k'},{lbl:'Nov',v:5400,fmt:'R5.4k'},{lbl:'Dec',v:4200,fmt:'R4.2k'},{lbl:'Jan',v:mtdFuel,fmt:'R'+(mtdFuel/1000).toFixed(1)+'k'}],{h:120,colors:['#3B82F6']});
+  },80);
+}
+
+function fleetLogFuel(){
+  const veh=prompt('Vehicle (FL-01 … FL-04):','FL-01');
+  const v=FLEET_VEHICLES.find(x=>x.id===veh);
+  if(!v){toast('Unknown vehicle ID','#DC2626');return;}
+  const litres=parseFloat(prompt('Litres:','60'))||0;
+  const cost=parseFloat(prompt('Total cost (R):','1390'))||0;
+  const odo=parseInt(prompt('Odometer (km):',String(v.odo+650)))||v.odo;
+  if(litres<=0||cost<=0){toast('Litres and cost are required','#DC2626');return;}
+  FUEL_LOG.unshift({id:FUEL_LOG.length+1,vehicle:veh,date:'Today',odo,litres,cost,station:'Manual entry'});
+  v.odo=Math.max(v.odo,odo);
+  if(v.odo>=v.serviceDueKm)v.status='Overdue';
+  else if(v.serviceDueKm-v.odo<2000)v.status='Due Soon';
+  renderFleet();
+  toast('Fill-up logged — '+litres+'L @ R'+(cost/litres).toFixed(2)+'/L','#16A34A');
+}
+
+function fleetBookService(id){
+  const v=FLEET_VEHICLES.find(x=>x.id===id); if(!v)return;
+  v.status='OK';v.serviceDueKm=v.odo+15000;
+  const d=new Date();d.setMonth(d.getMonth()+9);v.serviceDueDate=d.toISOString().slice(0,10);
+  renderFleet();
+  toast('Service booked for '+v.reg+' — PO raised to approved workshop','#16A34A');
+  writeAudit('Service','Fleet',v.reg,0,'low');
+}
+
+/* ══ ACCESS CONTROL — card / fingerprint ═════════════════ */
+let ACCESS_CREDS=[
+  {id:'AC-101',emp:'Sipho Nkosi',type:'Card + Fingerprint',sites:'Sandton HQ · All floors',status:'Active',issued:'2024-03-01'},
+  {id:'AC-102',emp:'Thandi Mabaso',type:'Card',sites:'Sandton HQ · Floors 1–2',status:'Active',issued:'2024-05-12'},
+  {id:'AC-103',emp:'Kagiso Dube',type:'Fingerprint',sites:'Sandton HQ + Midrand DC',status:'Active',issued:'2024-01-20'},
+  {id:'AC-104',emp:'Ex-employee: J. Botha',type:'Card',sites:'Sandton HQ',status:'Revoked',issued:'2023-08-01'},
+  {id:'AC-105',emp:'Nomsa Petersen',type:'Card + PIN',sites:'Sandton HQ · Floors 1–3',status:'Active',issued:'2024-09-15'},
+  {id:'AC-106',emp:'Contractor: M. Santos',type:'Temp Card',sites:'Sandton HQ · Floor 2',status:'Expiring',issued:'2025-01-06'},
+];
+const ACCESS_SITES=[
+  {name:'Sandton HQ',doors:14,online:14,readers:'HID + ZKTeco biometric'},
+  {name:'Midrand Data Centre',doors:6,online:6,readers:'Biometric + mantrap'},
+  {name:'Cape Town Office',doors:8,online:7,readers:'HID card'},
+];
+let ACCESS_EVENTS=[
+  {ts:'11:42',emp:'Sipho Nkosi',door:'HQ Main Entrance',method:'Fingerprint',result:'Granted'},
+  {ts:'11:38',emp:'Unknown card 0x8842',door:'HQ Server Room',method:'Card',result:'Denied'},
+  {ts:'11:31',emp:'Nomsa Petersen',door:'HQ Floor 3',method:'Card + PIN',result:'Granted'},
+  {ts:'11:15',emp:'M. Santos',door:'HQ Floor 2',method:'Temp Card',result:'Granted'},
+  {ts:'10:58',emp:'J. Botha (revoked)',door:'HQ Main Entrance',method:'Card',result:'Denied'},
+];
+
+function renderAccess(){
+  const el=document.getElementById('accessContent'); if(!el)return;
+  const stB={Active:'gn',Revoked:'rd',Expiring:'am'};
+  el.innerHTML=`
+  <div class="tp on" id="accTabs-credentials">
+    <div class="kg kg-4" style="margin-bottom:14px;">
+      <div class="kpi gn"><div class="kpi-lbl">Active Credentials</div><div class="kpi-val">${ACCESS_CREDS.filter(c=>c.status==='Active').length}</div></div>
+      <div class="kpi am"><div class="kpi-lbl">Expiring</div><div class="kpi-val">${ACCESS_CREDS.filter(c=>c.status==='Expiring').length}</div><div class="kpi-sub">Temp credentials</div></div>
+      <div class="kpi rd"><div class="kpi-lbl">Denied Today</div><div class="kpi-val">${ACCESS_EVENTS.filter(e=>e.result==='Denied').length}</div><div class="kpi-sub">2 revoked card attempts</div></div>
+      <div class="kpi bl"><div class="kpi-lbl">Doors Online</div><div class="kpi-val">${ACCESS_SITES.reduce((s,x)=>s+x.online,0)}/${ACCESS_SITES.reduce((s,x)=>s+x.doors,0)}</div><div class="kpi-sub">1 reader offline (CPT)</div></div>
+    </div>
+    <div class="card"><div class="ch2"><span class="ch2-title">Issued Credentials</span></div>
+    <div class="cb" style="padding:0;"><div class="tw"><table>
+      <thead><tr><th>ID</th><th>Holder</th><th>Method</th><th>Access Scope</th><th>Status</th><th></th></tr></thead>
+      <tbody>${ACCESS_CREDS.map((c,i)=>`<tr>
+        <td class="mo tb">${c.id}</td><td class="tb">${c.emp}</td><td>${c.type}</td>
+        <td style="font-size:11px;">${c.sites}</td>
+        <td><span class="badge ${stB[c.status]}">${c.status}</span></td>
+        <td>${c.status==='Active'||c.status==='Expiring'?`<button class="btn bd2 btn-xs" onclick="accessRevoke(${i})">Revoke</button>`:`<button class="btn bs btn-xs" onclick="accessReissue(${i})">Re-issue</button>`}</td>
+      </tr>`).join('')}</tbody></table></div></div></div>
+  </div>
+  <div class="tp" id="accTabs-sites">
+    <div class="card"><div class="ch2"><span class="ch2-title">Sites & Door Controllers</span></div>
+    <div class="cb" style="padding:0;">${ACCESS_SITES.map(s=>`
+      <div class="stock-card">
+        <div class="stock-icon" style="background:${s.online===s.doors?'var(--gn-l)':'var(--am-l)'};">${svgIcon('building','14px',s.online===s.doors?'var(--gn)':'var(--am)')}</div>
+        <div style="flex:1;"><div class="stock-name">${s.name}</div><div class="stock-sku">${s.readers}</div></div>
+        <div style="text-align:right;"><div class="stock-qty">${s.online}/${s.doors} online</div><div style="font-size:9px;color:var(--mu);">doors</div></div>
+      </div>`).join('')}</div></div>
+  </div>
+  <div class="tp" id="accTabs-events">
+    <div class="card"><div class="ch2"><span class="ch2-title">Live Access Events</span><span class="ch2-sub"><span class="status-dot live"></span> streaming</span></div>
+    <div class="cb" style="padding:0;"><div class="tw"><table>
+      <thead><tr><th>Time</th><th>Person</th><th>Door</th><th>Method</th><th>Result</th></tr></thead>
+      <tbody>${ACCESS_EVENTS.map(e=>`<tr><td class="mo">${e.ts}</td><td class="tb">${e.emp}</td><td>${e.door}</td><td>${e.method}</td><td><span class="badge ${e.result==='Granted'?'gn':'rd'}">${e.result}</span></td></tr>`).join('')}</tbody></table></div></div></div>
+  </div>`;
+}
+function accessRevoke(i){
+  const c=ACCESS_CREDS[i]; if(!c)return;
+  c.status='Revoked';
+  ACCESS_EVENTS.unshift({ts:'Now',emp:'System',door:'—',method:'Admin action',result:'Denied'});
+  renderAccess();
+  toast('Credential '+c.id+' revoked — all doors updated in <1s','#DC2626');
+  writeAudit('Revoke','Access',c.id,0,'high');
+}
+function accessReissue(i){
+  const c=ACCESS_CREDS[i]; if(!c)return;
+  c.status='Active';c.issued=new Date().toISOString().slice(0,10);
+  renderAccess();
+  toast('Credential '+c.id+' re-issued','#16A34A');
+}
+function accessIssue(){
+  const emp=prompt('Employee / visitor name:');
+  if(!emp)return;
+  ACCESS_CREDS.unshift({id:'AC-'+(107+ACCESS_CREDS.length),emp,type:'Card',sites:'Sandton HQ · Floor 1',status:'Active',issued:new Date().toISOString().slice(0,10)});
+  renderAccess();
+  toast('Credential issued to '+emp+' — collect card at reception','#16A34A');
+  writeAudit('Issue','Access',emp,0,'medium');
+}
+
+/* ══ IAM CONFIGURATION ═══════════════════════════════════ */
+const IAM_PERMS=['View Finance','Approve POs','Run Payroll','Manage Users','Export Data','API Access','Delete Records','View Audit Trail'];
+let IAM_MATRIX={
+  admin:  [1,1,1,1,1,1,1,1],
+  cfo:    [1,1,1,0,1,1,0,1],
+  manager:[1,1,0,0,1,0,0,0],
+  hr:     [0,0,1,1,1,0,0,1],
+  staff:  [0,0,0,0,0,0,0,0],
+  vendor: [0,0,0,0,0,0,0,0],
+};
+let IAM_POLICY={mfaAll:true,mfaFinance:true,ssoOnly:false,sessionTimeout:true};
+
+function renderIAM(){
+  const el=document.getElementById('iamContent'); if(!el)return;
+  const roles=Object.keys(IAM_MATRIX);
+  el.innerHTML=`
+  <div class="g2" style="margin-bottom:14px;">
+    <div class="card"><div class="ch2"><span class="ch2-title">Security Policies</span></div>
+    <div class="cb" style="padding:6px 14px;">
+      ${[['mfaAll','Require MFA for all users'],['mfaFinance','Step-up OTP for finance actions'],['ssoOnly','SSO-only sign-in (disable passwords)'],['sessionTimeout','Auto sign-out after 30 min idle']].map(([k,lbl])=>`
+      <div class="stat-row"><span class="stat-lbl">${lbl}</span>
+      <button class="tgl ${IAM_POLICY[k]?'on':''}" onclick="IAM_POLICY['${k}']=!IAM_POLICY['${k}'];renderIAM();toast('Policy updated','#16A34A')"><span></span></button></div>`).join('')}
+    </div></div>
+    <div class="card"><div class="ch2"><span class="ch2-title">Identity Stats</span></div>
+    <div class="cb" style="padding:6px 14px;">
+      <div class="stat-row"><span class="stat-lbl">Total identities</span><span class="stat-val">682</span></div>
+      <div class="stat-row"><span class="stat-lbl">MFA enrolled</span><span class="stat-val" style="color:var(--gn);">96%</span></div>
+      <div class="stat-row"><span class="stat-lbl">SSO federated (Google/Microsoft)</span><span class="stat-val">418</span></div>
+      <div class="stat-row"><span class="stat-lbl">Dormant accounts (90d+)</span><span class="stat-val" style="color:var(--am);">7</span></div>
+      <div class="stat-row"><span class="stat-lbl">Privileged roles</span><span class="stat-val">12</span></div>
+    </div></div>
+  </div>
+  <div class="card"><div class="ch2"><span class="ch2-title">Role × Permission Matrix</span><span class="ch2-sub">Click a cell to toggle</span></div>
+  <div class="cb" style="padding:0;"><div class="tw"><table>
+    <thead><tr><th>Permission</th>${roles.map(r=>`<th style="text-align:center;text-transform:capitalize;">${r}</th>`).join('')}</tr></thead>
+    <tbody>${IAM_PERMS.map((p,pi)=>`<tr><td class="tb">${p}</td>
+      ${roles.map(r=>`<td style="text-align:center;"><span class="perm-check ${IAM_MATRIX[r][pi]?'on':''}" onclick="iamToggle('${r}',${pi})">${IAM_MATRIX[r][pi]?'✓':''}</span></td>`).join('')}
+    </tr>`).join('')}</tbody></table></div></div></div>`;
+}
+function iamToggle(role,pi){
+  if(role==='admin'){toast('Administrator permissions are locked','#D97706');return;}
+  IAM_MATRIX[role][pi]=IAM_MATRIX[role][pi]?0:1;
+  renderIAM();
+  writeAudit('Permission','IAM',role+':'+IAM_PERMS[pi],0,'high');
+}
+function iamExport(){
+  const a=document.createElement('a');
+  a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify({policies:IAM_POLICY,matrix:IAM_MATRIX,permissions:IAM_PERMS},null,2));
+  a.download='iam-policy.json';a.click();
+  toast('IAM policy exported as JSON','#16A34A');
+}
+
+/* ══ INTEGRATIONS MARKETPLACE ════════════════════════════ */
+let INTEGRATIONS=[
+  {name:'Xero',cat:'Accounting',desc:'Two-way GL, invoice and contact sync',color:'#13B5EA',initial:'X',connected:true},
+  {name:'Sage Intacct',cat:'Accounting',desc:'Journal export and consolidated reporting',color:'#00D639',initial:'S',connected:false},
+  {name:'QuickBooks',cat:'Accounting',desc:'Sync invoices, bills and payments',color:'#2CA01C',initial:'Q',connected:false},
+  {name:'Slack',cat:'Comms',desc:'Approval alerts and board updates in channels',color:'#611F69',initial:'#',connected:true},
+  {name:'Microsoft Teams',cat:'Comms',desc:'Notifications and approval actions in Teams',color:'#6264A7',initial:'T',connected:false},
+  {name:'WhatsApp Business',cat:'Comms',desc:'Payslip and OTP delivery via WhatsApp',color:'#25D366',initial:'W',connected:true},
+  {name:'Salesforce',cat:'CRM',desc:'Deal and account sync into NexCore CRM',color:'#00A1E0',initial:'SF',connected:false},
+  {name:'Shopify',cat:'Commerce',desc:'Order-to-invoice automation',color:'#96BF48',initial:'Sh',connected:false},
+  {name:'PayFast',cat:'Payments',desc:'Card & EFT collections for invoices',color:'#E4002B',initial:'P',connected:true},
+  {name:'Stripe',cat:'Payments',desc:'International card payments and payouts',color:'#635BFF',initial:'St',connected:false},
+  {name:'SARS eFiling',cat:'Compliance',desc:'EMP201, VAT201 and IRP5 submission',color:'#003399',initial:'SA',connected:true},
+  {name:'Google Workspace',cat:'Identity',desc:'SSO, directory sync and calendar',color:'#4285F4',initial:'G',connected:true},
+];
+function renderIntegrations(){
+  const el=document.getElementById('integrationsContent'); if(!el)return;
+  const cats=[...new Set(INTEGRATIONS.map(i=>i.cat))];
+  const conn=INTEGRATIONS.filter(i=>i.connected).length;
+  el.innerHTML=`
+  <div class="alert bl" style="margin-bottom:16px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:var(--bl-m);stroke-width:2;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><div><div class="alert-title">${conn} of ${INTEGRATIONS.length} connectors active</div><div class="alert-body">Connectors use OAuth2 and sync via the NexCore REST API — see API & Webhooks for keys and event subscriptions.</div></div></div>
+  ${cats.map(cat=>`
+  <div style="margin-bottom:18px;">
+    <div class="section-lbl" style="margin-bottom:10px;">${cat}</div>
+    <div class="intg-grid">
+    ${INTEGRATIONS.filter(i=>i.cat===cat).map((i)=>{const gi=INTEGRATIONS.indexOf(i);return `
+      <div class="intg-card">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="intg-logo" style="background:${i.color}">${i.initial}</div>
+          <div><div class="intg-name">${i.name}</div>${i.connected?'<span class="badge gn" style="font-size:9px;">Connected</span>':'<span class="badge gy" style="font-size:9px;">Not connected</span>'}</div>
+        </div>
+        <div class="intg-desc">${i.desc}</div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn ${i.connected?'bs':'bp'} btn-xs" onclick="intgToggle(${gi})">${i.connected?'Disconnect':'Connect'}</button>
+          ${i.connected?`<button class="btn bs btn-xs" onclick="toast('Opening ${i.name} sync settings…','#2563EB')">Configure</button>`:''}
+        </div>
+      </div>`;}).join('')}
+    </div>
+  </div>`).join('')}`;
+}
+function intgToggle(i){
+  const x=INTEGRATIONS[i]; if(!x)return;
+  x.connected=!x.connected;
+  renderIntegrations();
+  toast(x.name+(x.connected?' connected via OAuth2 — first sync queued':' disconnected'),x.connected?'#16A34A':'#71717A');
+  writeAudit(x.connected?'Connect':'Disconnect','Integrations',x.name,0,'medium');
+}
+
+/* ══ WHITE LABEL / BRANDING ══════════════════════════════ */
+const BRAND_PRESETS=[['#F97316','NexCore Orange'],['#2563EB','Corporate Blue'],['#16A34A','Growth Green'],['#7C3AED','Royal Purple'],['#DC2626','Bold Red'],['#0891B2','Ocean Teal'],['#DB2777','Vivid Pink'],['#18181B','Mono Black']];
+function renderBrand(){
+  const el=document.getElementById('brandContent'); if(!el)return;
+  const saved=JSON.parse(localStorage.getItem('nexcore-brand')||'{}');
+  el.innerHTML=`
+  <div class="g2">
+    <div class="card"><div class="ch2"><span class="ch2-title">Brand Settings</span></div>
+    <div class="cb">
+      <div class="fg"><label class="fl">Company / Product Name</label><input class="fi" id="brName" value="${saved.name||'NexCore'}" placeholder="e.g. AcmeERP"/></div>
+      <div class="fg"><label class="fl">Logo Initials (2 max)</label><input class="fi" id="brInitials" maxlength="2" value="${saved.initials||'NC'}"/></div>
+      <div class="fg"><label class="fl">Accent Colour</label>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input type="color" id="brColor" value="${saved.accent||'#F97316'}" style="width:44px;height:34px;border:1px solid var(--bd);border-radius:8px;background:var(--wh);cursor:pointer;padding:2px;"/>
+          ${BRAND_PRESETS.map(([hex,name])=>`<button title="${name}" onclick="document.getElementById('brColor').value='${hex}';brandPreview()" style="width:26px;height:26px;border-radius:50%;background:${hex};border:2px solid var(--wh);box-shadow:0 0 0 1px var(--bd);cursor:pointer;"></button>`).join('')}
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Custom Domain</label><input class="fi" id="brDomain" value="${saved.domain||'morr.co.za'}" placeholder="erp.yourcompany.co.za"/>
+      <div style="font-size:10px;color:var(--mu);margin-top:4px;">Point a CNAME at your NexCore tenant. SSL is provisioned automatically.</div></div>
+      <div class="fg"><label class="fl">Hide "Powered by NexCore"</label><button class="tgl ${saved.hidePoweredBy?'on':''}" id="brHidePb" onclick="this.classList.toggle('on')"><span></span></button></div>
+    </div></div>
+    <div class="card"><div class="ch2"><span class="ch2-title">Live Preview</span></div>
+    <div class="cb">
+      <div id="brPreview" style="border:1px solid var(--bd);border-radius:14px;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--bd);">
+          <div id="brPvLogo" style="width:32px;height:32px;border-radius:9px;background:${saved.accent||'#F97316'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;">${saved.initials||'NC'}</div>
+          <div style="font-size:15px;font-weight:900;" id="brPvName">${saved.name||'NexCore'}</div>
+        </div>
+        <div style="padding:16px;">
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <button class="btn btn-sm" id="brPvBtn" style="background:${saved.accent||'#F97316'};color:#fff;">Primary Action</button>
+            <button class="btn bs btn-sm">Secondary</button>
+          </div>
+          <div class="prog" style="margin-bottom:10px;"><div class="prog-fill" id="brPvProg" style="width:64%;background:${saved.accent||'#F97316'};"></div></div>
+          <div style="font-size:11px;color:var(--mid);">Sidebar highlights, KPI accents, buttons and charts will use your colour across all ${(currentUser?.pages||[]).length||40}+ modules.</div>
+        </div>
+      </div>
+    </div></div>
+  </div>`;
+  const c=document.getElementById('brColor');
+  if(c)c.addEventListener('input',brandPreview);
+  const n=document.getElementById('brName');
+  if(n)n.addEventListener('input',brandPreview);
+  const i=document.getElementById('brInitials');
+  if(i)i.addEventListener('input',brandPreview);
+}
+function brandPreview(){
+  const accent=document.getElementById('brColor')?.value||'#F97316';
+  const name=document.getElementById('brName')?.value||'NexCore';
+  const initials=(document.getElementById('brInitials')?.value||'NC').toUpperCase();
+  const l=document.getElementById('brPvLogo');if(l){l.style.background=accent;l.textContent=initials;}
+  const nm=document.getElementById('brPvName');if(nm)nm.textContent=name;
+  const b=document.getElementById('brPvBtn');if(b)b.style.background=accent;
+  const pr=document.getElementById('brPvProg');if(pr)pr.style.background=accent;
+}
+function brandApply(brand){
+  if(!brand||!brand.accent)return;
+  const r=document.documentElement.style;
+  r.setProperty('--or',brand.accent);
+  r.setProperty('--accent',brand.accent);
+  r.setProperty('--or-d',brandDarken(brand.accent,.82));
+  document.querySelectorAll('.tb-wordmark').forEach(w=>{w.innerHTML=(brand.name||'NexCore').replace(/^(.{3})(.*)$/,'$1<span>$2</span>');});
+  const logo=document.querySelector('.tb-logo');if(logo)logo.style.background=brand.accent;
+  const org=document.getElementById('tbOrg');if(org&&brand.name)org.textContent=brand.name;
+}
+function brandDarken(hex,f){
+  const n=parseInt(hex.slice(1),16);
+  const r=Math.round(((n>>16)&255)*f),g=Math.round(((n>>8)&255)*f),b=Math.round((n&255)*f);
+  return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function brandSave(){
+  const brand={
+    name:document.getElementById('brName')?.value||'NexCore',
+    initials:(document.getElementById('brInitials')?.value||'NC').toUpperCase(),
+    accent:document.getElementById('brColor')?.value||'#F97316',
+    domain:document.getElementById('brDomain')?.value||'',
+    hidePoweredBy:document.getElementById('brHidePb')?.classList.contains('on')||false,
+  };
+  localStorage.setItem('nexcore-brand',JSON.stringify(brand));
+  brandApply(brand);
+  toast('Branding applied across the platform — saved for this tenant','#16A34A');
+  writeAudit('Brand','WhiteLabel',brand.name,0,'medium');
+}
+function brandReset(){
+  localStorage.removeItem('nexcore-brand');
+  const r=document.documentElement.style;
+  r.removeProperty('--or');r.removeProperty('--or-d');r.removeProperty('--accent');
+  document.querySelectorAll('.tb-wordmark').forEach(w=>{w.innerHTML='Nex<span>Core</span>';});
+  const logo=document.querySelector('.tb-logo');if(logo)logo.style.background='';
+  renderBrand();
+  toast('Reset to NexCore default branding','#71717A');
+}
+/* apply saved brand on boot */
+(function(){try{const b=JSON.parse(localStorage.getItem('nexcore-brand')||'null');if(b)setTimeout(()=>brandApply(b),300);}catch(e){}})();
+
+/* ══ EMAIL CENTER ════════════════════════════════════════ */
+const EMAIL_TEMPLATES=[
+  {name:'Payslip Delivery',subject:'Your payslip for {{month}} is ready',body:'Hi {{name}},\n\nYour payslip for {{month}} is now available in your NexCore Employee Portal.\n\nNet pay: {{net}}\nPayment date: {{date}}\n\nRegards,\nPayroll Team'},
+  {name:'Invoice Reminder',subject:'Reminder: Invoice {{ref}} is due {{due}}',body:'Dear {{client}},\n\nThis is a friendly reminder that invoice {{ref}} for {{amount}} falls due on {{due}}.\n\nPay online: {{link}}\n\nThank you,\nAccounts Receivable'},
+  {name:'Welcome / Onboarding',subject:'Welcome to {{company}} 🎉',body:'Hi {{name}},\n\nWelcome aboard! Your NexCore account is ready.\n\nSign in: {{link}}\nYour manager: {{manager}}\nFirst-day checklist is in your portal.\n\nSee you Monday!'},
+  {name:'PO Approval Request',subject:'Approval needed: {{po}} — {{amount}}',body:'Hi {{approver}},\n\n{{requester}} has submitted {{po}} for {{amount}} ({{vendor}}).\n\nReview and approve in NexCore: {{link}}'},
+];
+let EMAIL_LOG=[
+  {ts:'Today 09:12',to:'all-staff@xgroup.co.za',subject:'Your payslip for January is ready',status:'Delivered',opens:641},
+  {ts:'Yesterday',to:'finance@capetown.gov.za',subject:'Reminder: Invoice INV-2025-0104 is due 15 Feb',status:'Delivered',opens:3},
+  {ts:'27 Jan',to:'msantos@contractor.pt',subject:'Welcome to xGroup SA 🎉',status:'Opened',opens:2},
+];
+function renderEmail(){
+  const el=document.getElementById('emailContent'); if(!el)return;
+  el.innerHTML=`
+  <div class="tp on" id="emlTabs-compose">
+    <div class="card"><div class="ch2"><span class="ch2-title">New Message</span><span class="ch2-sub">Sent via NexCore transactional relay (SPF/DKIM aligned)</span></div>
+    <div class="cb">
+      <div class="frow"><div class="fg"><label class="fl">To</label><input class="fi" id="emTo" placeholder="name@company.co.za (comma-separate for multiple)"/></div>
+      <div class="fg"><label class="fl">Template</label><select class="fi" id="emTemplate" onchange="emailUseTemplate(this.value)"><option value="">— Blank —</option>${EMAIL_TEMPLATES.map((t,i)=>`<option value="${i}">${t.name}</option>`).join('')}</select></div></div>
+      <div class="fg"><label class="fl">Subject</label><input class="fi" id="emSubject" placeholder="Subject line"/></div>
+      <div class="fg"><label class="fl">Message</label><textarea class="fi" id="emBody" rows="8" placeholder="Write your message… {{placeholders}} are merged per recipient."></textarea></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn bp" onclick="emailSend()">Send</button>
+        <button class="btn bs" onclick="emailSend(true)">Schedule for 08:00</button>
+        <button class="btn bs" onclick="toast('Draft saved','#71717A')">Save Draft</button>
+      </div>
+    </div></div>
+  </div>
+  <div class="tp" id="emlTabs-templates">
+    <div class="report-grid">${EMAIL_TEMPLATES.map((t,i)=>`
+      <div class="report-card">
+        <div class="report-name">${t.name}</div>
+        <div class="report-desc" style="font-family:var(--mo);font-size:10px;">${t.subject}</div>
+        <div class="report-desc" style="white-space:pre-line;max-height:90px;overflow:hidden;">${t.body.slice(0,140)}…</div>
+        <button class="btn bp btn-xs" onclick="emailUseTemplate(${i});switchTab('emlTabs','compose',document.querySelector('#page-email .tab'))">Use Template</button>
+      </div>`).join('')}</div>
+  </div>
+  <div class="tp" id="emlTabs-log">
+    <div class="card"><div class="ch2"><span class="ch2-title">Delivery Log</span></div>
+    <div class="cb" style="padding:0;"><div class="tw"><table>
+      <thead><tr><th>Sent</th><th>To</th><th>Subject</th><th>Status</th><th>Opens</th></tr></thead>
+      <tbody>${EMAIL_LOG.map(m=>`<tr><td>${m.ts}</td><td class="tb">${m.to}</td><td>${m.subject}</td><td><span class="badge ${m.status==='Delivered'||m.status==='Opened'?'gn':'am'}">${m.status}</span></td><td class="mo">${m.opens}</td></tr>`).join('')}</tbody></table></div></div></div>
+  </div>`;
+}
+function emailUseTemplate(i){
+  if(i===''||i===undefined)return;
+  const t=EMAIL_TEMPLATES[+i]; if(!t)return;
+  const s=document.getElementById('emSubject');if(s)s.value=t.subject;
+  const b=document.getElementById('emBody');if(b)b.value=t.body;
+  const sel=document.getElementById('emTemplate');if(sel)sel.value=String(i);
+}
+function emailCompose(){
+  openPage('email');
+  setTimeout(()=>document.getElementById('emTo')?.focus(),150);
+}
+function emailSend(scheduled){
+  const to=document.getElementById('emTo')?.value.trim();
+  const subject=document.getElementById('emSubject')?.value.trim();
+  if(!to||!subject){toast('Recipient and subject are required','#DC2626');return;}
+  EMAIL_LOG.unshift({ts:scheduled?'Scheduled 08:00':'Just now',to,subject,status:scheduled?'Queued':'Delivered',opens:0});
+  ['emTo','emSubject','emBody'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  renderEmail();
+  toast(scheduled?'Email scheduled for 08:00 tomorrow':'Email delivered to '+to,'#16A34A');
+  writeAudit('Send','Email',to,0,'low');
+}
+
+/* ══ v8 registration ═════════════════════════════════════ */
+CMD_ITEMS.push(
+  {name:'Payroll Engine',sub:'PAYE · UIF · Bonuses · GL',page:'paypro',icon:'dollar'},
+  {name:'Fleet & Fuel',sub:'Fuel log · Servicing',page:'fleet',icon:'box'},
+  {name:'Access Control',sub:'Cards · Fingerprint · Doors',page:'access',icon:'shield'},
+  {name:'IAM Configuration',sub:'Roles · Permissions · MFA',page:'iam',icon:'lock'},
+  {name:'Integrations',sub:'Xero · Slack · Stripe · SARS',page:'integrations',icon:'flow'},
+  {name:'White Label',sub:'Brand colours · Domain',page:'brand',icon:'cog'},
+  {name:'Email Center',sub:'Compose · Templates · Log',page:'email',icon:'chat'},
+);
+
+(function(){
+  const _b=initPageContents;
+  initPageContents=function(){
+    _b();
+    renderPaypro();renderFleet();renderAccess();renderIAM();renderIntegrations();renderBrand();renderEmail();
+  };
+  const _o=openPage;
+  window.openPage=function(name){
+    _o(name);
+    const m={paypro:renderPaypro,fleet:renderFleet,access:renderAccess,iam:renderIAM,integrations:renderIntegrations,brand:renderBrand,email:renderEmail};
+    if(m[name])setTimeout(m[name],50);
   };
 })();
 
