@@ -1054,6 +1054,27 @@ body.dark .intg-card{background:var(--sf2);}
 /* IAM permission matrix */
 .perm-check{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--bd);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;background:var(--wh);transition:all .12s;font-size:11px;color:#fff;}
 .perm-check.on{background:var(--gn);border-color:var(--gn);}
+/* ═══ v14 SPRINT D — sortable tables, DnD, mobile nav ═══ */
+th.nx-sortable{cursor:pointer;user-select:none;white-space:nowrap;}
+th.nx-sortable:hover{color:var(--ink);}
+th.nx-sortable .nx-arrow{font-size:8px;margin-left:4px;opacity:.55;}
+.nx-filter-input{font-size:11px;padding:4px 9px;border:1px solid var(--bd);border-radius:14px;background:var(--sf);color:var(--ink);font-family:var(--fn);width:130px;transition:width .15s,border-color .12s;}
+.nx-filter-input:focus{outline:none;border-color:var(--or);width:170px;}
+.kb-card[draggable=true]{cursor:grab;}
+.kb-card.nx-dragging{opacity:.45;transform:rotate(1.5deg);}
+.kb-col.nx-dragover{background:var(--or-bg);border-radius:10px;box-shadow:inset 0 0 0 2px var(--or);}
+tr[draggable=true]{cursor:grab;}
+tr.nx-dragging{opacity:.4;}
+.card.nx-dragover{box-shadow:inset 0 0 0 2px var(--or),var(--sh2)!important;}
+#nxHamburger{display:none;width:32px;height:32px;border:1px solid var(--bd);border-radius:8px;background:transparent;cursor:pointer;align-items:center;justify-content:center;margin-right:6px;flex-shrink:0;}
+#nxHamburger svg{width:16px;height:16px;fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;}
+@media(max-width:820px){
+  #nxHamburger{display:inline-flex;}
+  .sidebar{position:fixed;left:0;top:var(--hh);bottom:0;z-index:900;transform:translateX(-105%);transition:transform .22s cubic-bezier(.22,.68,0,1);box-shadow:var(--sh3);}
+  .sidebar.mobile-open{transform:none;}
+  .tb-main{display:none;}
+}
+
 body.dark .perm-check{background:var(--sf2);}
 body.dark .perm-check.on{background:var(--gn);}
 </style>
@@ -1260,6 +1281,7 @@ body.dark .perm-check.on{background:var(--gn);}
 
   <!-- TOPBAR -->
   <div class="topbar">
+    <button id="nxHamburger" onclick="document.querySelector('.sidebar').classList.toggle('mobile-open')" title="Menu"><svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
     <div class="tb-brand-zone">
       <div class="tb-logo"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:white;"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></div>
       <div class="tb-wordmark">MORR<span> ERP</span></div>
@@ -10388,6 +10410,143 @@ async function nxReconcilePayments(){
     _b();
     setTimeout(nxReconcilePayments,1500);
     setInterval(nxReconcilePayments,300000);
+  };
+})();
+
+
+/* ════════════════════════════════════════════════════════════
+   MORR ERP v14 — Sprint D: sortable tables, quick filters,
+   drag-and-drop boards & kanban, mobile navigation
+════════════════════════════════════════════════════════════ */
+
+/* ── Universal table sorting (event delegation, survives re-renders) ── */
+function _nxCellVal(td){
+  const t=(td?.textContent||'').trim();
+  const n=parseFloat(t.replace(/[R,%\s,]/g,'').replace(/−/g,'-'));
+  return isNaN(n)||!/[\d]/.test(t)?t.toLowerCase():n;
+}
+document.addEventListener('click',e=>{
+  const th=e.target.closest('.tw th');
+  if(!th||e.target.closest('button,input,select,a'))return;
+  const table=th.closest('table');
+  const tbody=table?.querySelector('tbody');
+  if(!tbody||tbody.rows.length<2)return;
+  const idx=[...th.parentElement.children].indexOf(th);
+  const dir=th.dataset.nxDir==='asc'?'desc':'asc';
+  table.querySelectorAll('th').forEach(h=>{h.dataset.nxDir='';h.querySelector('.nx-arrow')?.remove();h.classList.add('nx-sortable');});
+  th.dataset.nxDir=dir;
+  th.insertAdjacentHTML('beforeend','<span class="nx-arrow">'+(dir==='asc'?'▲':'▼')+'</span>');
+  /* keep special rows (inputs / colspan / totals) pinned to the bottom */
+  const rows=[...tbody.rows];
+  const sortable=rows.filter(r=>!r.querySelector('[colspan]')&&!r.querySelector('input')&&r.cells.length>idx);
+  const pinned=rows.filter(r=>!sortable.includes(r));
+  sortable.sort((a,b)=>{
+    const va=_nxCellVal(a.cells[idx]),vb=_nxCellVal(b.cells[idx]);
+    const cmp=typeof va==='number'&&typeof vb==='number'?va-vb:String(va).localeCompare(String(vb));
+    return dir==='asc'?cmp:-cmp;
+  });
+  sortable.concat(pinned).forEach(r=>tbody.appendChild(r));
+});
+/* mark all headers sortable on hover-time (cosmetic) */
+setInterval(()=>{document.querySelectorAll('.tw th:not(.nx-sortable)').forEach(h=>h.classList.add('nx-sortable'));},2500);
+
+/* ── Quick filter on large tables ── */
+function nxInjectFilters(){
+  document.querySelectorAll('.page.on .card').forEach(card=>{
+    const tbody=card.querySelector('.tw tbody');
+    const hdr=card.querySelector('.ch2');
+    if(!tbody||!hdr||tbody.rows.length<6||hdr.querySelector('.nx-filter-input'))return;
+    const inp=document.createElement('input');
+    inp.className='nx-filter-input';inp.placeholder='Filter…';
+    inp.addEventListener('input',()=>{
+      const q=inp.value.toLowerCase();
+      [...tbody.rows].forEach(r=>{
+        if(r.querySelector('[colspan]'))return;
+        r.style.display=!q||r.textContent.toLowerCase().includes(q)?'':'none';
+      });
+    });
+    inp.addEventListener('click',e=>e.stopPropagation());
+    hdr.appendChild(inp);
+  });
+}
+(function(){
+  const _o=openPage;
+  window.openPage=function(name){_o.apply(this,arguments);setTimeout(nxInjectFilters,350);};
+})();
+
+/* ── Drag & drop: Work Boards items between groups ── */
+let _nxDragItem=null;
+function nxBoardDnD(){
+  const el=document.getElementById('boardsContent'); if(!el)return;
+  el.querySelectorAll('#boardTabs-main .card').forEach((card,gi)=>{
+    card.querySelectorAll('tbody tr').forEach((tr,ri)=>{
+      const item=BOARDS_DATA[gi]?.items[ri];
+      if(!item)return;
+      tr.draggable=true;
+      tr.addEventListener('dragstart',()=>{_nxDragItem={gi,id:item.id};tr.classList.add('nx-dragging');});
+      tr.addEventListener('dragend',()=>tr.classList.remove('nx-dragging'));
+    });
+    card.addEventListener('dragover',e=>{e.preventDefault();card.classList.add('nx-dragover');});
+    card.addEventListener('dragleave',()=>card.classList.remove('nx-dragover'));
+    card.addEventListener('drop',e=>{
+      e.preventDefault();card.classList.remove('nx-dragover');
+      if(!_nxDragItem||_nxDragItem.gi===gi)return;
+      const src=BOARDS_DATA[_nxDragItem.gi];
+      const idx=src.items.findIndex(i=>i.id===_nxDragItem.id);
+      if(idx<0)return;
+      const [item]=src.items.splice(idx,1);
+      BOARDS_DATA[gi].items.push(item);
+      BOARD_ACTIVITY.unshift({ts:'Just now',user:currentUser?.name||'You',action:`moved "${item.name}" from ${src.group} to ${BOARDS_DATA[gi].group}`});
+      _nxDragItem=null;
+      renderBoards();
+      NXDB.save('boards');
+      toast('Item moved to '+BOARDS_DATA[gi].group,'#7C3AED');
+    });
+  });
+}
+(function(){
+  const _rb=renderBoards;
+  window.renderBoards=function(){_rb.apply(this,arguments);setTimeout(nxBoardDnD,60);};
+})();
+
+/* ── Drag & drop: CRM kanban cards between stages ── */
+function nxKanbanDnD(){
+  const board=document.querySelector('#crmKanban .kanban'); if(!board)return;
+  let dragCard=null;
+  board.querySelectorAll('.kb-card').forEach(cd=>{
+    cd.draggable=true;
+    cd.addEventListener('dragstart',()=>{dragCard=cd;cd.classList.add('nx-dragging');});
+    cd.addEventListener('dragend',()=>cd.classList.remove('nx-dragging'));
+  });
+  board.querySelectorAll('.kb-col').forEach(col=>{
+    col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('nx-dragover');});
+    col.addEventListener('dragleave',()=>col.classList.remove('nx-dragover'));
+    col.addEventListener('drop',e=>{
+      e.preventDefault();col.classList.remove('nx-dragover');
+      if(!dragCard||dragCard.parentElement===col)return;
+      col.appendChild(dragCard);
+      /* refresh column counts */
+      board.querySelectorAll('.kb-col').forEach(c=>{
+        const n=c.querySelectorAll('.kb-card').length;
+        const cnt=c.querySelector('.kb-count');if(cnt)cnt.textContent=n;
+      });
+      const stage=col.querySelector('.kb-col-header')?.childNodes[0]?.textContent.trim()||'stage';
+      const deal=dragCard.querySelector('.kb-card-title')?.textContent||'Deal';
+      toast(deal+' moved to '+stage,'#7C3AED');
+      writeAudit('Stage','CRM',deal+' → '+stage,0,'low');
+      dragCard=null;
+    });
+  });
+}
+(function(){
+  const _rk=renderCRMKanban;
+  window.renderCRMKanban=function(){_rk.apply(this,arguments);setTimeout(nxKanbanDnD,60);};
+  const _o2=openPage;
+  window.openPage=function(name){
+    _o2.apply(this,arguments);
+    if(name==='crm')setTimeout(nxKanbanDnD,200);
+    /* auto-close mobile sidebar after navigating */
+    document.querySelector('.sidebar')?.classList.remove('mobile-open');
   };
 })();
 
