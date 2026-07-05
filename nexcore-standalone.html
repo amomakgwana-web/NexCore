@@ -8601,7 +8601,7 @@ function renderBoards(){
           const st=BOARD_STATUS_STYLE[it.status];
           const prC=it.priority==='Critical'?'var(--rd)':it.priority==='High'?'var(--am)':it.priority==='Medium'?'var(--bl)':'var(--mid)';
           return `<tr>
-          <td class="tb">${it.name}</td>
+          <td class="tb" style="cursor:pointer;" onclick="boardItemDrawer(${gi},${it.id})">${it.name} <span style="color:var(--pu);font-size:9px;">▸</span>${(it.updates&&it.updates.length)?`<span class="badge pu" style="font-size:8px;margin-left:5px;">${it.updates.length} 💬</span>`:''}</td>
           <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:20px;height:20px;border-radius:50%;background:#3B82F6;color:#fff;font-size:8px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;">${it.owner.split(' ').map(w=>w[0]).join('')}</span>${it.owner}</span></td>
           <td><button onclick="boardCycleStatus(${gi},${it.id})" style="border:none;cursor:pointer;padding:4px 10px;border-radius:5px;font-size:10px;font-weight:700;font-family:var(--fn);background:${st.bg};color:${st.fg};min-width:96px;">${it.status}</button></td>
           <td><span style="font-size:10px;font-weight:700;color:${prC};">● ${it.priority}</span></td>
@@ -8757,7 +8757,7 @@ function renderContractors(){
         <td class="mo">${fmt(Math.round(ctrZAR(c)))}</td>
         <td style="font-size:11px;">${c.end}</td>
         <td><span class="badge ${stBadge[c.status]||'gy'}">${c.status}</span></td>
-        <td><button class="btn bs btn-xs" onclick="ctrRenew('${c.id}')">${c.status==='Ending Soon'?'Renew':'View'}</button></td>
+        <td><button class="btn bs btn-xs" onclick="ctrAction('${c.id}')">${c.status==='Ending Soon'?'Renew':'View'}</button></td>
       </tr>`).join('')}</tbody></table></div></div></div>
   </div>
 
@@ -9163,7 +9163,7 @@ function renderPaypro(){
     const c=payproCalc(e);
     tGross+=c.gross;tPaye+=c.paye;tUif+=c.uif;tNet+=c.net;tComm+=e.commission;tBonus+=e.bonus;tBen+=e.medical+e.retirement;
     return `<tr>
-      <td class="tb">${e.name}<div style="font-size:10px;color:var(--mu);font-weight:400;">${e.id} · ${e.dept} · Leave ${e.leaveBal}d</div></td>
+      <td class="tb" style="cursor:pointer;" onclick="empPayrollDrawer(${i})" title="Open full tax breakdown">${e.name} <span style="color:var(--or);font-size:9px;">▸</span><div style="font-size:10px;color:var(--mu);font-weight:400;">${e.id} · ${e.dept} · Leave ${e.leaveBal}d</div></td>
       <td class="mo">${fmt(e.basic)}</td>
       <td><input class="fi" type="number" value="${e.commission}" style="width:86px;font-size:11px;padding:4px 8px;" oninput="PAYPRO_EMPS[${i}].commission=parseFloat(this.value)||0;renderPaypro()"/></td>
       <td><input class="fi" type="number" value="${e.bonus}" style="width:78px;font-size:11px;padding:4px 8px;" oninput="PAYPRO_EMPS[${i}].bonus=parseFloat(this.value)||0;renderPaypro()"/></td>
@@ -11032,6 +11032,220 @@ document.addEventListener('click',e=>{
     +'<div class="nx-sec">Integrity</div><div style="font-size:12px;color:var(--mid);line-height:1.7;">Entry hash: <span class="mo" style="font-size:10px;">sha256:'+Math.random().toString(16).slice(2,10)+'…'+Math.random().toString(16).slice(2,6)+'</span><br>Chained to previous entry · immutable · POPIA retention: 5 years</div>',
   });
 });
+
+
+/* ════════════════════════════════════════════════════════════
+   MORR ERP v19 — benchmark depth
+   Monday.com item card · Sage payslip breakdown + pay-run
+   wizard + EMP201 · Deel contractor workspace
+════════════════════════════════════════════════════════════ */
+
+/* ══ SAGE-STYLE: full employee tax breakdown ═════════════ */
+function _payeBrackets(annual){
+  const B=[[0,237100,.18],[237100,370500,.26],[370500,512800,.31],[512800,673000,.36],[673000,857900,.39],[857900,1817000,.41],[1817000,Infinity,.45]];
+  return B.map(([lo,hi,r])=>{
+    const taxable=Math.max(0,Math.min(annual,hi)-lo);
+    return {band:'R'+(lo/1000).toFixed(0)+'k – '+(hi===Infinity?'∞':'R'+(hi/1000).toFixed(0)+'k'),rate:(r*100)+'%',taxable,tax:taxable*r};
+  }).filter(b=>b.taxable>0);
+}
+function empPayrollDrawer(i){
+  const e=PAYPRO_EMPS[i]; if(!e)return;
+  const c=payproCalc(e);
+  const gross=c.gross, annual=(gross-Math.min(e.retirement,gross*.275))*12;
+  const rows=_payeBrackets(annual);
+  const totalTax=rows.reduce((s,b)=>s+b.tax,0);
+  const sdl=gross*.01, uifER=c.uif, cts=gross+sdl+uifER;
+  const ytdG=Math.round(gross*11.6), ytdP=Math.round(c.paye*11.6);
+  nxDrawerOpen({
+    title:e.name+' — Feb 2025',sub:e.id+' · '+e.dept+' · Tax breakdown (2024/25 tables)',icon:'dollar',color:'var(--gn)',
+    body:
+      nxKV([['Gross',fmt(Math.round(gross))],['Net Pay',fmt(Math.round(c.net))],['PAYE',fmt(Math.round(c.paye))],['UIF (employee)',fmt(Math.round(c.uif))]])
+      +'<div class="nx-sec">PAYE Calculation — bracket by bracket</div>'
+      +'<div style="font-size:10.5px;color:var(--mid);margin-bottom:8px;">Annual taxable income '+fmt(Math.round(annual))+' (after retirement deduction, capped at 27.5%)</div>'
+      +'<table style="width:100%;font-size:11px;border-collapse:collapse;">'
+      +'<tr style="color:var(--mu);font-size:9px;text-transform:uppercase;"><td style="padding:4px 0;">Band</td><td>Rate</td><td style="text-align:right;">Taxable</td><td style="text-align:right;">Tax</td></tr>'
+      +rows.map(b=>'<tr><td style="padding:3px 0;border-top:1px solid var(--bd-l);">'+b.band+'</td><td style="border-top:1px solid var(--bd-l);">'+b.rate+'</td><td class="mo" style="text-align:right;border-top:1px solid var(--bd-l);">'+fmt(Math.round(b.taxable))+'</td><td class="mo" style="text-align:right;border-top:1px solid var(--bd-l);">'+fmt(Math.round(b.tax))+'</td></tr>').join('')
+      +'<tr style="font-weight:800;"><td colspan="3" style="padding:5px 0;border-top:2px solid var(--bd);">Annual tax before rebate</td><td class="mo" style="text-align:right;border-top:2px solid var(--bd);">'+fmt(Math.round(totalTax))+'</td></tr>'
+      +'<tr><td colspan="3" style="color:var(--gn);">Less: primary rebate</td><td class="mo" style="text-align:right;color:var(--gn);">− '+fmt(17235)+'</td></tr>'
+      +'<tr style="font-weight:900;"><td colspan="3" style="padding:5px 0;">Monthly PAYE (÷12)</td><td class="mo" style="text-align:right;color:var(--rd);">'+fmt(Math.round(c.paye))+'</td></tr></table>'
+      +'<div class="nx-sec">IRP5 Source Codes</div>'
+      +[['3601','Income — basic salary',e.basic],['3606',e.commission?'Commission':null,e.commission],['3605',e.bonus?'Annual payment (bonus)':null,e.bonus],['4005','Medical aid contribution',e.medical],['4001','Retirement fund contribution',e.retirement],['4102','PAYE deducted',Math.round(c.paye)],['4141','UIF contribution',Math.round(c.uif*2)]]
+        .filter(x=>x[1]&&x[2]>0).map(([code,lbl,amt])=>'<div class="stat-row"><span class="stat-lbl"><span class="mo" style="color:var(--or);font-weight:700;">'+code+'</span> '+lbl+'</span><span class="stat-val">'+fmt(Math.round(amt))+'</span></div>').join('')
+      +'<div class="nx-sec">Year to Date (Mar 2024 → Feb 2025)</div>'
+      +nxKV([['YTD Gross',fmt(ytdG)],['YTD PAYE',fmt(ytdP)],['YTD UIF',fmt(Math.round(c.uif*11.6))],['Periods',' 12 of 12']])
+      +'<div class="nx-sec">Cost to Company (employer view)</div>'
+      +[['Gross remuneration',gross],['UIF — employer 1%',uifER],['SDL — skills levy 1%',sdl]].map(([l,v])=>'<div class="stat-row"><span class="stat-lbl">'+l+'</span><span class="stat-val">'+fmt(Math.round(v))+'</span></div>').join('')
+      +'<div class="stat-row" style="font-weight:900;"><span class="stat-lbl" style="font-weight:900;color:var(--ink);">Total CTC</span><span class="stat-val" style="color:var(--or);">'+fmt(Math.round(cts))+'</span></div>'
+      +'<div class="nx-sec">Leave Accrual</div>'
+      +'<div style="font-size:12px;color:var(--mid);line-height:1.7;">Accrues 1.25 days/month (15 p.a. BCEA minimum). Current balance <b style="color:var(--ink);">'+e.leaveBal+' days</b> · value if encashed: <b style="color:var(--ink);">'+fmt(Math.round(e.basic/21.67*e.leaveBal))+'</b></div>',
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>'
+      +'<button class="btn bs" onclick="nxDocOpen(payslipHTML(PAYPRO_EMPS['+i+']))">Payslip PDF</button>'
+      +'<button class="btn bp" onclick="nxDrawerClose();callEdgeFunction(\'email-relay\',\'send_email\',{to:\''+e.name.toLowerCase().replace(/[^a-z]+/g,'.')+'@xgroup.co.za\',subject:\'Your payslip for February 2025\',html:payslipHTML(PAYPRO_EMPS['+i+'])}).then(()=>toast(\'Payslip emailed to '+e.name+'\',\'#16A34A\'))">Email Payslip</button>',
+  });
+}
+
+/* ══ SAGE-STYLE: EMP201 document ═════════════════════════ */
+function emp201PDF(){
+  let g=0,paye=0,uif=0;
+  PAYPRO_EMPS.forEach(e=>{const c=payproCalc(e);g+=c.gross;paye+=c.paye;uif+=c.uif;});
+  const sdl=g*.01;
+  const body='<table><thead><tr><th>Liability</th><th class="r">Amount</th></tr></thead><tbody>'
+    +'<tr><td>PAYE (4102) — '+PAYPRO_EMPS.length+' employees</td><td class="r mono">'+fmt(Math.round(paye))+'</td></tr>'
+    +'<tr><td>UIF (employee 1% + employer 1%)</td><td class="r mono">'+fmt(Math.round(uif*2))+'</td></tr>'
+    +'<tr><td>SDL (1% of leviable amount)</td><td class="r mono">'+fmt(Math.round(sdl))+'</td></tr>'
+    +'<tr style="font-weight:900;"><td>TOTAL DUE TO SARS</td><td class="r mono">'+fmt(Math.round(paye+uif*2+sdl))+'</td></tr></tbody></table>'
+    +'<div style="margin-top:14px;padding:12px;background:#FAFAFA;border-radius:8px;font-size:11px;color:#52525B;"><b>Payment reference:</b> PAYE ref 7530778888 · Period 2025/02 · Due by 7 March 2025. Late payment attracts a 10% penalty plus interest at the prescribed rate.</div>';
+  nxDocOpen(nxDocChrome('EMP201 Return','2025/02',body,{banking:false}));
+  writeAudit('EMP201','Payroll','2025-02',Math.round(paye+uif*2+sdl),'high');
+}
+
+/* ══ SAGE-STYLE: 4-step pay-run wizard ═══════════════════ */
+let _wizStep=1;
+function payRunWizard(){_wizStep=1;_wizRender();}
+window.payproRun=payRunWizard;
+function _wizRender(){
+  let g=0,n=0,paye=0,uif=0;
+  PAYPRO_EMPS.forEach(e=>{const c=payproCalc(e);g+=c.gross;n+=c.net;paye+=c.paye;uif+=c.uif;});
+  const variances=PAYPRO_EMPS.filter(e=>e.commission>0||e.bonus>0).map(e=>({name:e.name,what:(e.commission?'Commission '+fmt(e.commission):'')+(e.commission&&e.bonus?' + ':'')+(e.bonus?'Bonus '+fmt(e.bonus):''),delta:e.commission+e.bonus}));
+  const steps=['Review','Variances','EMP201','Release'];
+  const stepBar='<div style="display:flex;gap:4px;margin-bottom:18px;">'+steps.map((st,ix)=>'<div style="flex:1;text-align:center;"><div style="height:4px;border-radius:2px;background:'+(ix<_wizStep?'var(--gn)':'var(--bd-l)')+';margin-bottom:5px;"></div><span style="font-size:9px;font-weight:700;color:'+(ix===_wizStep-1?'var(--ink)':'var(--mu)')+';text-transform:uppercase;letter-spacing:.05em;">'+(ix+1)+'. '+st+'</span></div>').join('')+'</div>';
+  let body='',actions='';
+  if(_wizStep===1){
+    body=stepBar+nxKV([['Employees',PAYPRO_EMPS.length],['Pay Date','25 Feb 2025'],['Total Gross',fmt(Math.round(g))],['Total Net',fmt(Math.round(n))],['PAYE',fmt(Math.round(paye))],['UIF + SDL',fmt(Math.round(uif*2+g*.01))]])
+      +'<div class="nx-sec">Checks</div>'+nxTimeline([
+        {state:'done',t:'All employees have verified bank accounts',s:PAYPRO_EMPS.length+' of '+PAYPRO_EMPS.length+' passed'},
+        {state:'done',t:'Attendance & leave reconciled',s:'Feeds from Attendance Tracker'},
+        {state:'done',t:'GL mapping valid',s:'Salaries 6000 · PAYE/UIF 2200 · Bank 1000'},
+        {state:variances.length?'now':'done',t:variances.length+' variance(s) need review',s:'Step 2'},
+      ]);
+    actions='<button class="btn bs" onclick="nxDrawerClose()">Cancel</button><button class="btn bp" onclick="_wizStep=2;_wizRender()">Continue → Variances</button>';
+  }else if(_wizStep===2){
+    body=stepBar+'<div style="font-size:12px;color:var(--mid);margin-bottom:12px;">Changes versus January\'s run. Confirm each is expected before releasing funds.</div>'
+      +(variances.length?variances.map(v=>'<div class="stock-card"><div class="stock-icon" style="background:var(--am-l);">'+svgIcon('trending','14px','var(--am)')+'</div><div style="flex:1;"><div class="stock-name">'+v.name+'</div><div class="stock-sku">'+v.what+'</div></div><span class="stat-val" style="color:var(--am);">+'+fmt(v.delta)+'</span></div>').join('')
+        :'<div style="text-align:center;padding:24px;color:var(--mu);font-size:12px;">No variances — identical to last month</div>')
+      +'<div class="nx-sec">Impact</div><div class="stat-row"><span class="stat-lbl">Net payout vs January</span><span class="stat-val" style="color:var(--am);">+'+fmt(variances.reduce((s,v)=>s+v.delta,0))+' gross</span></div>';
+    actions='<button class="btn bs" onclick="_wizStep=1;_wizRender()">← Back</button><button class="btn bp" onclick="_wizStep=3;_wizRender()">Accept Variances →</button>';
+  }else if(_wizStep===3){
+    const sdl=g*.01;
+    body=stepBar+'<div style="font-size:12px;color:var(--mid);margin-bottom:12px;">Statutory liabilities generated by this run — your EMP201 for period 2025/02.</div>'
+      +nxKV([['PAYE (4102)',fmt(Math.round(paye))],['UIF (1%+1%)',fmt(Math.round(uif*2))],['SDL (1%)',fmt(Math.round(sdl))],['Total to SARS',fmt(Math.round(paye+uif*2+sdl))]])
+      +'<div class="stat-row"><span class="stat-lbl">Submission deadline</span><span class="stat-val" style="color:var(--rd);">7 March 2025</span></div>'
+      +'<div class="stat-row"><span class="stat-lbl">eFiling status</span><span class="stat-val">Connected via SARS integration</span></div>'
+      +'<div style="margin-top:12px;"><button class="btn bs btn-sm" onclick="emp201PDF()">Preview EMP201 PDF</button></div>';
+    actions='<button class="btn bs" onclick="_wizStep=2;_wizRender()">← Back</button><button class="btn bp" onclick="_wizStep=4;_wizRender()">Continue → Release</button>';
+  }else{
+    body=stepBar+'<div class="alert or" style="margin-bottom:14px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:#D97706;stroke-width:2;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><div><div class="alert-title">Final authorisation</div><div class="alert-body">Releasing '+fmt(Math.round(n))+' to '+PAYPRO_EMPS.length+' bank accounts via SwiftPay. This posts the GL journal, emails payslips, and cannot be recalled after 14:00 SAST.</div></div></div>'
+      +nxKV([['Net Release',fmt(Math.round(n))],['Accounts',PAYPRO_EMPS.length],['GL Journal','Auto-posted'],['Payslips','Emailed on success']]);
+    actions='<button class="btn bs" onclick="_wizStep=3;_wizRender()">← Back</button><button class="btn bp" onclick="_wizRelease()">Authorise with OTP</button>';
+  }
+  nxDrawerOpen({title:'Pay Run — February 2025',sub:'Step '+_wizStep+' of 4 · '+steps[_wizStep-1],icon:'dollar',color:'var(--gn)',body,actions});
+}
+function _wizRelease(){
+  nxDrawerClose();
+  confirmWithOTP('Release February pay run',async ()=>{
+    const tNet=PAYPRO_EMPS.reduce((s,e)=>s+payproCalc(e).net,0);
+    if(!_payproPosted)payproPostToGL();
+    NXSync.emit('payroll:run',{count:PAYPRO_EMPS.length,total:Math.round(tNet)});
+    NXDB.save('paypro');
+    toast('Pay run released — '+fmt(Math.round(tNet))+' to '+PAYPRO_EMPS.length+' accounts via SwiftPay','#16A34A');
+    writeAudit('PayRun','Payroll','FEB-2025',Math.round(tNet),'high');
+  });
+}
+
+/* ══ DEEL-STYLE: contractor workspace drawer ═════════════ */
+function ctrAction(id){
+  const c=CONTRACTORS_DATA.find(x=>x.id===id); if(!c)return;
+  if(c.status==='Ending Soon'){ctrRenew(id);}else{ctrDrawer(id);}
+}
+function ctrDrawer(id){
+  const c=CONTRACTORS_DATA.find(x=>x.id===id); if(!c)return;
+  const zar=ctrZAR(c), fx=FX_TO_ZAR[c.currency];
+  const isOnboarding=c.status==='Onboarding';
+  const docBadge=v=>v==='Signed'||v==='Verified'?'gn':v==='Sent'?'bl':'am';
+  const payHist=[['25 Jan 2025',fx],['20 Dec 2024',fx*0.985],['25 Nov 2024',fx*1.01]].map(([d,r],ix)=>({
+    state:'done',t:c.currency+' '+c.rate.toLocaleString()+' → '+fmt(Math.round(c.rate*r)),
+    s:d+' · FX '+r.toFixed(3)+' · SWIFT ref MOR'+(8891-ix)}));
+  const obSteps=[['Contract sent',c.docs.contract!=='Pending'],['Contract signed',c.docs.contract==='Signed'],['ID verification',c.docs.id==='Verified'],['Tax form (W-8/local)',c.docs.tax==='Verified'],['Bank verification',c.docs.bank==='Verified']];
+  const obDone=obSteps.filter(x=>x[1]).length;
+  nxDrawerOpen({
+    title:c.name,sub:c.flag+' '+c.country+' · '+c.role+' · '+c.status,icon:'person',color:'var(--em)',
+    body:
+      nxKV([['Rate',c.currency+' '+c.rate.toLocaleString()+' / '+(c.rateType||'Monthly').toLowerCase()],['ZAR Equivalent',fmt(Math.round(zar))+' @ '+fx.toFixed(2)],['Contract Start',c.start],['Contract End',c.end||'Open-ended']])
+      +(isOnboarding?
+        '<div class="nx-sec">Onboarding — '+obDone+' of '+obSteps.length+' complete</div>'
+        +'<div class="prog" style="margin-bottom:12px;"><div class="prog-fill" style="width:'+(obDone/obSteps.length*100)+'%;background:var(--em);"></div></div>'
+        +nxTimeline(obSteps.map(([t,done],ix)=>({state:done?'done':(ix===obDone?'now':'wait'),t,s:done?'Complete':'Outstanding'})))
+        :'')
+      +'<div class="nx-sec">Compliance Documents</div>'
+      +[['Contract',c.docs.contract,'Auto-renews with 30d notice'],['Tax form',c.docs.tax,'Valid for the '+(c.country==='South Africa'?'SARS':'local')+' authority'],['ID check',c.docs.id,'Biometric + document match'],['Bank account',c.docs.bank,c.currency+' account · SWIFT enabled']]
+        .map(([lbl,st,note])=>'<div class="stat-row"><span class="stat-lbl">'+lbl+'<div style="font-size:9.5px;color:var(--mu);">'+note+'</div></span><span class="badge '+docBadge(st)+'">'+st+'</span></div>').join('')
+      +'<div class="nx-sec">Payment History</div>'+nxTimeline(payHist)
+      +'<div class="nx-sec">Cost Analysis</div>'
+      +nxKV([['Monthly (ZAR)',fmt(Math.round(zar))],['Annualised',fmt(Math.round(zar*12))],['vs Local Hire','−'+Math.round((1-zar/(zar*1.32))*100)+'% (no UIF/SDL/office)'],['Payment Method',c.currency==='ZAR'?'SwiftPay':'SWIFT wire']]),
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>'
+      +'<button class="btn bs" onclick="nxDocOpen(contractHTML(CONTRACTORS_DATA.find(x=>x.id===\''+id+'\')))">Contract PDF</button>'
+      +'<button class="btn bs" onclick="nxDocOpen(invoiceHTML({id:\'SI-'+id+'-2502\',client:\''+NX_TPL.legal.replace(/'/g,'')+'\',total:'+Math.round(zar)+',description:\'Contractor services — Feb 2025 ('+c.name+')\',due:\'25 Feb 2025\'}))">Self-Invoice</button>'
+      +(Object.values(c.docs).some(v=>v!=='Signed'&&v!=='Verified')?'<button class="btn bp" onclick="nxDrawerClose();ctrChase(\''+id+'\')">Chase Documents</button>':''),
+  });
+}
+
+/* ══ MONDAY-STYLE: board item card with updates & checklist ══ */
+function boardItemDrawer(gi,itemId){
+  const g=BOARDS_DATA[gi]; const it=g?.items.find(x=>x.id===itemId); if(!it)return;
+  it.updates=it.updates||[]; it.checklist=it.checklist||[];
+  const st=BOARD_STATUS_STYLE[it.status];
+  const ckDone=it.checklist.filter(c=>c.done).length;
+  nxDrawerOpen({
+    title:it.name,sub:g.group+' · '+it.owner,icon:'grid',color:g.color,
+    body:
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">'
+      +'<button onclick="boardCycleStatus('+gi+','+itemId+');boardItemDrawer('+gi+','+itemId+')" style="border:none;cursor:pointer;padding:6px 14px;border-radius:6px;font-size:11px;font-weight:700;font-family:var(--fn);background:'+st.bg+';color:'+st.fg+';">'+it.status+' ↻</button>'
+      +'<select class="fi" style="width:auto;font-size:11px;padding:5px 8px;" onchange="BOARDS_DATA['+gi+'].items.find(x=>x.id==='+itemId+').priority=this.value;NXDB.save(\'boards\');renderBoards();toast(\'Priority updated\',\'#7C3AED\')">'
+      +['Low','Medium','High','Critical'].map(pr=>'<option '+(pr===it.priority?'selected':'')+'>'+pr+'</option>').join('')+'</select>'
+      +'<input class="fi" style="width:auto;font-size:11px;padding:5px 8px;" value="'+it.due+'" onchange="BOARDS_DATA['+gi+'].items.find(x=>x.id==='+itemId+').due=this.value;NXDB.save(\'boards\');renderBoards()" title="Due date"/></div>'
+      +'<div class="nx-sec">Progress — '+it.progress+'%</div>'
+      +'<input type="range" min="0" max="100" step="5" value="'+it.progress+'" style="width:100%;accent-color:'+g.color+';" oninput="this.nextElementSibling.textContent=this.value+\'%\'" onchange="(function(v){const x=BOARDS_DATA['+gi+'].items.find(x=>x.id==='+itemId+');x.progress=+v;if(+v===100)x.status=\'Done\';NXDB.save(\'boards\');renderBoards();})(this.value)"/><span style="font-size:11px;color:var(--mid);font-family:var(--mo);">'+it.progress+'%</span>'
+      +'<div class="nx-sec">Checklist'+(it.checklist.length?' — '+ckDone+'/'+it.checklist.length:'')+'</div>'
+      +'<div id="biCk">'+it.checklist.map((ck,ci)=>'<div class="stat-row" style="cursor:pointer;" onclick="(function(){const x=BOARDS_DATA['+gi+'].items.find(x=>x.id==='+itemId+');x.checklist['+ci+'].done=!x.checklist['+ci+'].done;NXDB.save(\'boards\');boardItemDrawer('+gi+','+itemId+');})()"><span class="stat-lbl" style="'+(ck.done?'text-decoration:line-through;opacity:.55;':'')+'"><span class="perm-check '+(ck.done?'on':'')+'" style="margin-right:8px;vertical-align:-4px;">'+(ck.done?'✓':'')+'</span>'+ck.text+'</span></div>').join('')+'</div>'
+      +'<div style="display:flex;gap:6px;margin-top:8px;"><input class="fi" id="biCkNew" placeholder="Add checklist item…" style="flex:1;font-size:11px;" onkeydown="if(event.key===\'Enter\')boardCkAdd('+gi+','+itemId+')"/><button class="btn bs btn-xs" onclick="boardCkAdd('+gi+','+itemId+')">Add</button></div>'
+      +'<div class="nx-sec">Updates — '+it.updates.length+'</div>'
+      +'<div id="biUpd">'+(it.updates.length?it.updates.map(u=>'<div style="padding:10px 12px;background:var(--sf2);border-radius:10px;margin-bottom:8px;"><div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;"><span style="width:20px;height:20px;border-radius:50%;background:'+g.color+';color:#fff;font-size:8px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;">'+u.by.split(' ').map(w=>w[0]).join('').slice(0,2)+'</span><b style="font-size:11px;">'+u.by+'</b><span style="font-size:9.5px;color:var(--mu);">'+u.ts+'</span></div><div style="font-size:12px;color:var(--ch);line-height:1.5;">'+u.text+'</div></div>').join(''):'<div style="font-size:11px;color:var(--mu);padding:6px 0;">No updates yet — start the conversation.</div>')+'</div>'
+      +'<div style="display:flex;gap:6px;margin-top:8px;"><input class="fi" id="biUpdNew" placeholder="Write an update… @mention to notify" style="flex:1;font-size:11px;" onkeydown="if(event.key===\'Enter\')boardUpdAdd('+gi+','+itemId+')"/><button class="btn bp btn-xs" onclick="boardUpdAdd('+gi+','+itemId+')">Post</button></div>',
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>'
+      +'<button class="btn bd2" onclick="(function(){const g=BOARDS_DATA['+gi+'];g.items=g.items.filter(x=>x.id!=='+itemId+');NXDB.save(\'boards\');nxDrawerClose();renderBoards();toast(\'Item deleted\',\'#DC2626\');})()">Delete Item</button>',
+  });
+}
+function boardCkAdd(gi,itemId){
+  const inp=document.getElementById('biCkNew'); const t=inp?.value.trim(); if(!t)return;
+  const it=BOARDS_DATA[gi].items.find(x=>x.id===itemId);
+  it.checklist=it.checklist||[]; it.checklist.push({text:t,done:false});
+  NXDB.save('boards'); boardItemDrawer(gi,itemId);
+}
+function boardUpdAdd(gi,itemId){
+  const inp=document.getElementById('biUpdNew'); const t=inp?.value.trim(); if(!t)return;
+  const it=BOARDS_DATA[gi].items.find(x=>x.id===itemId);
+  it.updates=it.updates||[];
+  it.updates.unshift({by:currentUser?.name||'You',ts:'Just now',text:t.replace(/</g,'&lt;')});
+  BOARD_ACTIVITY.unshift({ts:'Just now',user:currentUser?.name||'You',action:'posted an update on "'+it.name+'"'});
+  const mention=t.match(/@(\w+)/);
+  if(mention)toast('Notified '+mention[1]+' about this update','#7C3AED');
+  NXDB.save('boards'); renderBoards(); boardItemDrawer(gi,itemId);
+}
+
+/* EMP201 shortcut on the Payroll Engine header */
+(function(){
+  const _rp2=renderPaypro;
+  window.renderPaypro=function(){
+    _rp2.apply(this,arguments);
+    const hdr=document.querySelector('#payproContent .ch2 .ch2-sub');
+    if(hdr&&!document.getElementById('emp201Btn')){
+      const b=document.createElement('button');
+      b.id='emp201Btn';b.className='btn bs btn-xs';b.style.marginLeft='6px';
+      b.textContent='EMP201';b.onclick=emp201PDF;
+      hdr.appendChild(b);
+    }
+  };
+})();
 
 </script>
 
