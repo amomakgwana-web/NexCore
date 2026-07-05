@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <meta name="description" content="NexCore ERP — Enterprise Resource Platform · xGroup SA"/>
   <meta name="theme-color" content="#F97316"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <link rel="icon" type="image/png" href="icons/icon-192.png"/>
   <title>MORR ERP — xGroup SA</title>
 
   <!-- Fonts -->
@@ -10548,6 +10551,97 @@ function nxKanbanDnD(){
     /* auto-close mobile sidebar after navigating */
     document.querySelector('.sidebar')?.classList.remove('mobile-open');
   };
+})();
+
+
+/* ════════════════════════════════════════════════════════════
+   MORR ERP v15 — Sprint E: multi-tenant white-label
+   Tenant brand resolves by hostname BEFORE login; publishing a
+   tenant stores brand + templates in nx_tenants for that domain.
+════════════════════════════════════════════════════════════ */
+async function nxResolveTenant(){
+  const client=typeof sb==='function'?sb():null;
+  if(!client)return;
+  try{
+    const host=location.hostname||'localhost';
+    const {data,error}=await client.from('nx_tenants')
+      .select('slug,domain,brand,templates')
+      .or('domain.eq.'+host+',slug.eq.'+host.split('.')[0])
+      .limit(1);
+    if(error||!data||!data.length)return;
+    const t=data[0];
+    if(t.brand&&t.brand.accent){
+      localStorage.setItem('nexcore-brand',JSON.stringify(t.brand));
+      brandApply(t.brand);
+      /* login screen branding too */
+      const mark=document.querySelector('.lg-mark-word');
+      if(mark&&t.brand.name){const nm=t.brand.name.split(' ');mark.innerHTML=nm[0]+(nm.length>1?'<span> '+nm.slice(1).join(' ')+'</span>':'');}
+      document.title=(t.brand.name||'MORR ERP')+' — Enterprise Platform';
+    }
+    if(t.templates&&Object.keys(t.templates).length)Object.assign(NX_TPL,t.templates);
+    window._nxTenant=t.slug;
+    console.info('[tenant]',t.slug,'brand loaded for',host);
+  }catch(e){}
+}
+document.addEventListener('DOMContentLoaded',()=>setTimeout(nxResolveTenant,200));
+
+async function nxPublishTenant(){
+  const client=typeof sb==='function'?sb():null;
+  if(!client||!currentUser?.id){toast('Sign in with a Supabase account to publish a tenant','#D97706');return;}
+  const brand=JSON.parse(localStorage.getItem('nexcore-brand')||'{}');
+  if(!brand.name){toast('Set and apply a brand first (name + colour), then publish','#DC2626');return;}
+  const domain=(document.getElementById('brDomain')?.value||brand.domain||'').trim();
+  const slug=(brand.name||'tenant').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  const {error}=await client.from('nx_tenants').upsert({
+    slug,domain:domain||null,brand,templates:NX_TPL,
+  },{onConflict:'slug'});
+  if(error){toast('Publish failed: '+error.message,'#DC2626');return;}
+  toast('Tenant "'+slug+'" published — '+(domain?domain+' now loads this brand for every visitor':'set a domain to activate it'),'#16A34A');
+  writeAudit('Publish','WhiteLabel',slug,0,'high');
+}
+
+/* Publish button on the White Label page */
+(function(){
+  const _rb2=renderBrand;
+  window.renderBrand=function(){
+    _rb2.apply(this,arguments);
+    setTimeout(()=>{
+      const host=document.getElementById('brandContent');
+      if(!host||document.getElementById('tenantCard'))return;
+      const card=document.createElement('div');
+      card.id='tenantCard';
+      card.innerHTML=`
+      <div class="card" style="margin-top:14px;"><div class="ch2"><span class="ch2-title">Multi-Tenant Publishing</span><span class="ch2-sub">${window._nxTenant?'Active tenant: '+window._nxTenant:'No tenant published from this browser yet'}</span></div>
+      <div class="cb">
+        <div style="font-size:12px;color:var(--mid);line-height:1.6;margin-bottom:12px;">
+          Publishing stores this brand and all document/email templates in the <b>nx_tenants</b> table keyed to your custom domain.
+          Any visitor opening that domain sees your logo, colours and company details <b>before they even sign in</b> — the login screen,
+          documents, payslips, OTP emails, everything. One deployment, unlimited branded tenants.
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn bp" onclick="nxPublishTenant()">Publish Tenant to Cloud</button>
+          <button class="btn bs" onclick="nxResolveTenant().then(()=>toast('Tenant brand re-loaded from cloud','#2563EB'))">Reload From Cloud</button>
+        </div>
+      </div></div>`;
+      host.appendChild(card);
+    },120);
+  };
+})();
+
+/* PWA install prompt capture */
+(function(){
+  let deferred=null;
+  window.addEventListener('beforeinstallprompt',e=>{
+    e.preventDefault();deferred=e;
+    setTimeout(()=>{
+      if(!document.getElementById('pwaChip')&&document.querySelector('.tb-right')){
+        const b=document.createElement('button');
+        b.id='pwaChip';b.className='btn bs btn-xs';b.textContent='Install App';
+        b.onclick=()=>{if(deferred){deferred.prompt();deferred=null;b.remove();}};
+        document.querySelector('.tb-right').insertBefore(b,document.querySelector('.tb-right').firstChild);
+      }
+    },1500);
+  });
 })();
 
 </script>

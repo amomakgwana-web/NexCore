@@ -1,0 +1,14 @@
+{
+  "appId": "za.co.morr.erp",
+  "appName": "MORR ERP",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "backgroundColor": "#09090B",
+      "launchAutoHide": true
+    }
+  }
+}
