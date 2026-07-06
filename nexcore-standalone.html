@@ -1061,6 +1061,29 @@ body.dark .intg-card{background:var(--sf2);}
 /* IAM permission matrix */
 .perm-check{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--bd);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;background:var(--wh);transition:all .12s;font-size:11px;color:#fff;}
 .perm-check.on{background:var(--gn);border-color:var(--gn);}
+/* v21 spacing refinements */
+@media(max-width:820px){
+  .kg{gap:8px;margin-bottom:10px;}
+  .card{margin-bottom:10px;border-radius:12px;}
+  .cb{padding:12px;}
+  .ch2{padding:10px 12px;flex-wrap:wrap;gap:6px;}
+  .nx-drawer-bd{padding:14px 14px;}
+  .nx-drawer-hd{padding:13px 14px;}
+  .nx-drawer-ft{padding:11px 14px;}
+  .module-grid{gap:8px;}
+  .stock-card{padding:10px 12px;gap:10px;}
+  .stat-row{padding:8px 0;}
+  .tp{padding-top:2px;}
+  .alert{padding:10px 12px;font-size:11px;}
+  .kb-col{min-width:190px;}
+  .kanban{gap:8px;overflow-x:auto;padding-bottom:8px;}
+}
+@media(min-width:821px) and (max-width:1120px){
+  .content{padding:14px 16px;}
+  .kg{gap:9px;}
+  .card{margin-bottom:12px;}
+}
+.kb-card.nx-touch-drag{position:fixed;z-index:999;width:200px;pointer-events:none;box-shadow:var(--sh3);opacity:.92;transform:rotate(2deg);}
 /* ═══ v18 MOBILE & TABLET OPTIMIZATION ═══════════════════ */
 /* Tablet: 821–1120px */
 @media(max-width:1120px){
@@ -1510,7 +1533,7 @@ body.dark .perm-check.on{background:var(--gn);}
 
       <!-- HR -->
       <div class="page" id="page-hr">
-        <div class="ph"><div class="ph-icon" style="background:var(--gn)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="ph-title">HR & Payroll</div><div class="ph-sub">674 employees · Jan 2025 payroll</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="openModal('addEmpModal')">Add Employee</button><button class="btn bs btn-sm" onclick="toast('Payroll run initiated','#16A34A')">Run Payroll</button></div></div>
+        <div class="ph"><div class="ph-icon" style="background:var(--gn)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="ph-title">HR & Payroll</div><div class="ph-sub">674 employees · Jan 2025 payroll</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="onboardEmployeeDrawer()">Onboard Employee</button><button class="btn bs btn-sm" onclick="toast('Payroll run initiated','#16A34A')">Run Payroll</button></div></div>
         <div class="tabs"><button class="tab on" onclick="switchTab('hrTabs','employees',this)">Employees</button><button class="tab" onclick="switchTab('hrTabs','payroll',this)">Payroll</button><button class="tab" onclick="switchTab('hrTabs','leave',this)">Leave</button></div>
         <div class="content">
           <div class="tp on" id="hrTabs-employees"><div class="card"><div class="ch2"><span class="ch2-title">Employee Directory</span></div><div id="empList"></div></div></div>
@@ -1882,7 +1905,7 @@ body.dark .perm-check.on{background:var(--gn);}
       <!-- ACCOUNTING / GENERAL LEDGER (Sage-style) -->
       <div class="page" id="page-accounting">
         <div class="ph"><div class="ph-icon" style="background:var(--ch)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M2 3h20v4H2z"/><path d="M4 7v14h16V7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="15" y2="15"/></svg></div><div><div class="ph-title">Accounting</div><div class="ph-sub">General Ledger · Journals · Bank Recon · Aging</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="openJournalModal()">+ Journal Entry</button><button class="btn bs btn-sm" onclick="exportTrialBalance()">Trial Balance</button></div></div>
-        <div class="tabs"><button class="tab on" onclick="switchTab('acctTabs','coa',this)">Chart of Accounts</button><button class="tab" onclick="switchTab('acctTabs','journal',this)">Journal Entries</button><button class="tab" onclick="switchTab('acctTabs','recon',this)">Bank Recon</button><button class="tab" onclick="switchTab('acctTabs','aging',this)">AR / AP Aging</button></div>
+        <div class="tabs"><button class="tab on" onclick="switchTab('acctTabs','coa',this)">Chart of Accounts</button><button class="tab" onclick="switchTab('acctTabs','journal',this)">Journal Entries</button><button class="tab" onclick="switchTab('acctTabs','ledgers',this)">Sub-Ledgers</button><button class="tab" onclick="switchTab('acctTabs','recon',this)">Bank Recon</button><button class="tab" onclick="switchTab('acctTabs','aging',this)">AR / AP Aging</button></div>
         <div class="content" id="accountingContent"></div>
       </div>
 
@@ -1978,7 +2001,7 @@ body.dark .perm-check.on{background:var(--gn);}
   <div class="modal"><div class="mh"><span class="m-title">e-Sign Document</span><button class="mclose" onclick="closeModal('signContractModal')"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:var(--mid);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
   <div class="mb"><div class="alert bl"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:var(--bl-m);stroke-width:2;flex-shrink:0;margin-top:1px;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><div><div class="alert-title">ECTA-compliant e-Signature</div><div class="alert-body">SHA-256 hash · Timestamp · Stored in xVault</div></div></div>
   <div class="fg"><label class="fl">Draw Signature</label><canvas id="sigCanvas" width="460" height="120" style="border:1px solid var(--bd);border-radius:var(--r6);width:100%;cursor:crosshair;background:white;display:block;"></canvas><button class="btn bs btn-xs" style="margin-top:4px;" onclick="clearSig()">Clear</button></div></div>
-  <div class="mf"><button class="btn bs" onclick="closeModal('signContractModal')">Cancel</button><button class="btn bp" onclick="closeModal('signContractModal');toast('Document signed and stored in xVault','#16A34A')">Sign & Submit</button></div></div>
+  <div class="mf"><button class="btn bs" onclick="closeModal('signContractModal')">Cancel</button><button class="btn bp" onclick="nxSignSubmit()">Sign & Submit</button></div></div>
 </div>
 
 <!-- New Invoice Modal -->
@@ -2024,12 +2047,12 @@ body.dark .perm-check.on{background:var(--gn);}
   <div class="modal wide"><div class="mh"><span class="m-title">Submit Expense Claim</span><button class="mclose" onclick="closeModal('newClaimModal')"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:var(--mid);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
   <div class="mb">
     <div class="alert bl" style="margin-bottom:12px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:var(--bl-m);stroke-width:2;flex-shrink:0;margin-top:1px;stroke-linecap:round;stroke-linejoin:round;"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><div><div class="alert-title">Reimbursement for personal funds used at work</div><div class="alert-body">Manager → CFO approval → SwiftPay to your account within 2 business days.</div></div></div>
-    <div class="frow"><div class="fg"><label class="fl">Category</label><select class="fi"><option>Travel (Uber/Taxi)</option><option>Meals</option><option>Accommodation</option><option>Stationery</option><option>Training / CPD</option><option>Equipment</option><option>Other</option></select></div><div class="fg"><label class="fl">Amount (R)</label><input class="fi" type="number" placeholder="0"/></div></div>
-    <div class="fg"><label class="fl">Description &amp; Business Purpose</label><textarea class="fi" rows="2" placeholder="e.g. Uber to client site in Midrand for DHA integration meeting"></textarea></div>
-    <div class="frow"><div class="fg"><label class="fl">Date of Expense</label><input class="fi" type="date"/></div><div class="fg"><label class="fl">No. of Receipts</label><input class="fi" type="number" value="1" min="1"/></div></div>
+    <div class="frow"><div class="fg"><label class="fl">Category</label><select class="fi" id="clCat"><option>Travel</option><option>Meals</option><option>Accommodation</option><option>Stationery</option><option>Training</option><option>Equipment</option><option>Other</option></select></div><div class="fg"><label class="fl">Amount (R)</label><input class="fi" type="number" placeholder="0" id="clAmt"/></div></div>
+    <div class="fg"><label class="fl">Description &amp; Business Purpose</label><textarea class="fi" rows="2" id="clDesc" placeholder="e.g. Uber to client site in Midrand for DHA integration meeting"></textarea></div>
+    <div class="frow"><div class="fg"><label class="fl">Date of Expense</label><input class="fi" type="date" id="clDate"/></div><div class="fg"><label class="fl">No. of Receipts</label><input class="fi" type="number" value="1" min="1" id="clRcpts"/></div></div>
     <div class="fg"><label class="fl">Receipts</label><div style="border:1px dashed var(--bd);border-radius:var(--r6);padding:14px;text-align:center;cursor:pointer;background:var(--sf);" onclick="toast('Receipt upload ready in production','#2563EB')"><div style="font-size:11px;color:var(--mid);">Click to attach receipts (JPG, PNG, PDF)</div></div></div>
   </div>
-  <div class="mf"><button class="btn bs" onclick="closeModal('newClaimModal')">Cancel</button><button class="btn bp" onclick="closeModal('newClaimModal');toast('Claim submitted — your manager will be notified','#16A34A')">Submit Claim</button></div></div>
+  <div class="mf"><button class="btn bs" onclick="closeModal('newClaimModal')">Cancel</button><button class="btn bp" onclick="submitClaim()">Submit Claim</button></div></div>
 </div>
 
 <!-- Add Risk Modal -->
@@ -2250,7 +2273,7 @@ const ROLES = {
   manager: {
     label:'Manager', color:'#3B82F6', avBg:'#3B82F6', avInitials:'TM',
     name:'Thabo Mokoena', org:'xGroup SA',
-    pages:['dashboard','procurement','approvals','hr','crm','projects','inventory','ess','claims','vault','chat','ai','search','attendance','paypro','fleet','boards','email'],
+    pages:['dashboard','procurement','approvals','hr','crm','projects','inventory','ess','claims','vault','chat','ai','search','attendance','paypro','fleet','boards','email','onboarding'],
     nav:[
       {section:'Overview'},
       {id:'dashboard',label:'Dashboard',icon:'grid'},
@@ -2261,6 +2284,7 @@ const ROLES = {
       {id:'crm',label:'CRM',icon:'heart'},
       {section:'Team'},
       {id:'hr',label:'HR & Leave',icon:'users'},
+      {id:'onboarding',label:'Onboard Employee',icon:'useradd'},
       {id:'paypro',label:'Payroll Engine',icon:'dollar'},
       {id:'fleet',label:'Fleet & Fuel',icon:'box'},
       {id:'attendance',label:'Attendance Tracker',icon:'clock'},
@@ -4753,10 +4777,12 @@ function resetWF(){loadWF(document.getElementById('wfSel')?.value||'po');}
 function initSig(){
   const c=document.getElementById('sigCanvas');if(!c||sigCtx)return;
   sigCtx=c.getContext('2d');sigCtx.strokeStyle='#111';sigCtx.lineWidth=2;sigCtx.lineCap='round';
-  c.addEventListener('mousedown',e=>{sigDrawing=true;sigCtx.beginPath();const r=c.getBoundingClientRect();sigCtx.moveTo(e.clientX-r.left,e.clientY-r.top);});
-  c.addEventListener('mousemove',e=>{if(!sigDrawing)return;const r=c.getBoundingClientRect();sigCtx.lineTo(e.clientX-r.left,e.clientY-r.top);sigCtx.stroke();});
-  c.addEventListener('mouseup',()=>sigDrawing=false);
-  c.addEventListener('mouseleave',()=>sigDrawing=false);
+  c.style.touchAction='none'; /* pointer events: mouse + touch + stylus */
+  const pos=e=>{const r=c.getBoundingClientRect();return [ (e.clientX-r.left)*(c.width/r.width), (e.clientY-r.top)*(c.height/r.height) ];};
+  c.addEventListener('pointerdown',e=>{e.preventDefault();c.setPointerCapture(e.pointerId);sigDrawing=true;sigCtx.beginPath();sigCtx.moveTo(...pos(e));});
+  c.addEventListener('pointermove',e=>{if(!sigDrawing)return;e.preventDefault();sigCtx.lineTo(...pos(e));sigCtx.stroke();});
+  c.addEventListener('pointerup',()=>{sigDrawing=false;window.NX_SIGNATURE=c.toDataURL('image/png');});
+  c.addEventListener('pointercancel',()=>sigDrawing=false);
 }
 
 function clearSig(){if(sigCtx){const c=document.getElementById('sigCanvas');sigCtx.clearRect(0,0,c.width,c.height);}}
@@ -7028,7 +7054,7 @@ function budgetDeptFilter(q)   {
   });
 }
 
-function invoiceNew()            { if(typeof toast==='function') toast('Opening new invoice form…','#3B82F6'); }
+function invoiceNew()            { openModal('newInvoiceModal'); }
 function exportToCSV(rows, filename) {
   if (!rows || !rows.length) { toast('No data to export', '#EF4444'); return; }
   const headers = Object.keys(rows[0]);
@@ -7058,8 +7084,13 @@ function invoiceApprove(id)      { if(typeof toast==='function') toast(`Invoice 
 function invoicePay(id)          { if(typeof toast==='function') toast(`Payment initiated for ${id} via SwiftPay`,'#16A34A'); }
 function invoiceView(id)         { if(typeof toast==='function') toast(`Opening invoice ${id}…`,'#3B82F6'); }
 
-function supplierAdd()           { if(typeof toast==='function') toast('Opening supplier onboarding form…','#3B82F6'); }
-function supplierExport()        { if(typeof toast==='function') toast('Exporting supplier register…','#16A34A'); }
+function supplierAdd()           { openModal('addVendorModal'); }
+function supplierExport(){
+  const rows=SUPPLY_SUPPLIERS.map(x=>[`"${x.name}"`,x.category,x.spend,x.orders,x.rating,x.risk,x.onTime].join(','));
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('Name,Category,Spend,Orders,Rating,Risk,OnTime%\n'+rows.join('\n'));
+  a.download='supplier-register.csv';a.click();toast('supplier-register.csv downloaded','#16A34A');
+}
 function supplierView(id)        {
   const s = SUPPLIERS.find(x=>x.id===id);
   if(typeof toast==='function') toast(`Opening profile: ${s?.name}…`,'#3B82F6');
@@ -9782,7 +9813,8 @@ NXSync.on('attendance:clockin',()=>{
 /* 2. Leave: staff submits → manager approval queue + HR list + dashboards */
 NXSync.on('leave:created',(lv)=>{
   NX_LEAVE_REQUESTS.unshift(lv);
-  if(window.APPROVALS_DATA)APPROVALS_DATA.unshift({id:lv.id,label:'Leave — '+lv.emp+' ('+lv.days+'d '+lv.type+')',amount:0,status:'Pending',requester:lv.emp,age:Date.now()});
+  window.APPROVALS_DATA=window.APPROVALS_DATA||[];
+  window.APPROVALS_DATA.unshift({id:lv.id,label:'Leave — '+lv.emp+' ('+lv.days+'d '+lv.type+')',amount:0,status:'Pending',requester:lv.emp,age:Date.now()});
   NX_ATTENDANCE.onLeave+=0; // reserved until approved
   if(currentUser?.notifs)currentUser.notifs.unshift({title:'New leave request '+lv.id,body:lv.emp+' · '+lv.days+' days '+lv.type,color:'#3B82F6',icon:'cal',unread:true,time:'Just now',action:"openPage('leave');closeNotif()",actionLabel:'Review'});
   renderNotifs();nxRefresh();
@@ -11459,6 +11491,317 @@ window.financeReportPDF=pdfPnL;
     document.querySelectorAll('#ctrTabs-people .ctr-pdf').forEach((b,i)=>{b.onclick=()=>pdfContract(CONTRACTORS_DATA[i].id);});
   };
 })();
+
+
+/* ════════════════════════════════════════════════════════════
+   MORR ERP v21 — Claims SOP engine · Payroll automation ·
+   Sub-ledgers · Employee onboarding · e-sign · touch kanban
+════════════════════════════════════════════════════════════ */
+
+/* ══ CLAIMS: real-time SOP flow ══════════════════════════ */
+function submitClaim(){
+  const cat=document.getElementById('clCat')?.value||'Other';
+  const amt=parseFloat(document.getElementById('clAmt')?.value)||0;
+  const desc=(document.getElementById('clDesc')?.value||'').trim();
+  const date=document.getElementById('clDate')?.value||new Date().toISOString().slice(0,10);
+  const rcpts=parseInt(document.getElementById('clRcpts')?.value)||1;
+  if(amt<=0){toast('Enter the claim amount','#DC2626');return;}
+  if(!desc){toast('Describe the expense and business purpose','#DC2626');return;}
+  const claim={
+    id:'CLAIM-'+String(42+CLAIMS_DATA.length).padStart(4,'0'),
+    emp:currentUser?.name||'You',empId:currentUser?.id||'EMP-000',dept:'—',
+    category:cat,desc,amount:amt,receipts:rcpts,
+    status:'Pending Manager',submitted:date,managerApproval:null,cfoApproval:null,paid:false,
+  };
+  CLAIMS_DATA.unshift(claim);
+  closeModal('newClaimModal');
+  ['clAmt','clDesc'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  NXSync.emit('claim:created',claim);
+}
+NXSync.on('claim:created',(claim)=>{
+  /* SOP step 1: appears in Claims list */
+  if(typeof renderClaims==='function')renderClaims();
+  /* SOP step 2: manager approval queue + notification */
+  window.APPROVALS_DATA=window.APPROVALS_DATA||[];
+  window.APPROVALS_DATA.unshift({id:claim.id,label:'Claim — '+claim.emp+' ('+claim.category+' '+fmt(claim.amount)+')',amount:claim.amount,status:'Pending',requester:claim.emp,age:Date.now()});
+  if(typeof renderApprovalContent==='function')renderApprovalContent();
+  if(currentUser?.notifs){currentUser.notifs.unshift({title:'New claim '+claim.id+' — '+fmt(claim.amount),body:claim.emp+' · '+claim.category+' · '+claim.desc.slice(0,40),color:'#F97316',icon:'credit',unread:true,time:'Just now',action:"openPage('claims');closeNotif()",actionLabel:'Review'});renderNotifs();}
+  /* SOP: audit + confirmation email + dashboards */
+  writeAudit('Submit','Claims',claim.id,claim.amount,'medium');
+  EMAIL_LOG.unshift({ts:'Just now',to:'manager@xgroup.co.za',subject:'Approval needed: '+claim.id+' — '+fmt(claim.amount),status:'Delivered',opens:0});
+  if(typeof renderEmail==='function')renderEmail();
+  if(typeof renderDashboard==='function')renderDashboard();
+  NXDB.save('claims');
+  toast(claim.id+' submitted — routed to your manager (SOP step 1 of 4)','#16A34A');
+});
+/* claim approvals continue the SOP with side effects */
+(function(){
+  const _ac2=approveClaim;
+  window.approveClaim=function(claimId,approver){
+    _ac2.apply(this,arguments);
+    const c=CLAIMS_DATA.find(x=>x.id===claimId);
+    if(!c)return;
+    if(approver==='cfo'&&c.paid){
+      /* SOP step 4: GL journal + payslip-style email + xPayments already queued */
+      JOURNAL_ENTRIES.unshift({ref:'JNL-CLM-'+claimId,date:new Date().toISOString().slice(0,10),
+        narration:'Expense claim '+claimId+' — '+c.emp+' ('+c.category+')',
+        lines:[{acct:'6200',debit:c.amount,credit:0},{acct:'1000',debit:0,credit:c.amount}],
+        postedBy:'Claims SOP',status:'Posted'});
+      if(typeof renderAccounting==='function')renderAccounting();
+      if(typeof renderXPayments==='function')renderXPayments();
+      EMAIL_LOG.unshift({ts:'Just now',to:c.emp.toLowerCase().replace(/[^a-z]+/g,'.')+'@xgroup.co.za',subject:'Claim '+claimId+' approved — '+fmt(c.amount)+' paying out via SwiftPay',status:'Delivered',opens:0});
+      NXDB.save('accounting');
+    }
+    writeAudit(approver==='cfo'?'CFO-Approve':'Mgr-Approve','Claims',claimId,c.amount,'medium');
+    NXDB.save('claims');
+  };
+})();
+/* persist claims */
+NXDB.registry.claims={
+  get:()=>({list:CLAIMS_DATA.slice(0,80)}),
+  set:(st)=>{if(st.list){CLAIMS_DATA.length=0;st.list.forEach(x=>CLAIMS_DATA.push(x));}},
+  render:()=>{if(typeof renderClaims==='function')renderClaims();},
+};
+
+/* ══ PAYROLL AUTOMATION (Xero / QuickBooks style) ════════ */
+let PAYROLL_AUTOS=[
+  {id:'draft',rule:'Auto-draft pay run on the 20th of each month',detail:'Pulls attendance, leave and approved commission into a draft run',enabled:true,last:'Drafted Feb run · 20 Jan'},
+  {id:'gl',rule:'Auto-post GL journal when a run is approved',detail:'Salaries 6000 DR · PAYE/UIF 2200 CR · Bank 1000 CR',enabled:true,last:'Posted Jan run'},
+  {id:'payslips',rule:'Auto-email payslips on payment date',detail:'Branded PDF payslips via the email relay at 06:00 on pay day',enabled:true,last:'674 sent · 25 Jan'},
+  {id:'emp201',rule:'Auto-generate EMP201 and remind before the 7th',detail:'PDF return + notification 3 business days before deadline',enabled:true,last:'EMP201 2025/01 generated'},
+  {id:'recon',rule:'Auto-match salary batch on the bank statement',detail:'Reconciles the SALARIES batch line when the amounts agree',enabled:true,last:'Matched Jan batch'},
+  {id:'leaveaccrue',rule:'Accrue leave 1.25 days/employee on month-end',detail:'BCEA minimum · syncs balances to ESS and the Payroll Engine',enabled:false,last:'—'},
+];
+NXDB.registry.payrollauto={
+  get:()=>({rules:PAYROLL_AUTOS}),
+  set:(st)=>{if(st.rules)st.rules.forEach(r=>{const x=PAYROLL_AUTOS.find(y=>y.id===r.id);if(x)x.enabled=r.enabled;});},
+  render:()=>{},
+};
+function payrollAutoToggle(id){
+  const a=PAYROLL_AUTOS.find(x=>x.id===id); if(!a)return;
+  a.enabled=!a.enabled;
+  NXDB.save('payrollauto');
+  renderPaypro();
+  toast('Automation '+(a.enabled?'enabled':'paused')+': '+a.rule,a.enabled?'#16A34A':'#71717A');
+}
+/* automation panel under the pay run table */
+(function(){
+  const _rp4=renderPaypro;
+  window.renderPaypro=function(){
+    _rp4.apply(this,arguments);
+    const el=document.getElementById('payproContent');
+    if(!el||document.getElementById('payAutoCard'))return;
+    const card=document.createElement('div');
+    card.className='card';card.id='payAutoCard';
+    card.innerHTML='<div class="ch2">'+svgIcon('flow','13px','var(--bl)')+'<span class="ch2-title">Payroll Automation</span><span class="ch2-sub">'+PAYROLL_AUTOS.filter(a=>a.enabled).length+' of '+PAYROLL_AUTOS.length+' active · runs without you</span></div>'
+      +'<div class="cb" style="padding:0;">'
+      +PAYROLL_AUTOS.map(a=>'<div class="stock-card"><div class="stock-icon" style="background:'+(a.enabled?'var(--bl-l)':'var(--sf2)')+';">'+svgIcon('flow','14px',a.enabled?'var(--bl)':'var(--mu)')+'</div><div style="flex:1;"><div class="stock-name" style="'+(a.enabled?'':'color:var(--mu);')+'">'+a.rule+'</div><div class="stock-sku">'+a.detail+' · Last: '+a.last+'</div></div><button class="tgl '+(a.enabled?'on':'')+'" onclick="payrollAutoToggle(\''+a.id+'\')"><span></span></button></div>').join('')
+      +'</div>';
+    el.appendChild(card);
+  };
+})();
+/* automations actually fire on release */
+(function(){
+  const _wr=_wizRelease;
+  window._wizRelease=function(){
+    nxDrawerClose();
+    confirmWithOTP('Release February pay run',async ()=>{
+      const tNet=PAYPRO_EMPS.reduce((s,e)=>s+payproCalc(e).net,0);
+      const on=id=>PAYROLL_AUTOS.find(a=>a.id===id)?.enabled;
+      if(on('gl')&&!_payproPosted){payproPostToGL();PAYROLL_AUTOS.find(a=>a.id==='gl').last='Posted Feb run · just now';}
+      if(on('payslips')){EMAIL_LOG.unshift({ts:'Just now',to:'all-staff@xgroup.co.za',subject:'Your payslip for February is ready',status:'Delivered',opens:0});PAYROLL_AUTOS.find(a=>a.id==='payslips').last=PAYPRO_EMPS.length+' queued · just now';}
+      if(on('emp201')){PAYROLL_AUTOS.find(a=>a.id==='emp201').last='EMP201 2025/02 generated · just now';if(currentUser?.notifs)currentUser.notifs.unshift({title:'EMP201 2025/02 ready',body:'Submit to SARS by 7 March',color:'#3B82F6',icon:'file',unread:true,time:'Just now'});}
+      if(on('recon')){const g=PAYPRO_EMPS.reduce((s,e)=>s+payproCalc(e).net,0);BANK_STATEMENT.unshift({id:BANK_STATEMENT.length+10,date:'25 Feb',desc:'SALARIES FEB BATCH',amount:-Math.round(g),matched:true,ledgerRef:'PAY-2025-02'});PAYROLL_AUTOS.find(a=>a.id==='recon').last='Matched Feb batch · just now';if(typeof renderAccounting==='function')renderAccounting();}
+      NXSync.emit('payroll:run',{count:PAYPRO_EMPS.length,total:Math.round(tNet)});
+      NXDB.save('paypro');NXDB.save('payrollauto');NXDB.save('accounting');
+      renderNotifs();renderPaypro();
+      toast('Pay run released — automations fired: GL, payslips, EMP201, bank recon','#16A34A');
+      writeAudit('PayRun','Payroll','FEB-2025',Math.round(tNet),'high');
+    });
+  };
+})();
+
+/* ══ SUB-LEDGERS (all ledger types, derived from live data) ══ */
+(function(){
+  const _ra=renderAccounting;
+  window.renderAccounting=function(){
+    _ra.apply(this,arguments);
+    const content=document.getElementById('accountingContent');
+    if(!content||document.getElementById('acctTabs-ledgers'))return;
+    const bill=(typeof _billingInvoices==='function'?_billingInvoices():[])||[];
+    const wrap=document.createElement('div');
+    wrap.className='tp';wrap.id='acctTabs-ledgers';
+    const T=(title,sub,head,rows)=>'<div class="card"><div class="ch2"><span class="ch2-title">'+title+'</span><span class="ch2-sub">'+sub+'</span></div><div class="cb" style="padding:0;"><div class="tw"><table><thead><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map((c,i)=>'<td class="'+(i===0?'tb':'')+(String(c).startsWith('R ')||String(c).startsWith('−R')?' mo':'')+'">'+c+'</td>').join('')+'</tr>').join('')+'</tbody></table></div></div></div>';
+    wrap.innerHTML=
+      '<div class="alert bl" style="margin-bottom:14px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:var(--bl-m);stroke-width:2;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;"><path d="M2 3h20v4H2z"/><path d="M4 7v14h16V7"/></svg><div><div class="alert-title">Six ledger types, one source of truth</div><div class="alert-body">Every transaction across the platform posts into its sub-ledger and rolls up to the General Ledger. CSV/PDF export available on every ledger below.</div></div></div>'
+      +T('Cash Book (1000 — Bank)','From bank statement feed',['Date','Description','Amount','GL Ref','Status'],
+        BANK_STATEMENT.map(b=>[b.date,b.desc,(b.amount<0?'−':'')+fmt(Math.abs(b.amount)),b.ledgerRef||'—','<span class="badge '+(b.matched?'gn':'am')+'">'+(b.matched?'Reconciled':'Open')+'</span>']))
+      +T('Accounts Receivable Ledger (1100)','Customer invoices — xBilling',['Invoice','Customer','Total','Due','Status'],
+        bill.slice(0,10).map(v=>[v.id||v.invoice_number,v.client||v.client_name,fmt(Math.round(v.total||v.total_amount||0)),v.due||v.due_date||'—','<span class="badge '+((v.status==='Paid')?'gn':(v.status==='Overdue'?'rd':'bl'))+'">'+v.status+'</span>']))
+      +T('Accounts Payable Ledger (2000)','Supplier invoices',['Invoice','Supplier','Amount','Due','Status'],
+        INVOICES.map(v=>[v.id,v.vendor,fmt(v.amount),v.due,'<span class="badge '+(v.status==='paid'?'gn':v.status==='overdue'?'rd':'am')+'">'+v.status+'</span>']))
+      +T('Payroll Ledger (6000 / 2200)','Pay runs incl. contractors',['Run','Period','People','Amount','Posting'],
+        [['PAYRUN-2025-02','February 2025',String(PAYPRO_EMPS.length),fmt(Math.round(PAYPRO_EMPS.reduce((s,e)=>s+payproCalc(e).gross,0))),(_payproPosted?'<span class="badge gn">Posted</span>':'<span class="badge am">Draft</span>')]]
+        .concat(CONTRACTOR_PAYRUNS.map(pr=>[pr.id,pr.period,String(pr.contractors),fmt(pr.totalZAR),'<span class="badge gn">Posted</span>'])))
+      +T('Fixed Asset Register (1200)','Cost less accumulated depreciation',['Asset','Cost','Accum. Depr.','Book Value','GL'],
+        [['IT equipment & laptops',fmt(2140000),'−'+fmt(618000),fmt(1522000),'1200/1250'],['Office furniture & fittings',fmt(980000),'−'+fmt(312000),fmt(668000),'1200/1250'],['Vehicles (fleet of '+FLEET_VEHICLES.length+')',fmt(1700000),'−'+fmt(310000),fmt(1390000),'1200/1250']])
+      +T('Ledger Mapping','Where each module posts',['Module','Transaction','DR Account','CR Account'],
+        [['Payroll Engine','Monthly pay run','6000 Salaries','1000 Bank + 2200 PAYE/UIF'],
+         ['Claims','Approved claim','6200 Office & Admin','1000 Bank'],
+         ['xBilling','Customer invoice','1100 Receivables','4100 Revenue'],
+         ['Procurement','Supplier invoice','5000/6200 Expense','2000 Payables'],
+         ['SwiftPay/PayFast','Online payment received','1000 Bank','1100 Receivables'],
+         ['Contractors','Pay cycle','6000 Salaries','1000 Bank']]);
+    content.appendChild(wrap);
+  };
+})();
+
+/* ══ EMPLOYEE ONBOARDING (HR & Managers) ═════════════════ */
+function onboardEmployeeDrawer(){
+  nxDrawerOpen({
+    title:'Onboard New Employee',sub:'Contract + policy pack sent for e-signature',icon:'useradd',color:'var(--gn)',
+    body:'<div class="frow"><div class="fg"><label class="fl">Full Name</label><input class="fi" id="obName" placeholder="e.g. Naledi Mokgadi"/></div>'
+      +'<div class="fg"><label class="fl">Work Email</label><input class="fi" id="obEmail" type="email" placeholder="naledi@xgroup.co.za"/></div></div>'
+      +'<div class="frow"><div class="fg"><label class="fl">Role / Title</label><input class="fi" id="obRole" placeholder="e.g. Financial Analyst"/></div>'
+      +'<div class="fg"><label class="fl">Department</label><select class="fi" id="obDept"><option>Engineering</option><option>Sales</option><option>Finance</option><option>Marketing</option><option>Operations</option><option>HR</option><option>IT Support</option></select></div></div>'
+      +'<div class="frow"><div class="fg"><label class="fl">Monthly Salary (R)</label><input class="fi" id="obSalary" type="number" placeholder="0"/></div>'
+      +'<div class="fg"><label class="fl">Start Date</label><input class="fi" id="obStart" type="date"/></div></div>'
+      +'<div class="nx-sec">Documents to send</div>'
+      +[['Employment contract (auto-generated, e-sign)',1],['POPIA & IT acceptable-use policy',1],['Leave & remote-work policy',1],['Medical aid + retirement fund forms',0]]
+        .map(([lbl,on],i)=>'<div class="stat-row"><span class="stat-lbl">'+lbl+'</span><button class="tgl '+(on?'on':'')+'" id="obDoc'+i+'" onclick="this.classList.toggle(\'on\')"><span></span></button></div>').join('')
+      +'<div style="font-size:11px;color:var(--mid);margin-top:12px;line-height:1.6;">On submit: employee is added to HR + Payroll Engine, an onboarding checklist starts, the contract PDF and selected policies go out via the branded email relay, and an e-signature request is created (signable on phone, tablet or desktop).</div>',
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Cancel</button>'
+      +'<button class="btn bp" onclick="onboardEmployeeSubmit()">Onboard & Send Pack</button>',
+  });
+}
+async function onboardEmployeeSubmit(){
+  const name=document.getElementById('obName')?.value.trim();
+  const email=document.getElementById('obEmail')?.value.trim();
+  const role=document.getElementById('obRole')?.value.trim()||'Employee';
+  const dept=document.getElementById('obDept')?.value||'Operations';
+  const salary=parseFloat(document.getElementById('obSalary')?.value)||0;
+  const start=document.getElementById('obStart')?.value||new Date().toISOString().slice(0,10);
+  if(!name||!email||salary<=0){toast('Name, email and salary are required','#DC2626');return;}
+  const emp={id:'EMP-'+String(PAYPRO_EMPS.length+1).padStart(3,'0'),name,dept,basic:salary,commission:0,bonus:0,
+    medical:Math.round(salary*.055),retirement:Math.round(salary*.075),leaveBal:0,role,email,startDate:start};
+  PAYPRO_EMPS.push(emp);
+  try{if(typeof EMPLOYEES!=='undefined'&&Array.isArray(EMPLOYEES))EMPLOYEES.push({name,dept,position:role,gross:salary,status:'Onboarding'});}catch(e){}
+  nxDrawerClose();
+  /* contract + policy pack via relay */
+  await callEdgeFunction('email-relay','send_email',{to:email,
+    subject:tplMerge('Welcome to {{company}} — your contract & policy pack'),
+    html:contractHTML(emp)+'<hr><p>Policy pack attached: POPIA & IT policy, Leave policy. Sign digitally from any device using the link in your portal.</p>'});
+  EMAIL_LOG.unshift({ts:'Just now',to:email,subject:'Welcome — contract & policy pack (e-sign requested)',status:'Delivered',opens:0});
+  if(currentUser?.notifs)currentUser.notifs.unshift({title:'Onboarding started — '+name,body:role+' · '+dept+' · starts '+start,color:'#16A34A',icon:'useradd',unread:true,time:'Just now'});
+  renderNotifs();
+  if(typeof renderPaypro==='function'){const c=document.getElementById('payAutoCard');if(c)c.remove();renderPaypro();}
+  if(typeof renderEmployeeList==='function')renderEmployeeList();
+  if(typeof renderEmail==='function')renderEmail();
+  NXDB.save('paypro');NXDB.save('email');
+  writeAudit('Onboard','HR',name,salary,'high');
+  toast(name+' onboarded — contract & policies sent to '+email+' for e-signature','#16A34A');
+  NXSync.emit('employee:onboarded',{name,dept,role});
+}
+/* onboarding page header button */
+(function(){
+  const btn=document.querySelector('#page-onboarding .ph-right');
+  document.addEventListener('DOMContentLoaded',()=>{
+    const ph=document.querySelector('#page-onboarding .ph');
+    if(ph&&!ph.querySelector('.ph-right')){
+      const d=document.createElement('div');d.className='ph-right';
+      d.innerHTML='<button class="btn bp btn-sm" onclick="onboardEmployeeDrawer()">+ Onboard Employee</button>';
+      ph.appendChild(d);
+    }
+  });
+})();
+
+/* ══ E-SIGN: submit stores signature, stamps PDFs ════════ */
+function nxSignSubmit(){
+  const c=document.getElementById('sigCanvas');
+  if(c){
+    const blank=document.createElement('canvas');blank.width=c.width;blank.height=c.height;
+    if(c.toDataURL()===blank.toDataURL()){toast('Draw your signature first','#DC2626');return;}
+    window.NX_SIGNATURE=c.toDataURL('image/png');
+    localStorage.setItem('nx-signature',window.NX_SIGNATURE);
+  }
+  closeModal('signContractModal');
+  toast('Signature captured — it will be stamped onto contracts you sign (SHA-256 sealed, stored in xVault)','#16A34A');
+  writeAudit('eSign','xVault','signature-capture',0,'medium');
+}
+(function(){try{const sig=localStorage.getItem('nx-signature');if(sig)window.NX_SIGNATURE=sig;}catch(e){}})();
+/* stamp signature into contract PDFs */
+(function(){
+  const _pc=pdfContract;
+  window.pdfContract=function(id){
+    const c=typeof id==='string'?CONTRACTORS_DATA.find(x=>x.id===id):PAYPRO_EMPS[id];
+    if(!c)return;
+    const isCtr=!!c.currency;
+    const p=nxPDFStart(isCtr?'Contractor Agreement':'Employment Contract',(c.id||'CT')+'-AGR');
+    if(!p){nxDocOpen(contractHTML(c));return;}
+    p.kv([['Party',c.name],['Role',c.role||c.dept||'-'],['Start',c.start||c.startDate||'-'],[isCtr?'End':'Type',isCtr?(c.end||'-'):'Permanent']])
+     .sec('Terms');
+    const rate=isCtr?c.currency+' '+c.rate.toLocaleString()+' per '+(c.rateType||'month').toLowerCase():fmt(c.basic)+' per month';
+    [['1. Appointment',NX_TPL.legal+' engages '+c.name+' as '+(c.role||'a member of staff')+(isCtr?' on an independent-contractor basis.':'.')],
+     ['2. Remuneration',rate+(isCtr?', payable monthly on valid invoice.':', less statutory deductions (PAYE, UIF).')],
+     ['3. Confidentiality','All business, client and personal information remains confidential per POPIA.'],
+     ['4. Intellectual Property','All work product vests in the Company.'],
+     ['5. Termination','30 days written notice by either party; immediate for material breach.'],
+     ['6. Governing Law','Republic of South Africa.']].forEach(([h,t])=>{p.note(h+' - '+t);});
+    p.sec('Signatures');
+    if(window.NX_SIGNATURE){
+      try{p._pg(70);p.d.addImage(window.NX_SIGNATURE,'PNG',40,p.y,140,42);p.d.setFontSize(7.5);p.d.setTextColor(120,120,128);p.d.text('Digitally signed | '+new Date().toISOString().slice(0,16).replace('T',' ')+' | ECTA compliant',40,p.y+52);p.y+=64;}catch(e){}
+      p.note(c.name+': ______________________    Date: ____________');
+    } else {
+      p.note('For '+NX_TPL.legal+': ______________________    '+c.name+': ______________________    Date: ____________');
+    }
+    p.save((c.id||'contract')+'-agreement.pdf',false);
+    writeAudit('PDF','Contracts',c.id||c.name,0,'low');
+  };
+})();
+
+/* ══ CRM KANBAN: pointer-based drag (mouse + touch + pen) ══ */
+window.nxKanbanDnD=function(){
+  const board=document.querySelector('#crmKanban .kanban'); if(!board||board._nxPtr)return;
+  board._nxPtr=true;
+  let drag=null,ghost=null,srcCol=null;
+  board.querySelectorAll('.kb-card').forEach(cd=>{cd.style.touchAction='none';});
+  board.addEventListener('pointerdown',e=>{
+    const card=e.target.closest('.kb-card'); if(!card)return;
+    e.preventDefault();
+    drag=card;srcCol=card.parentElement;
+    ghost=card.cloneNode(true);ghost.classList.add('nx-touch-drag');
+    ghost.style.left=(e.clientX-100)+'px';ghost.style.top=(e.clientY-30)+'px';
+    document.body.appendChild(ghost);
+    card.style.opacity='.35';
+  });
+  document.addEventListener('pointermove',e=>{
+    if(!ghost)return;
+    e.preventDefault();
+    ghost.style.left=(e.clientX-100)+'px';ghost.style.top=(e.clientY-30)+'px';
+    document.querySelectorAll('.kb-col').forEach(c=>c.classList.remove('nx-dragover'));
+    ghost.style.display='none';
+    const col=document.elementFromPoint(e.clientX,e.clientY)?.closest('.kb-col');
+    ghost.style.display='';
+    if(col)col.classList.add('nx-dragover');
+  },{passive:false});
+  document.addEventListener('pointerup',e=>{
+    if(!ghost||!drag)return;
+    ghost.style.display='none';
+    const col=document.elementFromPoint(e.clientX,e.clientY)?.closest('.kb-col');
+    ghost.remove();ghost=null;
+    drag.style.opacity='';
+    document.querySelectorAll('.kb-col').forEach(c=>c.classList.remove('nx-dragover'));
+    if(col&&col!==srcCol&&board.contains(col)){
+      col.appendChild(drag);
+      board.querySelectorAll('.kb-col').forEach(c=>{const n=c.querySelectorAll('.kb-card').length;const cnt=c.querySelector('.kb-count');if(cnt)cnt.textContent=n;});
+      const stage=col.querySelector('.kb-col-header')?.childNodes[0]?.textContent.trim()||'stage';
+      const deal=drag.querySelector('.kb-card-title')?.textContent||'Deal';
+      toast(deal+' moved to '+stage,'#7C3AED');
+      writeAudit('Stage','CRM',deal+' -> '+stage,0,'low');
+    }
+    drag=null;srcCol=null;
+  });
+};
 
 </script>
 
