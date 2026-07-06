@@ -11941,6 +11941,159 @@ NXSync.on('employee:onboarded',({name})=>{
   };
 })();
 
+
+/* ════════════════════════════════════════════════════════════
+   MORR ERP v23 — external e-signature requests + SARS year-end
+   (IRP5 certificates, EMP501 reconciliation)
+════════════════════════════════════════════════════════════ */
+const NX_SIGN_URL='https://anncqmypbgxuzkvxpptk.supabase.co/functions/v1/sign-doc';
+
+async function requestSignature(party){
+  const token=Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join('');
+  const isCtr=!!party.currency;
+  const title=(isCtr?'Contractor Agreement':'Employment Contract')+' — '+party.name;
+  const link=NX_SIGN_URL+'?token='+token;
+  const row=await NXCloud.insert('nx_sign_requests',{
+    token,doc_type:'contract',doc_title:title,
+    doc_html:contractHTML(party),party_name:party.name,party_email:party.email||null,
+    requested_by:currentUser?.id&&String(currentUser.id).length>20?currentUser.id:null,
+  });
+  if(!row){
+    navigator.clipboard?.writeText(link);
+    toast('Demo mode — sign in with a real account to issue live signing links','#D97706');
+    return;
+  }
+  const email=party.email||(party.name.toLowerCase().replace(/[^a-z]+/g,'.')+'@example.com');
+  await callEdgeFunction('email-relay','send_email',{to:email,
+    subject:tplMerge('Signature requested: ')+title,
+    html:'<div style="font-family:sans-serif"><h2>'+title+'</h2><p>Please review and sign your document. The link works on any phone, tablet or computer and expires in 14 days.</p><p><a href="'+link+'" style="background:#F97316;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:700;">Review & Sign</a></p><p style="font-size:12px;color:#777;">Or copy this link: '+link+'</p></div>'});
+  EMAIL_LOG.unshift({ts:'Just now',to:email,subject:'Signature requested: '+title,status:'Delivered',opens:0});
+  if(typeof renderEmail==='function')renderEmail();
+  navigator.clipboard?.writeText(link);
+  toast('Signing link sent to '+email+' and copied to your clipboard','#16A34A');
+  writeAudit('SignRequest','xVault',party.name,0,'medium');
+  nxSignStatusDrawer();
+}
+
+async function nxSignStatusDrawer(){
+  if(!NXCloud.ok()){toast('Sign in to view signature requests','#D97706');return;}
+  const {data}=await sb().from('nx_sign_requests')
+    .select('doc_title,party_name,status,created_at,signed_at,token')
+    .order('created_at',{ascending:false}).limit(15);
+  const rows=(data||[]).map(r=>{
+    const st={sent:['bl','Sent'],viewed:['am','Viewed'],signed:['gn','Signed ✓'],declined:['rd','Declined']}[r.status]||['gy',r.status];
+    return '<div class="stat-row"><span class="stat-lbl">'+r.doc_title+'<div style="font-size:9.5px;color:var(--mu);">'+r.party_name+' · '+new Date(r.created_at).toLocaleDateString('en-ZA')+(r.signed_at?' · signed '+new Date(r.signed_at).toLocaleString('en-ZA',{dateStyle:'short',timeStyle:'short'}):'')+'</div></span>'
+      +'<span style="display:flex;gap:6px;align-items:center;"><span class="badge '+st[0]+'">'+st[1]+'</span>'
+      +(r.status!=='signed'?'<button class="btn bs btn-xs" onclick="navigator.clipboard.writeText(\''+NX_SIGN_URL+'?token='+r.token+'\').then(()=>toast(\'Link copied\',\'#16A34A\'))">Copy Link</button>':'')
+      +'</span></div>';
+  }).join('')||'<div style="padding:14px 0;color:var(--mu);font-size:12px;">No signature requests yet.</div>';
+  nxDrawerOpen({
+    title:'Signature Requests',sub:'Live status — refreshes from the cloud',icon:'shield',color:'var(--bl)',
+    body:'<div class="alert bl" style="margin-bottom:14px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:var(--bl-m);stroke-width:2;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><div><div class="alert-title">ECTA-compliant external signing</div><div class="alert-body">Recipients open the link on any device, review the document and sign with finger, stylus or mouse. IP + timestamp recorded; links expire after 14 days.</div></div></div>'+rows,
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button><button class="btn bp" onclick="nxSignStatusDrawer()">Refresh</button>',
+  });
+}
+
+/* Request-signature buttons: contractor drawer + onboarding pack */
+(function(){
+  const _cd=ctrDrawer;
+  window.ctrDrawer=function(id){
+    _cd.apply(this,arguments);
+    const foot=document.getElementById('nxDrawerFoot');
+    const c=CONTRACTORS_DATA.find(x=>x.id===id);
+    if(foot&&c&&!foot.querySelector('.req-sign')){
+      const b=document.createElement('button');
+      b.className='btn bb req-sign';b.textContent='Request e-Sign';
+      b.onclick=()=>requestSignature(c);
+      foot.appendChild(b);
+    }
+  };
+  const _ob=onboardEmployeeSubmit;
+  window.onboardEmployeeSubmit=async function(){
+    await _ob.apply(this,arguments);
+    const e=PAYPRO_EMPS[PAYPRO_EMPS.length-1];
+    if(e&&e.email&&NXCloud.ok())requestSignature(e);
+  };
+})();
+
+/* xVault gets a Signature Requests button */
+document.addEventListener('DOMContentLoaded',()=>{
+  const ph=document.querySelector('#page-vault .ph-right');
+  if(ph&&!ph.querySelector('.sig-status-btn')){
+    const b=document.createElement('button');
+    b.className='btn bs btn-sm sig-status-btn';b.textContent='Signature Requests';
+    b.onclick=nxSignStatusDrawer;
+    ph.insertBefore(b,ph.firstChild);
+  }
+});
+
+/* ══ SARS YEAR-END: IRP5 per employee + EMP501 recon ═════ */
+function pdfIRP5(i){
+  const e=PAYPRO_EMPS[i]; if(!e)return;
+  const c=payproCalc(e);
+  const y=v=>fmt(Math.round(v*12));
+  const p=nxPDFStart('IRP5 Certificate','2025 · '+e.id);
+  if(!p){toast('PDF engine offline','#D97706');return;}
+  p.kv([['Employee',e.name],['Employee No',e.id],['Tax Year','1 Mar 2024 - 28 Feb 2025'],['Periods Worked','12 of 12'],['PAYE Ref','7530778888'],['Certificate No','IRP5-2025-'+e.id.replace(/\D/g,'')]])
+   .sec('Income (annual)')
+   .table(['Code','Description','Amount'],[
+     ['3601','Income - basic salary',y(e.basic)],
+     ...(e.commission?[['3606','Commission',y(e.commission)]]:[]),
+     ...(e.bonus?[['3605','Annual payment',fmt(e.bonus)]]:[]),
+     ['3699','GROSS REMUNERATION',y(c.gross)]],['left','left','right'])
+   .sec('Deductions & Contributions')
+   .table(['Code','Description','Amount'],[
+     ['4005','Medical scheme contributions',y(e.medical)],
+     ['4001','Pension/retirement fund',y(e.retirement)],
+     ['4102','PAYE deducted',y(c.paye)],
+     ['4141','UIF contributions (EE+ER)',y(c.uif*2)],
+     ['4142','SDL contributions',y(c.gross*.01)]],['left','left','right'])
+   .note('Issued by '+NX_TPL.legal+' (PAYE ref 7530778888). This certificate reflects remuneration and deductions for the 2025 tax year and is submitted to SARS with the EMP501 reconciliation.')
+   .save('IRP5-2025-'+e.id+'.pdf',false);
+  writeAudit('IRP5','Payroll',e.id,0,'medium');
+}
+function pdfEMP501(){
+  let g=0,paye=0,uif=0;
+  const rows=PAYPRO_EMPS.map(e=>{
+    const c=payproCalc(e);g+=c.gross;paye+=c.paye;uif+=c.uif;
+    return [e.id+' '+e.name,fmt(Math.round(c.gross*12)),fmt(Math.round(c.paye*12)),fmt(Math.round(c.uif*2*12))];
+  });
+  const p=nxPDFStart('EMP501 Reconciliation','Tax Year 2025');
+  if(!p){toast('PDF engine offline','#D97706');return;}
+  p.kv([['Employer',NX_TPL.legal],['PAYE Ref','7530778888'],['Period','1 Mar 2024 - 28 Feb 2025'],['Certificates',PAYPRO_EMPS.length+' IRP5s']])
+   .sec('Per-Employee Reconciliation (annualised)')
+   .table(['Employee','Gross','PAYE','UIF'],rows,['left','right','right','right'])
+   .total('TOTAL PAYE FOR RECONCILIATION',fmt(Math.round(paye*12)))
+   .note('Declaration: the EMP501 reconciles monthly EMP201 submissions against IRP5 certificates issued. Totals: Gross '+fmt(Math.round(g*12))+' | UIF '+fmt(Math.round(uif*2*12))+' | SDL '+fmt(Math.round(g*.01*12))+'. Submit via SARS e@syFile before 31 May 2025.')
+   .save('EMP501-2025.pdf',false);
+  writeAudit('EMP501','Payroll','2025',Math.round(paye*12),'high');
+}
+/* buttons: IRP5 in the employee tax drawer, EMP501 next to EMP201 */
+(function(){
+  const _ed=empPayrollDrawer;
+  window.empPayrollDrawer=function(i){
+    _ed.apply(this,arguments);
+    const foot=document.getElementById('nxDrawerFoot');
+    if(foot&&!foot.querySelector('.irp5-btn')){
+      const b=document.createElement('button');
+      b.className='btn bs irp5-btn';b.textContent='IRP5 2025';
+      b.onclick=()=>pdfIRP5(i);
+      foot.insertBefore(b,foot.firstChild.nextSibling);
+    }
+  };
+  const _rp5=renderPaypro;
+  window.renderPaypro=function(){
+    _rp5.apply(this,arguments);
+    const hdr=document.querySelector('#payproContent .ch2 .ch2-sub');
+    if(hdr&&!document.getElementById('emp501Btn')){
+      const b=document.createElement('button');
+      b.id='emp501Btn';b.className='btn bs btn-xs';b.style.marginLeft='6px';
+      b.textContent='EMP501';b.onclick=pdfEMP501;
+      hdr.appendChild(b);
+    }
+  };
+})();
+
 </script>
 
 </body>
