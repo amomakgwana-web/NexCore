@@ -2050,7 +2050,7 @@ body.dark .perm-check.on{background:var(--gn);}
     <div class="frow"><div class="fg"><label class="fl">Category</label><select class="fi" id="clCat"><option>Travel</option><option>Meals</option><option>Accommodation</option><option>Stationery</option><option>Training</option><option>Equipment</option><option>Other</option></select></div><div class="fg"><label class="fl">Amount (R)</label><input class="fi" type="number" placeholder="0" id="clAmt"/></div></div>
     <div class="fg"><label class="fl">Description &amp; Business Purpose</label><textarea class="fi" rows="2" id="clDesc" placeholder="e.g. Uber to client site in Midrand for DHA integration meeting"></textarea></div>
     <div class="frow"><div class="fg"><label class="fl">Date of Expense</label><input class="fi" type="date" id="clDate"/></div><div class="fg"><label class="fl">No. of Receipts</label><input class="fi" type="number" value="1" min="1" id="clRcpts"/></div></div>
-    <div class="fg"><label class="fl">Receipts</label><div style="border:1px dashed var(--bd);border-radius:var(--r6);padding:14px;text-align:center;cursor:pointer;background:var(--sf);" onclick="toast('Receipt upload ready in production','#2563EB')"><div style="font-size:11px;color:var(--mid);">Click to attach receipts (JPG, PNG, PDF)</div></div></div>
+    <div class="fg"><label class="fl">Receipts</label><div style="border:1px dashed var(--bd);border-radius:var(--r6);padding:14px;text-align:center;cursor:pointer;background:var(--sf);" onclick="document.getElementById('clFile').click()"><div style="font-size:11px;color:var(--mid);" id="clFileLbl">Click to attach receipts (JPG, PNG, PDF — uploads to encrypted Storage)</div><input type="file" id="clFile" accept="image/*,.pdf" style="display:none" onchange="if(this.files[0])document.getElementById('clFileLbl').textContent='📎 '+this.files[0].name+' — will upload on submit'"/></div></div>
   </div>
   <div class="mf"><button class="btn bs" onclick="closeModal('newClaimModal')">Cancel</button><button class="btn bp" onclick="submitClaim()">Submit Claim</button></div></div>
 </div>
@@ -9237,7 +9237,7 @@ function payproPostToGL(){
     lines:[
       {acct:'6000',debit:Math.round(tGross+tUif),credit:0},
       {acct:'2200',debit:0,credit:Math.round(tPaye+tUif*2)},
-      {acct:'1000',debit:0,credit:Math.round(tNet+ben-tUif)},
+      {acct:'1000',debit:0,credit:Math.round(tNet+ben)},
     ],
     postedBy:currentUser?.name||'You',status:'Posted',
   });
@@ -11802,6 +11802,144 @@ window.nxKanbanDnD=function(){
     drag=null;srcCol=null;
   });
 };
+
+
+/* ════════════════════════════════════════════════════════════
+   MORR ERP v22 — Production Foundation cloud layer
+   Real relational persistence (RLS-enforced) for claims,
+   journals, payroll runs and employees + Storage uploads.
+════════════════════════════════════════════════════════════ */
+const NXCloud={
+  ok(){return !!(typeof sb==='function'&&sb()&&currentUser?.id&&String(currentUser.id).length>20);},
+  async insert(table,row){
+    if(!this.ok())return null;
+    try{
+      const {data,error}=await sb().from(table).insert(row).select().limit(1);
+      if(error){console.warn('[NXCloud]',table,error.message);return null;}
+      return data&&data[0];
+    }catch(e){return null;}
+  },
+  async update(table,match,patch){
+    if(!this.ok())return null;
+    try{
+      const q=sb().from(table).update(patch);
+      Object.entries(match).forEach(([k,v])=>q.eq(k,v));
+      const {error}=await q;
+      if(error)console.warn('[NXCloud]',table,error.message);
+    }catch(e){}
+  },
+  async upload(bucket,path,file){
+    if(!this.ok()||!file)return null;
+    try{
+      const {error}=await sb().storage.from(bucket).upload(path,file,{upsert:true});
+      if(error){console.warn('[NXCloud:storage]',error.message);return null;}
+      return path;
+    }catch(e){return null;}
+  },
+};
+
+/* ── Load real rows on boot (cloud wins over demo seed) ── */
+async function nxCloudLoad(){
+  if(!NXCloud.ok())return;
+  try{
+    const {data:claims}=await sb().from('nx_claims').select('*').order('created_at',{ascending:false}).limit(50);
+    if(claims&&claims.length){
+      const mapped=claims.map(c=>({id:c.claim_no,emp:c.emp_name,empId:'',dept:'—',category:c.category,desc:c.description,amount:Number(c.amount),receipts:c.receipts,status:c.status,submitted:c.submitted,managerApproval:c.manager_approval,cfoApproval:c.cfo_approval,paid:c.paid,_dbId:c.id,receiptPath:c.receipt_path}));
+      CLAIMS_DATA.length=0;mapped.forEach(m=>CLAIMS_DATA.push(m));
+      if(typeof renderClaims==='function')renderClaims();
+    }
+    const {data:journals}=await sb().from('nx_journals').select('*').order('created_at',{ascending:false}).limit(50);
+    if(journals&&journals.length){
+      journals.forEach(j=>{
+        if(!JOURNAL_ENTRIES.find(x=>x.ref===j.ref))
+          JOURNAL_ENTRIES.unshift({ref:j.ref,date:j.jdate,narration:j.narration,lines:j.lines,postedBy:'Cloud',status:'Posted'});
+      });
+      if(typeof renderAccounting==='function')renderAccounting();
+    }
+    const {data:emps}=await sb().from('nx_employees').select('*').order('created_at');
+    if(emps&&emps.length){
+      emps.forEach(e=>{
+        if(!PAYPRO_EMPS.find(x=>x.id===e.emp_no))
+          PAYPRO_EMPS.push({id:e.emp_no,name:e.full_name,dept:e.department||'—',basic:Number(e.basic),commission:0,bonus:0,medical:Number(e.medical),retirement:Number(e.retirement),leaveBal:Number(e.leave_balance),email:e.email,startDate:e.start_date});
+      });
+      if(typeof renderPaypro==='function'){const c=document.getElementById('payAutoCard');if(c)c.remove();renderPaypro();}
+    }
+    console.info('[NXCloud] loaded',(claims||[]).length,'claims,',(journals||[]).length,'journals,',(emps||[]).length,'employees');
+  }catch(e){console.warn('[NXCloud] load',e);}
+}
+(function(){
+  const _b=initPageContents;
+  initPageContents=function(){_b();setTimeout(nxCloudLoad,900);};
+})();
+
+/* ── Dual-write hooks ── */
+/* claims: insert with receipt upload */
+NXSync.on('claim:created',async (claim)=>{
+  const f=document.getElementById('clFile')?.files?.[0];
+  let receiptPath=null;
+  if(f)receiptPath=await NXCloud.upload('receipts',claim.id+'/'+f.name.replace(/[^\w.\-]/g,'_'),f);
+  const row=await NXCloud.insert('nx_claims',{
+    claim_no:claim.id,user_id:currentUser?.id&&String(currentUser.id).length>20?currentUser.id:null,
+    emp_name:claim.emp,category:claim.category,description:claim.desc,
+    amount:claim.amount,receipts:claim.receipts,submitted:claim.submitted,receipt_path:receiptPath,
+  });
+  if(row){const c=CLAIMS_DATA.find(x=>x.id===claim.id);if(c)c._dbId=row.id;toast('Claim stored in cloud DB'+(receiptPath?' with receipt attached':''),'#2563EB');}
+  const fi=document.getElementById('clFile');if(fi)fi.value='';
+  const lbl=document.getElementById('clFileLbl');if(lbl)lbl.textContent='Click to attach receipts (JPG, PNG, PDF — uploads to encrypted Storage)';
+});
+/* claim approvals sync status */
+(function(){
+  const _ac3=approveClaim;
+  window.approveClaim=function(claimId,approver){
+    _ac3.apply(this,arguments);
+    const c=CLAIMS_DATA.find(x=>x.id===claimId);
+    if(c)NXCloud.update('nx_claims',{claim_no:claimId},{
+      status:c.status,manager_approval:c.managerApproval,cfo_approval:c.cfoApproval,paid:c.paid});
+  };
+})();
+/* journals: mirror every local posting */
+(function(){
+  function mirrorJournal(j){
+    if(!j)return;
+    NXCloud.insert('nx_journals',{ref:j.ref,jdate:j.date||new Date().toISOString().slice(0,10),narration:j.narration,lines:j.lines});
+  }
+  const _pj=postJournal;
+  window.postJournal=function(){
+    const before=JOURNAL_ENTRIES.length;
+    _pj.apply(this,arguments);
+    if(JOURNAL_ENTRIES.length>before)mirrorJournal(JOURNAL_ENTRIES[0]);
+  };
+  const _pg=payproPostToGL;
+  window.payproPostToGL=function(){
+    const before=JOURNAL_ENTRIES.length;
+    _pg.apply(this,arguments);
+    if(JOURNAL_ENTRIES.length>before)mirrorJournal(JOURNAL_ENTRIES[0]);
+  };
+})();
+/* payroll runs */
+NXSync.on('payroll:run',({count,total})=>{
+  let g=0,paye=0,uif=0;
+  PAYPRO_EMPS.forEach(e=>{const c=payproCalc(e);g+=c.gross;paye+=c.paye;uif+=c.uif;});
+  NXCloud.insert('nx_payroll_runs',{period:'2025-02',headcount:count,gross:Math.round(g),paye:Math.round(paye),uif:Math.round(uif*2),net:total});
+});
+/* onboarded employees */
+NXSync.on('employee:onboarded',({name})=>{
+  const e=PAYPRO_EMPS[PAYPRO_EMPS.length-1];
+  if(!e||e.name!==name)return;
+  NXCloud.insert('nx_employees',{emp_no:e.id,full_name:e.name,email:e.email||null,department:e.dept,
+    role_title:e.role||null,basic:e.basic,medical:e.medical,retirement:e.retirement,
+    leave_balance:e.leaveBal,start_date:e.startDate||null});
+});
+/* vault uploads become real when signed in */
+(function(){
+  const _vs=vaultSimUpload;
+  window.vaultSimUpload=function(name){
+    _vs.apply(this,arguments);
+    const f=document.getElementById('vuFile')?.files?.[0];
+    if(f)NXCloud.upload('vault',new Date().toISOString().slice(0,10)+'/'+f.name.replace(/[^\w.\-]/g,'_'),f)
+      .then(p=>{if(p)toast(f.name+' uploaded to encrypted Storage bucket','#2563EB');});
+  };
+})();
 
 </script>
 

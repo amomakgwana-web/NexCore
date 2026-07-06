@@ -1,0 +1,22 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main, claude/bugs-supabase-connection-ft81zi]
+  pull_request:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null
+          npm install --no-save @playwright/test
+          npx playwright install chromium --with-deps
+      - name: Run E2E suite
+        run: npx playwright test
