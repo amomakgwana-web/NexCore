@@ -29,6 +29,7 @@ jobs:
           cp nexcore-standalone.html _site/index.html
           cp CNAME _site/
           cp manifest.json _site/
+          cp jspdf.umd.min.js _site/
           cp -r icons _site/
           cp vercel.json _site/ 2>/dev/null || true
 

@@ -13,6 +13,10 @@
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 
+  <!-- jsPDF for real PDF downloads (vendored, CDN fallback) -->
+  <script src="jspdf.umd.min.js"></script>
+  <script>if(!window.jspdf){var _js=document.createElement('script');_js.src='https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';document.head.appendChild(_js);}</script>
+
   <!-- Supabase JS v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
@@ -11244,6 +11248,215 @@ function boardUpdAdd(gi,itemId){
       b.textContent='EMP201';b.onclick=emp201PDF;
       hdr.appendChild(b);
     }
+  };
+})();
+
+
+/* ════════════════════════════════════════════════════════════
+   MORR ERP v20 — REAL file downloads platform-wide
+   jsPDF-based branded PDF engine + universal CSV/PDF export
+   on every table. Print windows remain as fallback only.
+════════════════════════════════════════════════════════════ */
+function _hexRGB(h){const n=parseInt(h.replace('#',''),16);return [(n>>16)&255,(n>>8)&255,n&255];}
+function _pdfSafe(t){return String(t).replace(/—/g,'-').replace(/–/g,'-').replace(/·/g,'|').replace(/→/g,'->').replace(/[^\x20-\x7E\n]/g,'');}
+
+function nxPDFStart(docType,docNo){
+  if(!window.jspdf||!window.jspdf.jsPDF)return null;
+  const brand=JSON.parse(localStorage.getItem('nexcore-brand')||'{}');
+  const accent=_hexRGB(brand.accent||'#F97316');
+  const name=brand.name||NX_TPL.company;
+  const initials=brand.initials||'M';
+  const d=new window.jspdf.jsPDF({unit:'pt',format:'a4'});
+  const W=595.28;
+  /* header */
+  d.setFillColor(...accent); d.rect(0,0,W,5,'F');
+  d.setFillColor(...accent); d.roundedRect(40,26,40,40,8,8,'F');
+  d.setTextColor(255,255,255); d.setFont('helvetica','bold'); d.setFontSize(19);
+  d.text(initials,60,52,{align:'center'});
+  d.setTextColor(24,24,27); d.setFontSize(19); d.text(_pdfSafe(name),92,46);
+  d.setFontSize(7.5); d.setFont('helvetica','normal'); d.setTextColor(120,120,128);
+  d.text(_pdfSafe(NX_TPL.legal+' | Reg '+NX_TPL.reg+' | VAT '+NX_TPL.vat),92,60);
+  d.setFont('helvetica','bold'); d.setFontSize(15); d.setTextColor(...accent);
+  d.text(_pdfSafe(docType.toUpperCase()),W-40,44,{align:'right'});
+  d.setFont('helvetica','normal'); d.setFontSize(8.5); d.setTextColor(120,120,128);
+  d.text(_pdfSafe(docNo),W-40,58,{align:'right'});
+  d.setFontSize(7.5);
+  d.text(_pdfSafe(NX_TPL.address),40,84);
+  d.text(_pdfSafe(NX_TPL.phone+' | '+NX_TPL.emailFrom),W-40,84,{align:'right'});
+  d.setDrawColor(...accent); d.setLineWidth(1.4); d.line(40,92,W-40,92);
+
+  const st={d,W,y:112,accent,docNo,name,
+    _pg(need=20){if(this.y+need>790){this.d.addPage();this.y=48;}},
+    sec(t){this._pg(28);this.d.setFont('helvetica','bold');this.d.setFontSize(8);this.d.setTextColor(140,140,148);this.d.text(_pdfSafe(t.toUpperCase()),40,this.y);this.d.setDrawColor(228,228,231);this.d.setLineWidth(.6);this.d.line(40+this.d.getTextWidth(t.toUpperCase())+8,this.y-2.5,this.W-40,this.y-2.5);this.y+=14;return this;},
+    kv(pairs){const colW=(this.W-80)/2;pairs.forEach((pr,i)=>{const x=40+(i%2)*colW;if(i%2===0)this._pg(26);const yy=this.y;this.d.setFont('helvetica','normal');this.d.setFontSize(7);this.d.setTextColor(150,150,158);this.d.text(_pdfSafe(String(pr[0]).toUpperCase()),x,yy);this.d.setFont('helvetica','bold');this.d.setFontSize(10);this.d.setTextColor(24,24,27);this.d.text(_pdfSafe(String(pr[1])),x,yy+11);if(i%2===1||i===pairs.length-1)this.y+=26;});return this;},
+    table(head,rows,aligns){const W2=this.W-80;const n=head.length;const ws=head.map((_,i)=>i===0?W2*0.4:W2*0.6/(n-1));this._pg(24);this.d.setFillColor(245,245,246);this.d.rect(40,this.y-9,W2,15,'F');this.d.setFont('helvetica','bold');this.d.setFontSize(7.5);this.d.setTextColor(110,110,118);let x=44;head.forEach((h,i)=>{const al=(aligns&&aligns[i])||(i===0?'left':'right');this.d.text(_pdfSafe(h.toUpperCase()),al==='right'?x+ws[i]-8:x,this.y,{align:al});x+=ws[i];});this.y+=14;this.d.setFont('helvetica','normal');this.d.setFontSize(8.6);rows.forEach(r=>{this._pg(16);let x2=44;this.d.setTextColor(40,40,46);r.forEach((c,i)=>{const al=(aligns&&aligns[i])||(i===0?'left':'right');const txt=_pdfSafe(String(c)).slice(0,i===0?60:28);this.d.text(txt,al==='right'?x2+ws[i]-8:x2,this.y,{align:al});x2+=ws[i];});this.d.setDrawColor(240,240,242);this.d.setLineWidth(.5);this.d.line(40,this.y+4,this.W-40,this.y+4);this.y+=15;});return this;},
+    total(lbl,val){this._pg(24);this.d.setDrawColor(24,24,27);this.d.setLineWidth(1);this.d.line(40,this.y-4,this.W-40,this.y-4);this.d.setFont('helvetica','bold');this.d.setFontSize(12);this.d.setTextColor(24,24,27);this.d.text(_pdfSafe(lbl),40,this.y+10);this.d.setTextColor(...this.accent);this.d.text(_pdfSafe(val),this.W-40,this.y+10,{align:'right'});this.y+=26;return this;},
+    note(t){this._pg(30);this.d.setFont('helvetica','normal');this.d.setFontSize(8);this.d.setTextColor(110,110,118);const lines=this.d.splitTextToSize(_pdfSafe(t),this.W-80);this.d.text(lines,40,this.y);this.y+=lines.length*10+8;return this;},
+    save(filename,banking=true){const pages=this.d.getNumberOfPages();for(let i=1;i<=pages;i++){this.d.setPage(i);this.d.setDrawColor(228,228,231);this.d.setLineWidth(.6);this.d.line(40,806,this.W-40,806);this.d.setFont('helvetica','normal');this.d.setFontSize(6.8);this.d.setTextColor(160,160,168);const f=_pdfSafe(NX_TPL.footer)+(banking?'  |  Banking: '+_pdfSafe(NX_TPL.bankName)+' Acc '+NX_TPL.bankAcc+' Branch '+NX_TPL.bankBranch+'  |  Ref: '+_pdfSafe(this.docNo):'');this.d.text(f,40,816);this.d.text('Page '+i+' of '+pages+'  |  Generated by '+_pdfSafe(this.name),this.W-40,816,{align:'right'});}this.d.save(filename);toast(filename+' downloaded','#16A34A');return this.d;},
+  };
+  return st;
+}
+
+/* ── Structured PDF builders (real downloads) ── */
+function pdfInvoice(inv){
+  const no=inv.id||inv.invoice_number||'INV';
+  const client=inv.client||inv.client_name||inv.vendor||'Client';
+  const total=Number(inv.total||inv.total_amount||inv.amount||0);
+  const excl=Number(inv.amtExcl||total/1.15), vat=total-excl;
+  const p=nxPDFStart('Tax Invoice',no);
+  if(!p){nxDocOpen(invoiceHTML(inv));return;}
+  p.kv([['Billed To',client],['Contact',inv.contact||inv.contact_email||'-'],['Issue Date',inv.issued||inv.issue_date||new Date().toLocaleDateString('en-ZA')],['Due Date',inv.due||inv.due_date||'30 days']])
+   .sec('Line Items')
+   .table(['Description','Amount'],[[inv.description||'Professional services rendered',fmt(Math.round(excl))],['VAT @ 15%',fmt(Math.round(vat))]])
+   .total('TOTAL DUE',fmt(Math.round(total)))
+   .note('Payment terms: 30 days from date of invoice. Use the invoice number as your payment reference.')
+   .save(no+'.pdf');
+  writeAudit('PDF','Billing',no,total,'low');
+}
+function pdfQuote(i){
+  const q=QUOTES_DATA[i]; if(!q)return;
+  const excl=q.value/1.15;
+  const p=nxPDFStart('Quotation',q.id);
+  if(!p){quoteOpen(i);return;}
+  p.kv([['Prepared For',q.client],['Contact',q.contact||'-'],['Issued',q.issued],['Valid Until',q.expires]])
+   .sec('Scope')
+   .table(['Item','Amount'],[['Enterprise platform licence, implementation & support',fmt(Math.round(excl))],['VAT @ 15%',fmt(Math.round(q.value-excl))]])
+   .total('QUOTED TOTAL',fmt(q.value))
+   .note('Valid until '+q.expires+'. Pricing excludes travel and third-party licence escalations. Acceptance in writing constitutes an order under our standard terms. Account executive: '+q.owner+'.')
+   .save(q.id+'.pdf');
+  writeAudit('PDF','Quotes',q.id,q.value,'low');
+}
+function pdfPayslip(i){
+  const e=PAYPRO_EMPS[i]; if(!e)return;
+  const c=payproCalc(e);
+  const p=nxPDFStart('Payslip',e.id+' - Feb 2025');
+  if(!p){payslipOpen(i);return;}
+  p.kv([['Employee',e.name],['Department',e.dept],['Pay Date','25 Feb 2025'],['Leave Balance',e.leaveBal+' days']])
+   .sec('Earnings')
+   .table(['Item','Amount'],[['Basic salary',fmt(e.basic)],...(e.commission?[['Commission',fmt(e.commission)]]:[]),...(e.bonus?[['Bonus',fmt(e.bonus)]]:[]),['GROSS PAY',fmt(Math.round(c.gross))]])
+   .sec('Deductions')
+   .table(['Item','Amount'],[['PAYE (income tax)','- '+fmt(Math.round(c.paye))],['UIF (1%)','- '+fmt(Math.round(c.uif))],['Medical aid','- '+fmt(e.medical)],['Retirement fund','- '+fmt(e.retirement)]])
+   .total('NET PAY',fmt(Math.round(c.net)))
+   .note('Employer contributions: UIF '+fmt(Math.round(c.uif))+' | SDL '+fmt(Math.round(c.gross*.01))+'. PAYE per 2024/25 SARS tables with primary rebate. POPIA: this document contains personal information.')
+   .save(e.id+'-payslip-feb2025.pdf',false);
+  writeAudit('PDF','Payroll',e.id,0,'low');
+}
+function pdfContract(id){
+  const c=typeof id==='string'?CONTRACTORS_DATA.find(x=>x.id===id):PAYPRO_EMPS[id];
+  if(!c)return;
+  const isCtr=!!c.currency;
+  const p=nxPDFStart(isCtr?'Contractor Agreement':'Employment Contract',(c.id||'CT')+'-AGR');
+  if(!p){nxDocOpen(contractHTML(c));return;}
+  p.kv([['Party',c.name],['Role',c.role||c.dept||'-'],['Start',c.start||c.startDate||'-'],[isCtr?'End':'Type',isCtr?(c.end||'-'):'Permanent']])
+   .sec('Terms');
+  const rate=isCtr?c.currency+' '+c.rate.toLocaleString()+' per '+(c.rateType||'month').toLowerCase():fmt(c.basic)+' per month';
+  [['1. Appointment',NX_TPL.legal+' engages '+c.name+' as '+(c.role||'a member of staff')+(isCtr?' on an independent-contractor basis.':'.')],
+   ['2. Remuneration',rate+(isCtr?', payable monthly on valid invoice.':', less statutory deductions (PAYE, UIF).')],
+   ['3. Confidentiality','All business, client and personal information remains confidential per POPIA.'],
+   ['4. Intellectual Property','All work product vests in the Company.'],
+   ['5. Termination','30 days written notice by either party; immediate for material breach.'],
+   ['6. Governing Law','Republic of South Africa.']].forEach(([h,t])=>{p.note(h+' - '+t);});
+  p.sec('Signatures')
+   .note('For '+NX_TPL.legal+': ______________________    '+c.name+': ______________________    Date: ____________')
+   .save((c.id||'contract')+'-agreement.pdf',false);
+  writeAudit('PDF','Contracts',c.id||c.name,0,'low');
+}
+function pdfEMP201(){
+  let g=0,paye=0,uif=0;
+  PAYPRO_EMPS.forEach(e=>{const c=payproCalc(e);g+=c.gross;paye+=c.paye;uif+=c.uif;});
+  const sdl=g*.01;
+  const p=nxPDFStart('EMP201 Return','2025/02');
+  if(!p){emp201PDF();return;}
+  p.kv([['Period','2025/02'],['PAYE Reference','7530778888'],['Employees',PAYPRO_EMPS.length],['Due Date','7 March 2025']])
+   .sec('Liabilities')
+   .table(['Liability','Amount'],[['PAYE (4102)',fmt(Math.round(paye))],['UIF (employee 1% + employer 1%)',fmt(Math.round(uif*2))],['SDL (1% of leviable amount)',fmt(Math.round(sdl))]])
+   .total('TOTAL DUE TO SARS',fmt(Math.round(paye+uif*2+sdl)))
+   .note('Late payment attracts a 10% penalty plus interest at the prescribed rate. Submit via eFiling before the deadline.')
+   .save('EMP201-2025-02.pdf',false);
+  writeAudit('PDF','Payroll','EMP201-2025-02',Math.round(paye+uif*2+sdl),'high');
+}
+function pdfPnL(){
+  const rows=[['Revenue',7000000,7200000],['Cost of Sales',2100000,2040000],['Gross Profit',4900000,5160000],['Operating Expenses',3600000,3130000],['EBITDA',1300000,2030000]];
+  const p=nxPDFStart('Management Accounts','P&L Jan 2025');
+  if(!p){financeReportPDF();return;}
+  p.sec('Profit & Loss - January 2025')
+   .table(['Line Item','Budget','Actual','Variance'],rows.map(([l,b,a])=>[l,fmt(b),fmt(a),(a-b>=0?'+':'')+fmt(a-b)]),['left','right','right','right'])
+   .note('Commentary: EBITDA beat budget by R 730,000 (56%) driven by SwiftPay settlement growth (+32% MoM) and operating under-spend. Marketing exceeded its line by 4% - flagged in Budget vs Actual.')
+   .save('management-accounts-jan2025.pdf',false);
+  writeAudit('PDF','Finance','PL-JAN-2025',0,'low');
+}
+
+/* ── Universal table exports: CSV + PDF buttons on every card ── */
+function _cardTable(card){
+  const table=card.querySelector('.tw table'); if(!table)return null;
+  const head=[...table.querySelectorAll('thead th')].map(th=>th.textContent.replace(/[▲▼]/g,'').trim());
+  const rows=[...table.querySelectorAll('tbody tr')].filter(r=>r.style.display!=='none'&&!r.querySelector('input[type=text],input[type=number]')&&!r.querySelector('[colspan]')).map(r=>{
+    return [...r.cells].map(td=>{
+      const clone=td.cloneNode(true);
+      clone.querySelectorAll('button,input,select,svg').forEach(x=>x.remove());
+      return clone.textContent.replace(/\s+/g,' ').trim();
+    });
+  });
+  return {head,rows};
+}
+function nxExportCardCSV(btn){
+  const card=btn.closest('.card'); const t=_cardTable(card); if(!t||!t.rows.length){toast('Nothing to export','#D97706');return;}
+  const title=(card.querySelector('.ch2-title')?.textContent||'export').toLowerCase().replace(/[^a-z0-9]+/g,'-');
+  const csv=[t.head.join(','),...t.rows.map(r=>r.map(c=>'"'+c.replace(/"/g,'""')+'"').join(','))].join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=title+'.csv'; a.click(); URL.revokeObjectURL(a.href);
+  toast(title+'.csv downloaded','#16A34A');
+}
+function nxExportCardPDF(btn){
+  const card=btn.closest('.card'); const t=_cardTable(card); if(!t||!t.rows.length){toast('Nothing to export','#D97706');return;}
+  const title=card.querySelector('.ch2-title')?.textContent||'Table Export';
+  const p=nxPDFStart('Data Export',title);
+  if(!p){toast('PDF engine offline - use CSV','#D97706');return;}
+  const keep=Math.min(t.head.length,5);
+  p.sec(title+' - '+t.rows.length+' rows')
+   .table(t.head.slice(0,keep),t.rows.map(r=>r.slice(0,keep)),t.head.slice(0,keep).map((_,i)=>i===0?'left':'right'))
+   .save(title.toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.pdf',false);
+}
+/* extend the card-enhancer that already injects quick filters */
+(function(){
+  const _f=nxInjectFilters;
+  window.nxInjectFilters=function(){
+    _f.apply(this,arguments);
+    document.querySelectorAll('.page.on .card').forEach(card=>{
+      const tbody=card.querySelector('.tw tbody');
+      const hdr=card.querySelector('.ch2');
+      if(!tbody||!hdr||tbody.rows.length<2||hdr.querySelector('.nx-exp-csv'))return;
+      const mk=(cls,lbl,fn,tip)=>{const b=document.createElement('button');b.className='btn bs btn-xs '+cls;b.textContent=lbl;b.title=tip;b.style.marginLeft='6px';b.onclick=e=>{e.stopPropagation();fn(b);};return b;};
+      hdr.appendChild(mk('nx-exp-csv','CSV',nxExportCardCSV,'Download this table as CSV'));
+      hdr.appendChild(mk('nx-exp-pdf','PDF',nxExportCardPDF,'Download this table as a branded PDF'));
+    });
+  };
+})();
+
+/* ── Rewire primary document buttons to real downloads ── */
+window.printInvoice=function(inv){pdfInvoice(inv);};       /* invoice buttons -> real .pdf */
+window.quoteOpenPrint=quoteOpen;                            /* keep print available */
+window.financeReportPDF=pdfPnL;
+(function(){
+  /* paypro payslip buttons -> real download */
+  const _rp3=renderPaypro;
+  window.renderPaypro=function(){
+    _rp3.apply(this,arguments);
+    document.querySelectorAll('#payproContent .ps-btn').forEach((b,i)=>{b.onclick=()=>pdfPayslip(i);b.textContent='Payslip PDF';});
+    const e2=document.getElementById('emp201Btn'); if(e2)e2.onclick=pdfEMP201;
+  };
+  /* quotes PDF buttons -> real download */
+  const _rq2=renderQuotes;
+  window.renderQuotes=function(){
+    _rq2.apply(this,arguments);
+    document.querySelectorAll('#quotesContent .qt-pdf').forEach((b,i)=>{b.onclick=e=>{e.stopPropagation();pdfQuote(i);};});
+  };
+  /* contractor Contract buttons -> real download */
+  const _rc2=renderContractors;
+  window.renderContractors=function(){
+    _rc2.apply(this,arguments);
+    document.querySelectorAll('#ctrTabs-people .ctr-pdf').forEach((b,i)=>{b.onclick=()=>pdfContract(CONTRACTORS_DATA[i].id);});
   };
 })();
 
