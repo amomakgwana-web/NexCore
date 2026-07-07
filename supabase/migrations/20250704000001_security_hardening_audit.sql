@@ -1,0 +1,10 @@
+-- Architecture audit hardening (from security advisor findings)
+-- 1. Pinned search_path on all functions (search-path hijack prevention)
+-- 2. encrypt/decrypt_field + rls_auto_enable revoked from client roles
+-- 3. audit_write / nx_role revoked from anon
+-- 4. Always-true write policies tightened:
+--    notifications: clients insert only their own rows
+--    nx_module_state: vendors read-only
+--    nx_payments reconciliation: admin/cfo only
+--    nx_tenants: admin only
+-- (Applied live via MCP; see dashboard migration security_hardening_audit)

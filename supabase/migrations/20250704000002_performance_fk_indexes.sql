@@ -1,0 +1,5 @@
+-- Architecture audit performance pass
+-- 1. Covering index generated for every foreign key in public schema
+--    (37 created, 0 remaining — generated from pg_constraint catalog)
+-- 2. Hot policies switched to init-plan-cached (select auth.uid())
+-- (Applied live via MCP; see dashboard migration performance_fk_indexes)
