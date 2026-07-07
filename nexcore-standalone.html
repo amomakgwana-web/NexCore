@@ -1471,9 +1471,14 @@ body.dark .perm-check.on{background:var(--gn);}
           </div>
           <div id="sbRoleBadge"></div>
         </div>
-        <button class="sb-logout" onclick="doLogout()">
-          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign Out
-        </button>
+        <div style="display:flex;gap:6px;">
+          <button class="sb-logout" style="flex:1;" onclick="doLogout()">
+            <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign Out
+          </button>
+          <button class="sb-logout" style="width:44px;flex:none;justify-content:center;" onclick="logoutAllDevices()" title="Sign out on ALL devices — revokes every session for your account">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -1675,7 +1680,7 @@ body.dark .perm-check.on{background:var(--gn);}
 
       <!-- USERS -->
       <div class="page" id="page-users">
-        <div class="ph"><div class="ph-icon" style="background:var(--or)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div><div class="ph-title">User Management</div><div class="ph-sub">674 users · 6 roles</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="userInviteDrawer()">Invite User</button></div></div>
+        <div class="ph"><div class="ph-icon" style="background:var(--or)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div><div class="ph-title">User Management</div><div class="ph-sub">674 users · 6 roles</div></div><div class="ph-right"><button class="btn bs btn-sm" onclick="teamCloudDrawer()">Team (Cloud)</button><button class="btn bs btn-sm" onclick="bulkInviteDrawer()">Bulk Invite</button><button class="btn bp btn-sm" onclick="userInviteDrawer()">Invite User</button></div></div>
         <div class="content"><div class="card"><div class="ch2"><span class="ch2-title">Users</span></div><div id="userList"></div></div></div>
       </div>
 
@@ -2124,9 +2129,17 @@ body.dark .perm-check.on{background:var(--gn);}
     /* ── Session resume on page reload ── */
     document.addEventListener('DOMContentLoaded', async () => {
       if (typeof sb === 'function' && sb()) {
-        const session = await getSession();
+        /* Guard the resume path so a slow network never leaves the user on a
+           blank login screen — 3s for the session, 2s for the profile. */
+        const session = await Promise.race([
+          getSession(),
+          new Promise(res => setTimeout(() => res(null), 3000)),
+        ]);
         if (session?.user) {
-          const profile = await getUserProfile(session.user.id);
+          const profile = await Promise.race([
+            getUserProfile(session.user.id),
+            new Promise(res => setTimeout(() => res(null), 2000)),
+          ]);
           const role    = profile?.role || 'staff';
           currentRole   = role;
           currentUser   = {
@@ -2519,11 +2532,14 @@ async function callEdgeFunction(service, action, payload = {}) {
 async function signInWithEmail(email, password) {
   try {
     const client = sb(); if (!client) return null;
-    const { data, error } = await client.auth.signInWithPassword({ email, password });
-    if (error) return null;   /* silently fall through to demo credential check */
+    /* Latency guard: never block login on a slow network — fall back after 3.5s */
+    const attempt = client.auth.signInWithPassword({ email, password });
+    const timeout = new Promise(res => setTimeout(() => res({ data: null, error: { message: 'timeout' } }), 3500));
+    const { data, error } = await Promise.race([attempt, timeout]);
+    if (error) return null;
     return data;
   } catch(e) {
-    return null;              /* network / config error — fall through to demo */
+    return null;
   }
 }
 
@@ -3417,10 +3433,13 @@ async function doLogin() {
   const supabaseData = await signInWithEmail(email, password);
 
   if (supabaseData?.user) {
-    /* Live auth succeeded — load profile to get role */
-    const profile = await getUserProfile(supabaseData.user.id);
-    // Map DB enum values to frontend role keys
-    const dbRole  = profile?.role || 'staff';
+    /* Live auth succeeded — load profile with a 2.5s guard */
+    const profile = await Promise.race([
+      getUserProfile(supabaseData.user.id),
+      new Promise(res => setTimeout(() => res(null), 2500)),
+    ]);
+    // Map DB enum values to frontend role keys; fall back to demo role on timeout
+    const dbRole  = profile?.role || resolveRole(email, password) || 'staff';
     const role    = dbRole === 'hr_manager' ? 'hr' : dbRole;
     currentRole   = role;
     currentUser   = {
@@ -12092,6 +12111,224 @@ function pdfEMP501(){
       hdr.appendChild(b);
     }
   };
+})();
+
+
+/* ════════════════════════════════════════════════════════════
+   MORR ERP v24 — realtime sync, logout-everywhere, team admin,
+   IAM API-call limits (client + server enforced)
+════════════════════════════════════════════════════════════ */
+
+/* ══ REALTIME: live updates across every signed-in device ═══ */
+let _nxChannels=[];
+function nxStartRealtime(){
+  const client=typeof sb==='function'?sb():null;
+  if(!client||!currentUser?.id||String(currentUser.id).length<20)return;
+  nxStopRealtime();
+  const onChange=(table,payload)=>{
+    /* pull fresh authoritative rows, then re-render the affected module */
+    if(table==='nx_claims'){nxCloudLoad&&nxCloudLoad();toast('Claims updated on another device','#2563EB');}
+    else if(table==='nx_journals'){nxCloudLoad&&nxCloudLoad();}
+    else if(table==='notifications'){if(typeof loadNotifications==='function')loadNotifications();}
+    else if(table==='nx_sign_requests'){/* status drawer refreshes on open */}
+    else if(table==='nx_module_state'){/* NXDB reconciles on next load */}
+  };
+  ['nx_claims','nx_journals','notifications','nx_sign_requests','nx_module_state','nx_payments'].forEach(table=>{
+    const ch=client.channel('nx-'+table)
+      .on('postgres_changes',{event:'*',schema:'public',table},payload=>onChange(table,payload))
+      .subscribe();
+    _nxChannels.push(ch);
+  });
+  /* auth state: if THIS device's session is revoked elsewhere, log out */
+  client.auth.onAuthStateChange((event)=>{
+    if(event==='SIGNED_OUT'&&document.getElementById('appShell').classList.contains('active')){
+      toast('Your session ended (signed out on another device)','#DC2626');
+      setTimeout(()=>doLogout(),800);
+    }
+  });
+  const badge=document.getElementById('nxdbBadge');
+  if(badge)badge.title='Realtime connected — changes sync live across your devices';
+  console.info('[realtime] subscribed to',_nxChannels.length,'channels');
+}
+function nxStopRealtime(){
+  const client=typeof sb==='function'?sb():null;
+  _nxChannels.forEach(ch=>{try{client&&client.removeChannel(ch);}catch(e){}});
+  _nxChannels=[];
+}
+(function(){
+  const _b=initPageContents;
+  initPageContents=function(){_b();setTimeout(nxStartRealtime,1200);};
+})();
+
+/* ══ LOGOUT EVERYWHERE ══════════════════════════════════════ */
+async function logoutAllDevices(){
+  const client=typeof sb==='function'?sb():null;
+  if(!client||!currentUser?.id||String(currentUser.id).length<20){
+    toast('Sign in with a real account to manage device sessions','#D97706');
+    return;
+  }
+  confirmWithOTP('Sign out on all devices', async ()=>{
+    try{
+      /* global scope revokes every refresh token for this user everywhere */
+      await client.auth.signOut({scope:'global'});
+      writeAudit('LogoutAll','Security',currentUser.email||currentUser.name,0,'high');
+    }catch(e){}
+    nxStopRealtime();
+    toast('Signed out on all devices','#16A34A');
+    setTimeout(()=>doLogout(),600);
+  });
+}
+
+/* ══ TEAM ADMIN: onboard, bulk invite, cloud roster, revoke ══ */
+function _isPrivileged(){return ['admin','hr'].includes(currentRole);}
+
+async function _teamAdmin(action,payload={}){
+  return await callEdgeFunction('team-admin',action,payload);
+}
+
+function bulkInviteDrawer(){
+  if(!_isPrivileged()){toast('Only Admin or HR can onboard team members','#DC2626');return;}
+  nxDrawerOpen({
+    title:'Bulk Invite Team',sub:'One per line: name, email, role',icon:'useradd',color:'var(--gn)',
+    body:'<div class="alert bl" style="margin-bottom:14px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:var(--bl-m);stroke-width:2;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><div><div class="alert-title">Up to 25 at once</div><div class="alert-body">Each person gets a real account + a temporary password emailed to them, and the role you assign here (permissions come from IAM).</div></div></div>'
+      +'<div class="fg"><label class="fl">Team members (CSV: name, email, role)</label><textarea class="fi" id="bulkRows" rows="8" placeholder="Naledi Mokgadi, naledi@xgroup.co.za, staff\nJohn Smith, john@xgroup.co.za, manager"></textarea></div>'
+      +'<div style="font-size:11px;color:var(--mid);">Valid roles: admin, cfo, manager, hr_manager, staff, vendor. Only Admins may grant admin.</div>',
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Cancel</button><button class="btn bp" onclick="bulkInviteSubmit()">Send Invites</button>',
+  });
+}
+async function bulkInviteSubmit(){
+  const raw=document.getElementById('bulkRows')?.value||'';
+  const users=raw.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+    const [name,email,role]=l.split(',').map(x=>(x||'').trim());
+    return {name:name||'New User',email,role:(role||'staff').toLowerCase()};
+  }).filter(u=>u.email);
+  if(!users.length){toast('Add at least one "name, email, role" line','#DC2626');return;}
+  const {data,error}=await _teamAdmin('bulk_invite',{users});
+  if(error){
+    if(error==='no_client'||String(error).includes('401')){toast('Sign in with a real admin account to invite via cloud','#D97706');return;}
+    toast('Invite failed: '+(error.message||error),'#DC2626');return;
+  }
+  const results=data?.results||[];
+  const ok=results.filter(r=>r.result==='created').length;
+  const dup=results.filter(r=>r.result==='already_exists').length;
+  nxDrawerClose();
+  results.filter(r=>r.result==='created').forEach(r=>{
+    if(window.USERS_LIST)USERS_LIST.unshift({n:r.email.split('@')[0],e:r.email,role:r.role||'Staff',c:'#7C3AED',i:r.email.slice(0,2).toUpperCase(),s:'Invited',last:'—'});
+  });
+  if(typeof renderUserList==='function')renderUserList();
+  toast(ok+' invited'+(dup?', '+dup+' already existed':'')+(RESEND_ON()?' — passwords emailed':' — see cloud roster for temp passwords'),'#16A34A');
+  writeAudit('BulkInvite','Users',ok+' members',0,'high');
+}
+function RESEND_ON(){return false;} /* client can't know; server emails when key present */
+
+async function teamCloudDrawer(){
+  const {data,error}=await _teamAdmin('list_users');
+  if(error){toast('Sign in with a real admin account to view the cloud roster','#D97706');return;}
+  const users=data?.users||[];
+  const rows=users.map(u=>{
+    const last=u.last_sign_in_at?new Date(u.last_sign_in_at).toLocaleString('en-ZA',{dateStyle:'short',timeStyle:'short'}):'never';
+    return '<div class="stat-row"><span class="stat-lbl">'+(u.name||u.email)+'<div style="font-size:9.5px;color:var(--mu);">'+u.email+' · '+u.role+' · last '+last+'</div></span>'
+      +'<button class="btn bd2 btn-xs" onclick="revokeUserSessions(\''+u.id+'\',\''+(u.name||u.email).replace(/'/g,'')+'\')">Revoke Sessions</button></div>';
+  }).join('')||'<div style="padding:14px 0;color:var(--mu);font-size:12px;">No users found.</div>';
+  nxDrawerOpen({
+    title:'Team Roster (Cloud)',sub:users.length+' real accounts',icon:'users',color:'var(--or)',
+    body:'<div class="alert or" style="margin-bottom:14px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:#D97706;stroke-width:2;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><div><div class="alert-title">Live accounts from Supabase Auth</div><div class="alert-body">Revoking sessions signs a user out on every device immediately.</div></div></div>'+rows,
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button><button class="btn bp" onclick="bulkInviteDrawer()">+ Invite Team</button>',
+  });
+}
+async function revokeUserSessions(uid,name){
+  const {error}=await _teamAdmin('revoke_sessions',{user_id:uid});
+  if(error){toast('Revoke failed: '+(error.message||error),'#DC2626');return;}
+  toast(name+' signed out on all devices','#16A34A');
+  writeAudit('RevokeSessions','Security',name,0,'high');
+}
+
+/* Wire the existing single-invite drawer to the real cloud when possible */
+(function(){
+  const _ui=userInviteDrawer;
+  window.userInviteDrawer=function(){
+    _ui.apply(this,arguments);
+    /* swap the Send button to hit team-admin if privileged + signed in */
+    setTimeout(()=>{
+      const foot=document.getElementById('nxDrawerFoot');
+      const btn=foot&&foot.querySelector('.bp');
+      if(btn&&_isPrivileged()){
+        btn.setAttribute('onclick','inviteUserCloud()');
+      }
+    },60);
+  };
+})();
+async function inviteUserCloud(){
+  const n=document.getElementById('ivName')?.value.trim();
+  const e=document.getElementById('ivEmail')?.value.trim();
+  const role=(document.getElementById('ivRole')?.value||'staff').toLowerCase();
+  if(!n||!e){toast('Name and email are required','#DC2626');return;}
+  const {data,error}=await _teamAdmin('invite_user',{name:n,email:e,role});
+  if(error||(data&&!data.ok)){
+    if(data&&data.result==='already_exists'){toast(e+' already has an account','#D97706');nxDrawerClose();return;}
+    /* fall back to local add (demo mode) */
+    if(window.USERS_LIST)USERS_LIST.unshift({n,e,role,c:'#7C3AED',i:n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(),s:'Invited',last:'—'});
+    if(typeof renderUserList==='function')renderUserList();
+    nxDrawerClose();
+    toast('Invite recorded (demo mode — sign in with a real admin account for cloud accounts)','#D97706');
+    return;
+  }
+  if(window.USERS_LIST)USERS_LIST.unshift({n,e,role,c:'#7C3AED',i:n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(),s:'Invited',last:'—'});
+  if(typeof renderUserList==='function')renderUserList();
+  nxDrawerClose();
+  toast(n+' invited — real account created'+(data.emailed?', password emailed':', temp password: '+(data.temp_password||'sent')),'#16A34A');
+  writeAudit('Invite','Users',e,0,'high');
+}
+
+/* ══ IAM: live API-call limits panel (client mirror of server) ══ */
+const IAM_API_LIMITS={
+  'email-relay:send_email':{max:30,window:3600000,label:'Send email'},
+  'email-relay:send_otp':{max:5,window:600000,label:'Send OTP'},
+  'email-relay:verify_otp':{max:10,window:600000,label:'Verify OTP'},
+  'team-admin:invite_user':{max:30,window:600000,label:'Invite / admin ops'},
+  'team-admin:bulk_invite':{max:30,window:600000,label:'Bulk invite'},
+  default:{max:60,window:60000,label:'General API'},
+};
+/* merge into the existing client limiter used by callEdgeFunction */
+(function(){
+  Object.entries(IAM_API_LIMITS).forEach(([k,v])=>{
+    if(k!=='default')_RL_LIMITS[k]={max:v.max,window:v.window};
+  });
+  /* surface 429s from the server to the user */
+  const _ce=callEdgeFunction;
+  window.callEdgeFunction=async function(service,action,payload={}){
+    const r=await _ce.call(this,service,action,payload);
+    if(r&&r.data&&r.data.error==='rate_limited'){
+      toast('API limit reached for '+(action||service)+' — try again shortly','#DC2626');
+    }
+    return r;
+  };
+})();
+
+function renderIAMApiLimits(){
+  const host=document.getElementById('iamContent');
+  if(!host||document.getElementById('iamApiCard'))return;
+  const card=document.createElement('div');
+  card.className='card';card.id='iamApiCard';card.style.marginTop='14px';
+  const rows=Object.entries(IAM_API_LIMITS).filter(([k])=>k!=='default').map(([k,v])=>{
+    const used=(_RL_LOG[k]||[]).filter(t=>Date.now()-t<v.window).length;
+    const pct=Math.min(100,Math.round(used/v.max*100));
+    const win=v.window>=3600000?(v.window/3600000)+'h':(v.window/60000)+'m';
+    return '<div class="stat-row" style="display:block;"><div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span class="stat-lbl">'+v.label+' <span style="color:var(--mu);font-size:10px;">('+k+')</span></span><span class="stat-val">'+used+' / '+v.max+' per '+win+'</span></div><div class="prog" style="height:5px;"><div class="prog-fill" style="width:'+pct+'%;background:'+(pct>80?'var(--rd)':pct>50?'var(--am)':'var(--gn)')+';"></div></div></div>';
+  }).join('');
+  card.innerHTML='<div class="ch2">'+svgIcon('api','13px','var(--ch)')+'<span class="ch2-title">API Rate Limits</span><span class="ch2-sub">Enforced client-side and in Postgres (per user)</span></div>'
+    +'<div class="cb"><div style="font-size:11px;color:var(--mid);margin-bottom:10px;">Every Edge Function call is metered per user in a fixed window. Exceeding a limit returns HTTP 429 until the window resets — protecting against runaway loops, abuse and cost spikes.</div>'+rows+'</div>';
+  host.appendChild(card);
+}
+(function(){
+  const _ri=renderIAM;
+  window.renderIAM=function(){_ri.apply(this,arguments);setTimeout(renderIAMApiLimits,60);};
+})();
+
+/* stop realtime cleanly on logout */
+(function(){
+  const _dl=doLogout;
+  window.doLogout=async function(){nxStopRealtime();return _dl.apply(this,arguments);};
 })();
 
 </script>
