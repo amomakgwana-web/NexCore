@@ -1,0 +1,6 @@
+-- Architecture audit follow-up: every RLS policy that called
+-- auth.uid()/auth.role()/auth.jwt() per-row was rebuilt from pg_policies
+-- into the init-plan-cached ( SELECT auth.*() ) form, preserving semantics
+-- exactly (permissive/restrictive, command, roles, USING, WITH CHECK).
+-- Result: 0 of 81 policies evaluate auth functions per row.
+-- (Applied live via MCP; see dashboard migration rls_initplan_rewrite)
