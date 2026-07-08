@@ -1850,8 +1850,8 @@ body.dark .perm-check.on{background:var(--gn);}
 
       <!-- WORK OS BOARDS (Monday-style) -->
       <div class="page" id="page-boards">
-        <div class="ph"><div class="ph-icon" style="background:var(--pu)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg></div><div><div class="ph-title">Work Boards</div><div class="ph-sub">Customisable boards · Automations · Team workload</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="boardAddGroup()">+ New Group</button></div></div>
-        <div class="tabs"><button class="tab on" onclick="switchTab('boardTabs','main',this)">Main Board</button><button class="tab" onclick="switchTab('boardTabs','automations',this)">Automations</button><button class="tab" onclick="switchTab('boardTabs','workload',this)">Workload</button><button class="tab" onclick="switchTab('boardTabs','activity',this)">Activity Log</button></div>
+        <div class="ph"><div class="ph-icon" style="background:var(--pu)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg></div><div><div class="ph-title">Work Boards</div><div class="ph-sub">Customisable boards · Automations · Team workload</div></div><div class="ph-right"><button class="btn bs btn-sm" onclick="boardFormDrawer()">Board Form</button><button class="btn bp btn-sm" onclick="boardAddGroup()">+ New Group</button></div></div>
+        <div class="tabs"><button class="tab on" onclick="switchTab('boardTabs','main',this)">Main Board</button><button class="tab" onclick="switchTab('boardTabs','calendar',this);renderBoardCalendar()">Calendar</button><button class="tab" onclick="switchTab('boardTabs','automations',this)">Automations</button><button class="tab" onclick="switchTab('boardTabs','workload',this)">Workload</button><button class="tab" onclick="switchTab('boardTabs','activity',this)">Activity Log</button></div>
         <div class="content" id="boardsContent"></div>
       </div>
 
@@ -1860,6 +1860,12 @@ body.dark .perm-check.on{background:var(--gn);}
         <div class="ph"><div class="ph-icon" style="background:var(--em)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><div><div class="ph-title">Contractors & Global Pay</div><div class="ph-sub">Multi-currency · Compliance · Contract lifecycle</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="openModal('newContractorModal')">+ Add Contractor</button><button class="btn bg btn-sm" onclick="runContractorPayRun()">Run Pay Cycle</button></div></div>
         <div class="tabs"><button class="tab on" onclick="switchTab('ctrTabs','people',this)">Contractors</button><button class="tab" onclick="switchTab('ctrTabs','payruns',this)">Pay Runs</button><button class="tab" onclick="switchTab('ctrTabs','compliance',this)">Compliance</button><button class="tab" onclick="switchTab('ctrTabs','spend',this)">Spend Analytics</button></div>
         <div class="content" id="contractorsContent"></div>
+      </div>
+
+      <!-- ORG CHART -->
+      <div class="page" id="page-orgchart">
+        <div class="ph"><div class="ph-icon" style="background:var(--pu)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><line x1="10" y1="6.5" x2="14" y2="6.5"/><line x1="6.5" y1="10" x2="6.5" y2="14"/><line x1="17.5" y1="10" x2="17.5" y2="14"/></svg></div><div><div class="ph-title">Org Chart</div><div class="ph-sub">Reporting lines · Employees & Contractors</div></div><div class="ph-right"><button class="btn bs btn-sm" onclick="nxExportCardCSV_orgchart()">Export CSV</button></div></div>
+        <div class="content" id="orgchartContent"></div>
       </div>
 
       <!-- PAYROLL ENGINE (employer/manager view) -->
@@ -2175,7 +2181,7 @@ const ROLES = {
   admin: {
     label:'Administrator', color:'#F97316', avBg:'#F97316', avInitials:'AM',
     name:'Amohelang M.', org:'xGroup SA',
-    pages:['dashboard','analytics','finance','procurement','approvals','hr','inventory','crm','projects','budget','entities','vendor','ess','workflow','billing','quotes','claims','swiftpay','xpayments','audit','vault','chat','settings','users','onboarding','ai','search','api','sso','offline','attendance','leave','payroll','reports','risk','supply','boards','contractors','accounting','paypro','fleet','access','iam','integrations','brand','email'],
+    pages:['dashboard','analytics','finance','procurement','approvals','hr','inventory','crm','projects','budget','entities','vendor','ess','workflow','billing','quotes','claims','swiftpay','xpayments','audit','vault','chat','settings','users','onboarding','ai','search','api','sso','offline','attendance','leave','payroll','reports','risk','supply','boards','contractors','accounting','paypro','fleet','access','iam','integrations','brand','email','orgchart'],
     nav:[
       {section:'Overview'},
       {id:'dashboard',label:'Dashboard',icon:'grid'},
@@ -2200,6 +2206,7 @@ const ROLES = {
       {section:'People'},
       {id:'hr',label:'HR & Payroll',icon:'users'},
       {id:'contractors',label:'Contractors · Global Pay',icon:'person',badge:'8',badgeClass:'nb-bl'},
+      {id:'orgchart',label:'Org Chart',icon:'building'},
       {id:'paypro',label:'Payroll Engine',icon:'dollar',badge:'NEW',badgeClass:'nb-gn'},
       {id:'attendance',label:'Attendance Tracker',icon:'clock'},
       {id:'leave',label:'Leave Management',icon:'cal',badge:'3',badgeClass:'nb-or'},
@@ -2245,7 +2252,7 @@ const ROLES = {
   cfo: {
     label:'CFO', color:'#F59E0B', avBg:'#F59E0B', avInitials:'AM',
     name:'Amohelang M.', org:'xGroup SA',
-    pages:['dashboard','analytics','finance','approvals','budget','entities','billing','quotes','swiftpay','xpayments','claims','audit','vault','ai','search','chat','attendance','payroll','reports','risk','supply','accounting','contractors','boards','paypro','integrations','email'],
+    pages:['dashboard','analytics','finance','approvals','budget','entities','billing','quotes','swiftpay','xpayments','claims','audit','vault','ai','search','chat','attendance','payroll','reports','risk','supply','accounting','contractors','boards','paypro','integrations','email','orgchart'],
     nav:[
       {section:'Executive'},
       {id:'dashboard',label:'Dashboard',icon:'grid'},
@@ -2319,7 +2326,7 @@ const ROLES = {
   hr: {
     label:'HR Manager', color:'#16A34A', avBg:'#16A34A', avInitials:'LK',
     name:'Lerato Khumalo', org:'xGroup SA',
-    pages:['dashboard','hr','onboarding','ess','vault','users','chat','search','leave','attendance','paypro','access','email'],
+    pages:['dashboard','hr','onboarding','ess','vault','users','chat','search','leave','attendance','paypro','access','email','orgchart'],
     nav:[
       {section:'Overview'},
       {id:'dashboard',label:'Dashboard',icon:'grid'},
@@ -12330,6 +12337,297 @@ function renderIAMApiLimits(){
   const _dl=doLogout;
   window.doLogout=async function(){nxStopRealtime();return _dl.apply(this,arguments);};
 })();
+
+
+/* ════════════════════════════════════════════════════════════
+   MORR ERP v25 — closing the gap vs Monday.com / Deel / Sage Payroll
+════════════════════════════════════════════════════════════ */
+
+/* ══════════ MONDAY.COM PARITY ══════════════════════════════ */
+
+/* ── Board Forms: public-style item-intake form ── */
+function boardFormDrawer(){
+  const groupOpts=BOARDS_DATA.map((g,i)=>'<option value="'+i+'">'+g.group+'</option>').join('');
+  nxDrawerOpen({
+    title:'Board Form',sub:'Public intake form — anyone with the link can submit an item',icon:'file',color:'var(--pu)',
+    body:'<div class="alert bl" style="margin-bottom:14px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:var(--bl-m);stroke-width:2;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><div><div class="alert-title">Like Monday.com Forms</div><div class="alert-body">Submissions land directly as new items in the group you choose below — no login needed for the submitter.</div></div></div>'
+      +'<div class="fg"><label class="fl">Target Group</label><select class="fi" id="bfGroup">'+groupOpts+'</select></div>'
+      +'<div class="fg" style="margin-top:10px;"><label class="fl">Form Title</label><input class="fi" id="bfTitle" value="Request Intake"/></div>'
+      +'<div class="nx-key-box" style="margin-top:14px;"><span id="bfLink" style="flex:1;">'+location.href.split('?')[0]+'?board_form=1&group=0</span><button class="btn bs btn-xs" onclick="boardFormCopy()">Copy Link</button></div>'
+      +'<div class="nx-sec">Preview / Test Submit</div>'
+      +'<div class="fg"><label class="fl">Item Name</label><input class="fi" id="bfItemName" placeholder="e.g. Fix login bug on mobile"/></div>'
+      +'<div class="fg" style="margin-top:8px;"><label class="fl">Submitted By</label><input class="fi" id="bfSubmitter" placeholder="e.g. external@client.com"/></div>',
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button><button class="btn bp" onclick="boardFormSubmit()">Submit Test Item</button>',
+  });
+}
+function boardFormCopy(){
+  const gi=document.getElementById('bfGroup')?.value||'0';
+  const url=location.href.split('?')[0]+'?board_form=1&group='+gi;
+  navigator.clipboard?.writeText(url).then(()=>toast('Form link copied','#16A34A'));
+}
+function boardFormSubmit(){
+  const gi=parseInt(document.getElementById('bfGroup')?.value)||0;
+  const name=document.getElementById('bfItemName')?.value.trim();
+  const submitter=document.getElementById('bfSubmitter')?.value.trim()||'External submitter';
+  if(!name){toast('Enter an item name','#DC2626');return;}
+  const g=BOARDS_DATA[gi]; if(!g)return;
+  g.items.push({id:_boardNextId++,name,owner:submitter,status:'Not Started',priority:'Medium',due:'TBC',progress:0,updates:[{by:submitter,ts:'Just now',text:'Submitted via public board form.'}],checklist:[]});
+  BOARD_ACTIVITY.unshift({ts:'Just now',user:submitter,action:'submitted "'+name+'" via Board Form to '+g.group});
+  NXDB.save('boards');
+  renderBoards();
+  nxDrawerClose();
+  toast('Item created in '+g.group+' via Board Form','#16A34A');
+  writeAudit('FormSubmit','Boards',name,0,'low');
+}
+
+/* ── Calendar view: items plotted by due date ── */
+function renderBoardCalendar(){
+  const host=document.getElementById('boardsContent'); if(!host)return;
+  let cal=document.getElementById('boardTabs-calendar');
+  if(!cal){cal=document.createElement('div');cal.className='tp';cal.id='boardTabs-calendar';host.appendChild(cal);}
+  const now=new Date(); const year=now.getFullYear(), month=now.getMonth();
+  const first=new Date(year,month,1); const startDow=first.getDay();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const items=BOARDS_DATA.flatMap((g,gi)=>g.items.map(it=>({...it,group:g.group,color:g.color,gi})));
+  const byDay={};
+  items.forEach(it=>{
+    const m=String(it.due||'').match(/(\d{1,2})\s+(\w{3})/);
+    if(m){const d=parseInt(m[1]); (byDay[d]=byDay[d]||[]).push(it);}
+  });
+  let cells='';
+  for(let i=0;i<startDow;i++)cells+='<div style="background:var(--sf2);border-radius:8px;min-height:76px;"></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const isToday=d===now.getDate();
+    const dayItems=byDay[d]||[];
+    cells+='<div style="background:var(--wh);border:1px solid '+(isToday?'var(--or)':'var(--bd-l)')+';border-radius:8px;min-height:76px;padding:5px;">'
+      +'<div style="font-size:10px;font-weight:800;color:'+(isToday?'var(--or)':'var(--mid)')+';margin-bottom:3px;">'+d+'</div>'
+      +dayItems.slice(0,3).map(it=>'<div style="font-size:9px;background:'+it.color+'22;color:'+it.color+';border-radius:4px;padding:2px 4px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;" onclick="boardItemDrawer('+it.gi+','+it.id+')" title="'+it.name+'">'+it.name+'</div>').join('')
+      +(dayItems.length>3?'<div style="font-size:9px;color:var(--mu);">+'+(dayItems.length-3)+' more</div>':'')
+      +'</div>';
+  }
+  cal.innerHTML='<div class="card"><div class="ch2"><span class="ch2-title">'+now.toLocaleDateString('en-ZA',{month:'long',year:'numeric'})+'</span><span class="ch2-sub">Items plotted by due date</span></div>'
+    +'<div class="cb"><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px;">'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>'<div style="text-align:center;font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;">'+d+'</div>').join('')+'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">'+cells+'</div></div></div>';
+}
+
+/* ── Time Tracking column on board items ── */
+function boardItemToggleTimer(gi,itemId){
+  const it=BOARDS_DATA[gi]?.items.find(x=>x.id===itemId); if(!it)return;
+  if(it.timerRunning){
+    const elapsed=Math.round((Date.now()-it.timerStart)/60000);
+    it.loggedMinutes=(it.loggedMinutes||0)+elapsed;
+    it.timerRunning=false;it.timerStart=null;
+    toast('Logged '+elapsed+' min on "'+it.name+'" — total '+Math.round(it.loggedMinutes)+' min','#16A34A');
+  }else{
+    BOARDS_DATA.forEach(g=>g.items.forEach(x=>{if(x.timerRunning){const e=Math.round((Date.now()-x.timerStart)/60000);x.loggedMinutes=(x.loggedMinutes||0)+e;x.timerRunning=false;x.timerStart=null;}}));
+    it.timerRunning=true;it.timerStart=Date.now();
+    toast('Timer started on "'+it.name+'"','#2563EB');
+  }
+  NXDB.save('boards');
+  boardItemDrawer(gi,itemId);
+}
+(function(){
+  const _bid=boardItemDrawer;
+  window.boardItemDrawer=function(gi,itemId){
+    _bid.apply(this,arguments);
+    const it=BOARDS_DATA[gi]?.items.find(x=>x.id===itemId); if(!it)return;
+    const body=document.getElementById('nxDrawerBody'); if(!body)return;
+    const totalMin=(it.loggedMinutes||0)+(it.timerRunning?Math.round((Date.now()-it.timerStart)/60000):0);
+    const h=Math.floor(totalMin/60), m=totalMin%60;
+    const box=document.createElement('div');
+    box.innerHTML='<div class="nx-sec">Time Tracking</div>'
+      +'<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--sf2);border-radius:10px;">'
+      +'<div style="font-family:var(--mo);font-size:20px;font-weight:800;color:'+(it.timerRunning?'var(--or)':'var(--ink)')+';">'+h+'h '+m+'m</div>'
+      +'<button class="btn '+(it.timerRunning?'bd2':'bp')+' btn-sm" onclick="boardItemToggleTimer('+gi+','+itemId+')">'+(it.timerRunning?'⏸ Stop Timer':'▶ Start Timer')+'</button>'
+      +(it.timerRunning?'<span class="status-dot live" style="margin-left:4px;"></span>':'')+'</div>';
+    body.insertBefore(box,body.firstChild);
+  };
+})();
+
+/* ══════════ DEEL.COM PARITY ══════════════════════════════ */
+
+/* ── Org Chart ── */
+function renderOrgChart(){
+  const host=document.getElementById('orgchartContent'); if(!host)return;
+  const ceo={name:'Sipho Dlamini',role:'CEO',dept:'Executive'};
+  const nodes=[
+    {name:'Amohelang M.',role:'CTO / Admin',dept:'Executive',reportsTo:'CEO'},
+    {name:'Thabo Mokoena',role:'Operations Manager',dept:'Operations',reportsTo:'CEO'},
+    {name:'Lerato Khumalo',role:'HR Manager',dept:'HR',reportsTo:'CEO'},
+    ...PAYPRO_EMPS.map(e=>({name:e.name,role:e.role||e.dept,dept:e.dept,reportsTo:e.dept==='Operations'?'Thabo Mokoena':e.dept==='HR'?'Lerato Khumalo':'Amohelang M.'})),
+    ...CONTRACTORS_DATA.filter(c=>c.status!=='Onboarding').map(c=>({name:c.name,role:c.role+' (Contractor)',dept:c.country,reportsTo:'Amohelang M.'})),
+  ];
+  const byManager={};
+  nodes.forEach(n=>{(byManager[n.reportsTo]=byManager[n.reportsTo]||[]).push(n);});
+  const card=(n,color)=>'<div style="background:var(--wh);border:1px solid var(--bd);border-radius:10px;padding:8px 12px;text-align:center;min-width:130px;box-shadow:var(--sh1);"><div style="width:30px;height:30px;border-radius:50%;background:'+color+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;margin:0 auto 5px;">'+n.name.split(' ').map(w=>w[0]).join('').slice(0,2)+'</div><div style="font-size:11px;font-weight:700;">'+n.name+'</div><div style="font-size:9.5px;color:var(--mid);">'+n.role+'</div></div>';
+  const tier2=['Amohelang M.','Thabo Mokoena','Lerato Khumalo'];
+  let html='<div class="card"><div class="ch2"><span class="ch2-title">Reporting Structure</span><span class="ch2-sub">'+nodes.length+1+' people</span></div><div class="cb" style="overflow-x:auto;">'
+    +'<div style="display:flex;flex-direction:column;align-items:center;gap:24px;min-width:900px;">'
+    +'<div>'+card(ceo,'#F97316')+'</div>'
+    +'<div style="width:2px;height:20px;background:var(--bd);"></div>'
+    +'<div style="display:flex;gap:40px;">'+tier2.map(mn=>{
+      const mgr=nodes.find(n=>n.name===mn)||{name:mn,role:'',dept:''};
+      const reports=byManager[mn]||[];
+      return '<div style="display:flex;flex-direction:column;align-items:center;gap:14px;">'+card(mgr,'#3B82F6')
+        +(reports.length?'<div style="width:2px;height:16px;background:var(--bd);"></div><div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:280px;">'+reports.slice(0,8).map(r=>card(r,'#16A34A')).join('')+(reports.length>8?'<div style="font-size:10px;color:var(--mu);align-self:center;">+'+(reports.length-8)+' more</div>':'')+'</div>':'')
+        +'</div>';
+    }).join('')+'</div></div></div></div>';
+  host.innerHTML=html;
+}
+function nxExportCardCSV_orgchart(){
+  const rows=[['Name','Role','Department','Reports To']];
+  [{name:'Sipho Dlamini',role:'CEO',dept:'Executive',reportsTo:'-'},
+   ...PAYPRO_EMPS.map(e=>({name:e.name,role:e.role||e.dept,dept:e.dept,reportsTo:e.dept==='Operations'?'Thabo Mokoena':e.dept==='HR'?'Lerato Khumalo':'Amohelang M.'}))]
+   .forEach(n=>rows.push([n.name,n.role,n.dept,n.reportsTo]));
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='org-chart.csv';a.click();
+  toast('org-chart.csv downloaded','#16A34A');
+}
+(function(){
+  const _o=openPage;
+  window.openPage=function(name){_o.apply(this,arguments);if(name==='orgchart')setTimeout(renderOrgChart,60);};
+})();
+
+/* ── Contractor timesheets + expenses (Deel-style) ── */
+let CONTRACTOR_TIMESHEETS=[
+  {id:'TS-0091',contractor:'Maria Santos',week:'3-9 Feb 2025',hours:38,status:'Submitted',rate:0},
+  {id:'TS-0090',contractor:'Raj Patel',week:'3-9 Feb 2025',hours:42,status:'Approved',rate:0},
+];
+let CONTRACTOR_EXPENSES=[
+  {id:'CE-0021',contractor:'Grace Wanjiru',desc:'Client site travel — Nairobi',amount:1200,currency:'KES',status:'Pending'},
+];
+(function(){
+  const _cd=ctrDrawer;
+  window.ctrDrawer=function(id){
+    _cd.apply(this,arguments);
+    const c=CONTRACTORS_DATA.find(x=>x.id===id); if(!c)return;
+    const body=document.getElementById('nxDrawerBody'); if(!body)return;
+    const ts=CONTRACTOR_TIMESHEETS.filter(t=>t.contractor===c.name);
+    const ex=CONTRACTOR_EXPENSES.filter(e=>e.contractor===c.name);
+    const box=document.createElement('div');
+    box.innerHTML='<div class="nx-sec">Timesheets</div>'
+      +(ts.length?ts.map(t=>'<div class="stat-row"><span class="stat-lbl">'+t.week+' · '+t.hours+'h</span><span class="badge '+(t.status==='Approved'?'gn':'am')+'">'+t.status+'</span></div>').join('')
+        :'<div style="font-size:11px;color:var(--mu);padding:4px 0;">No timesheets logged yet.</div>')
+      +'<button class="btn bs btn-xs" style="margin-top:6px;" onclick="ctrLogTimesheet(\''+id+'\')">+ Log Week</button>'
+      +'<div class="nx-sec">Expenses</div>'
+      +(ex.length?ex.map(e=>'<div class="stat-row"><span class="stat-lbl">'+e.desc+'</span><span class="stat-val">'+e.currency+' '+e.amount.toLocaleString()+' · <span class="badge am" style="font-size:9px;">'+e.status+'</span></span></div>').join('')
+        :'<div style="font-size:11px;color:var(--mu);padding:4px 0;">No expenses submitted.</div>')
+      +'<button class="btn bs btn-xs" style="margin-top:6px;" onclick="ctrLogExpense(\''+id+'\')">+ Log Expense</button>';
+    body.appendChild(box);
+  };
+})();
+function ctrLogTimesheet(id){
+  const c=CONTRACTORS_DATA.find(x=>x.id===id); if(!c)return;
+  const hours=parseFloat(prompt('Hours worked this week:','40'))||0;
+  if(hours<=0)return;
+  CONTRACTOR_TIMESHEETS.unshift({id:'TS-'+(92+CONTRACTOR_TIMESHEETS.length),contractor:c.name,week:'This week',hours,status:'Submitted',rate:0});
+  toast('Timesheet logged — '+hours+'h submitted for approval','#16A34A');
+  ctrDrawer(id);
+  writeAudit('Timesheet','Contractors',c.name,0,'low');
+}
+function ctrLogExpense(id){
+  const c=CONTRACTORS_DATA.find(x=>x.id===id); if(!c)return;
+  const desc=prompt('Expense description:','Client travel'); if(!desc)return;
+  const amount=parseFloat(prompt('Amount ('+c.currency+'):','0'))||0;
+  if(amount<=0)return;
+  CONTRACTOR_EXPENSES.unshift({id:'CE-'+(22+CONTRACTOR_EXPENSES.length),contractor:c.name,desc,amount,currency:c.currency,status:'Pending'});
+  toast('Expense logged — pending approval','#16A34A');
+  ctrDrawer(id);
+  writeAudit('Expense','Contractors',c.name,amount,'low');
+}
+
+/* ══════════ SAGE PAYROLL PARITY ══════════════════════════ */
+
+/* ── Pay frequency support ── */
+const PAY_FREQ_DIVISOR={Monthly:1,'Bi-Weekly':2,Weekly:4.333};
+function empSetFrequency(i,freq){
+  const e=PAYPRO_EMPS[i]; if(!e)return;
+  e.payFrequency=freq;
+  NXDB.save('paypro');
+  toast(e.name+' switched to '+freq+' pay frequency','#2563EB');
+  renderPaypro();
+}
+
+/* ── Garnishee / court order deductions ── */
+function empAddGarnishee(i){
+  const e=PAYPRO_EMPS[i]; if(!e)return;
+  const amt=parseFloat(prompt('Monthly garnishee/court order amount (R) for '+e.name+':','500'))||0;
+  if(amt<=0)return;
+  e.garnishee=(e.garnishee||0)+amt;
+  NXDB.save('paypro');
+  toast('Garnishee order of '+fmt(amt)+'/month added for '+e.name,'#D97706');
+  writeAudit('Garnishee','Payroll',e.name,amt,'high');
+  renderPaypro();
+}
+
+/* ── Employee loans with repayment schedule ── */
+let EMP_LOANS=[];
+function empAddLoan(i){
+  const e=PAYPRO_EMPS[i]; if(!e)return;
+  const principal=parseFloat(prompt('Loan amount (R) for '+e.name+':','5000'))||0;
+  if(principal<=0)return;
+  const months=parseInt(prompt('Repayment term (months):','6'))||6;
+  const monthly=Math.round(principal/months);
+  EMP_LOANS.push({emp:e.id,name:e.name,principal,months,monthly,remaining:principal});
+  e.loanDeduction=(e.loanDeduction||0)+monthly;
+  NXDB.save('paypro');
+  toast('Loan of '+fmt(principal)+' approved — '+fmt(monthly)+'/month over '+months+' months','#16A34A');
+  writeAudit('Loan','Payroll',e.name,principal,'high');
+  renderPaypro();
+}
+
+/* ── UI-19 termination document ── */
+function pdfUI19(i){
+  const e=PAYPRO_EMPS[i]; if(!e)return;
+  const p=nxPDFStart('UI-19 Termination Declaration',e.id);
+  if(!p){toast('PDF engine offline','#D97706');return;}
+  p.kv([['Employee',e.name],['Employee No',e.id],['UIF Reference','U123456789'],['Employer',NX_TPL.legal],
+        ['Date of Appointment',e.startDate||'—'],['Date of Termination',new Date().toISOString().slice(0,10)],
+        ['Reason for Termination','Resignation'],['Final Gross Remuneration',fmt(Math.round(payproCalc(e).gross))]])
+   .sec('Declaration')
+   .note('This declaration confirms termination of employment for UIF purposes in terms of the Unemployment Insurance Act, 2001. The employee remuneration and contribution history for the preceding 12 months has been submitted via the monthly UIF declarations (U-Filing).')
+   .sec('Employer Certification')
+   .note('I certify that the above information is true and correct. Signed: ______________________  Date: ____________')
+   .save('UI19-'+e.id+'.pdf',false);
+  writeAudit('UI19','Payroll',e.id,0,'medium');
+}
+
+/* ── Wire Sage additions into the Payroll Engine table ── */
+(function(){
+  const _rp6=renderPaypro;
+  window.renderPaypro=function(){
+    _rp6.apply(this,arguments);
+    const el=document.getElementById('payproContent'); if(!el)return;
+    if(document.getElementById('sagePayCard'))return;
+    const card=document.createElement('div');
+    card.className='card';card.id='sagePayCard';
+    card.innerHTML='<div class="ch2">'+svgIcon('dollar','13px','var(--gn)')+'<span class="ch2-title">Pay Frequency, Garnishees & Loans</span><span class="ch2-sub">Sage-style statutory deductions</span></div>'
+      +'<div class="cb" style="padding:0;">'
+      +PAYPRO_EMPS.map((e,i)=>'<div class="stock-card">'
+        +'<div style="flex:1;"><div class="stock-name">'+e.name+'</div><div class="stock-sku">'
+        +'Frequency: <select style="font-size:10px;border:1px solid var(--bd);border-radius:4px;" onchange="empSetFrequency('+i+',this.value)">'+Object.keys(PAY_FREQ_DIVISOR).map(f=>'<option '+(e.payFrequency===f||(!e.payFrequency&&f==='Monthly')?'selected':'')+'>'+f+'</option>').join('')+'</select>'
+        +(e.garnishee?' · Garnishee '+fmt(e.garnishee)+'/mo':'')+(e.loanDeduction?' · Loan '+fmt(e.loanDeduction)+'/mo':'')
+        +'</div></div>'
+        +'<button class="btn bs btn-xs" onclick="empAddGarnishee('+i+')">+ Garnishee</button>'
+        +'<button class="btn bs btn-xs" onclick="empAddLoan('+i+')">+ Loan</button>'
+        +'<button class="btn bs btn-xs" onclick="pdfUI19('+i+')">UI-19</button>'
+        +'</div>').join('')
+      +'</div>';
+    el.appendChild(card);
+  };
+})();
+
+/* ── Include garnishee + loan deductions in net pay (Sage parity) ── */
+(function(){
+  const _pc=payproCalc;
+  window.payproCalc=function(e){
+    const base=_pc(e);
+    const extra=(e.garnishee||0)+(e.loanDeduction||0);
+    return {...base, net: base.net - extra, garnishee:e.garnishee||0, loanDeduction:e.loanDeduction||0};
+  };
+})();
+
+console.info('[MORR ERP] v25 loaded — Monday/Deel/Sage parity additions active');
 
 </script>
 
