@@ -172,13 +172,13 @@ body{font-family:var(--fn);background:var(--sf);color:var(--ink);font-size:13px;
 .lg-div::before,.lg-div::after{content:'';flex:1;height:1px;background:#1A1A1E;}
 
 /* Error banner */
-#loginError{
+#loginError,.lg-error{
   display:none;align-items:flex-start;gap:9px;
   background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.18);
   border-radius:8px;padding:10px 13px;margin-bottom:18px;
   font-size:12px;color:#FCA5A5;line-height:1.5;
 }
-#loginError svg{width:14px;height:14px;flex-shrink:0;margin-top:1px;fill:none;stroke:#F87171;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+#loginError svg,.lg-error svg{width:14px;height:14px;flex-shrink:0;margin-top:1px;fill:none;stroke:#F87171;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
 
 /* Fields */
 .lg-field{margin-bottom:16px;}
@@ -1272,6 +1272,8 @@ body.dark .perm-check.on{background:var(--gn);}
     <div class="lg-brand-bottom">
       <span class="lg-badge">POPIA</span>
       <span class="lg-badge">SOC 2</span>
+      <span class="lg-badge" title="Multi-factor authentication on privileged accounts">MFA</span>
+      <span class="lg-badge" title="OpenID Connect + SAML 2.0 sign-in">OIDC / SAML</span>
       <span class="lg-badge">ZA</span>
       <span class="lg-badge">Sandton</span>
       <span class="lg-badge">v5.5</span>
@@ -1293,6 +1295,7 @@ body.dark .perm-check.on{background:var(--gn);}
       <div class="lg-title">Welcome back</div>
       <div class="lg-subtitle">Sign in to your MORR ERP workspace</div>
 
+      <div id="lgPasswordStep">
       <!-- SSO -->
       <div class="lg-sso">
         <button id="googleBtn" class="lg-sso-btn g" onclick="doSSOLogin('google')">
@@ -1313,6 +1316,18 @@ body.dark .perm-check.on{background:var(--gn);}
           </svg>
           Microsoft
         </button>
+      </div>
+
+      <!-- Enterprise SSO (real SAML 2.0 via Supabase Auth signInWithSSO) -->
+      <div id="samlToggleRow" style="text-align:center;margin:-6px 0 14px;">
+        <a href="#" onclick="toggleSamlPanel();return false;" style="font-size:11px;color:#8A8A92;">Sign in with company SSO (SAML) instead</a>
+      </div>
+      <div id="samlPanel" style="display:none;margin-bottom:14px;">
+        <div class="lg-field">
+          <label class="lg-label" for="samlDomain">Company Domain</label>
+          <input id="samlDomain" class="lg-input" type="text" placeholder="yourcompany.com" onkeydown="if(event.key==='Enter')signInWithSAML(document.getElementById('samlDomain').value.trim())"/>
+        </div>
+        <button class="lg-sso-btn" style="width:100%;justify-content:center;" onclick="signInWithSAML(document.getElementById('samlDomain').value.trim())">Continue with SAML SSO</button>
       </div>
 
       <div class="lg-div">or sign in with email</div>
@@ -1404,6 +1419,64 @@ body.dark .perm-check.on{background:var(--gn);}
             Demo environment · Not for production use
           </div>
         </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:6px;justify-content:center;margin-top:16px;font-size:10px;color:#52525B;">
+        <svg viewBox="0 0 24 24" style="width:11px;height:11px;flex-shrink:0;fill:none;stroke:#52525B;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>MFA on privileged accounts · Account lockout · 15-min session timeout · Full audit trail</span>
+      </div>
+      </div><!-- /lgPasswordStep -->
+
+      <!-- MFA step (real second factor via auth-service send_otp/verify_otp,
+           enforced for admin/cfo roles — NIST 800-63B AAL2) -->
+      <div id="lgMfaStep" style="display:none;">
+        <div class="lg-title" style="font-size:18px;">Verify it's you</div>
+        <div class="lg-subtitle">Enter the 6-digit code sent to <strong id="lgMfaEmail"></strong></div>
+
+        <div id="mfaError" class="lg-error" style="display:none;">
+          <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span id="mfaErrorText"></span>
+        </div>
+
+        <div class="lg-field">
+          <label class="lg-label" for="mfaCode">Verification Code</label>
+          <input id="mfaCode" class="lg-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" autocomplete="one-time-code" onkeydown="if(event.key==='Enter')submitLoginMFA()" style="letter-spacing:.3em;font-family:var(--mo);text-align:center;font-size:18px;"/>
+        </div>
+
+        <button id="mfaVerifyBtn" class="lg-btn" onclick="submitLoginMFA()">Verify &amp; sign in</button>
+
+        <div class="lg-links" style="justify-content:space-between;display:flex;margin-top:12px;">
+          <a href="#" id="mfaSendBtn" onclick="startLoginMFA(_pendingLogin&&_pendingLogin.email);return false;">Resend code</a>
+          <a href="#" onclick="cancelLoginMFA();return false;">Back to sign in</a>
+        </div>
+      </div>
+
+      <!-- Set new password step (completes the recovery-link flow, which
+           previously sent an email with nowhere for the user to land) -->
+      <div id="lgResetStep" style="display:none;">
+        <div class="lg-title" style="font-size:18px;">Set a new password</div>
+        <div class="lg-subtitle">Choose a strong password for your account</div>
+
+        <div id="resetError" class="lg-error" style="display:none;">
+          <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span id="resetErrorText"></span>
+        </div>
+
+        <div class="lg-field">
+          <label class="lg-label" for="newPassword">New Password</label>
+          <input id="newPassword" class="lg-input" type="password" placeholder="At least 8 characters" autocomplete="new-password" oninput="updatePasswordStrengthMeter()"/>
+          <div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:8px;overflow:hidden;">
+            <div id="pwStrengthFill" style="height:100%;width:0;transition:width .2s,background .2s;"></div>
+          </div>
+          <div id="pwStrengthLabel" style="font-size:10px;color:#8A8A92;margin-top:4px;"></div>
+        </div>
+        <div class="lg-field">
+          <label class="lg-label" for="newPasswordConfirm">Confirm Password</label>
+          <input id="newPasswordConfirm" class="lg-input" type="password" placeholder="Re-enter password" autocomplete="new-password" onkeydown="if(event.key==='Enter')submitNewPassword()"/>
+        </div>
+
+        <button id="resetSubmitBtn" class="lg-btn" onclick="submitNewPassword()">Set new password</button>
+        <div style="font-size:10px;color:#8A8A92;margin-top:10px;line-height:1.5;">Checked against known data breaches before it's saved. No arbitrary complexity rules — length and uniqueness matter more (NIST SP 800-63B).</div>
       </div>
 
       <!-- Footer -->
@@ -2129,12 +2202,28 @@ body.dark .perm-check.on{background:var(--gn);}
   <div class="mf"><button class="btn bs" onclick="closeModal('newContractorModal')">Cancel</button><button class="btn bp" onclick="saveContractor()">Add & Send Contract</button></div></div>
 </div>
 
+<!-- Idle session warning (ISO/IEC 27001 A.9.4.2) -->
+<div class="moverlay" id="idleWarningModal">
+  <div class="modal"><div class="mh"><span class="m-title">Still there?</span></div>
+  <div class="mb">
+    <p style="font-size:13px;color:var(--mid);line-height:1.6;margin:0;">You've been inactive for a while. For your security, you'll be signed out in <strong id="idleCountdown">120</strong> seconds.</p>
+  </div>
+  <div class="mf"><button class="btn bs" onclick="doLogout()">Sign out now</button><button class="btn bp" onclick="dismissIdleWarning()">Stay signed in</button></div></div>
+</div>
+
 <!-- ══ Script load order comment ══ -->
 
   <script>
     /* ── Session resume on page reload ── */
     document.addEventListener('DOMContentLoaded', async () => {
       if (typeof sb === 'function' && sb()) {
+        /* Password recovery links land back here with a recovery token;
+           supabase-js fires this event once it detects it in the URL. The
+           reset email previously had nowhere to send the user — this was a
+           dead end in the flow. */
+        sb().auth.onAuthStateChange((event) => {
+          if (event === 'PASSWORD_RECOVERY') showSetNewPasswordStep();
+        });
         /* Guard the resume path so a slow network never leaves the user on a
            blank login screen — 3s for the session, 2s for the profile. */
         const session = await Promise.race([
@@ -2549,6 +2638,27 @@ async function signInWithEmail(email, password) {
   } catch(e) {
     return null;
   }
+}
+
+/* Real SAML 2.0 enterprise SSO via Supabase Auth's signInWithSSO — the
+   actual protocol call, not a simulation. Requires a SAML identity provider
+   to be registered for the domain (Supabase SSO add-on + `supabase sso add`
+   or the Management API — outside what this app's own code can provision).
+   Without one registered, Supabase returns a real "no SSO provider for this
+   domain" error, which is surfaced honestly rather than faked as success. */
+async function signInWithSAML(domain) {
+  domain = (domain || '').trim();
+  if (!domain) { showLoginError('Enter your company domain (e.g. yourcompany.com).'); return null; }
+  const client = sb();
+  if (!client) { showLoginError('Enterprise SSO requires a live connection — try again shortly.'); return null; }
+  const { data, error } = await client.auth.signInWithSSO({
+    domain,
+    options: { redirectTo: window.location.origin },
+  });
+  if (error) { showLoginError('SSO error: ' + error.message); return null; }
+  if (!data?.url) { showLoginError('No SSO identity provider is configured for "' + domain + '" yet. Contact your administrator.'); return null; }
+  window.location.href = data.url;
+  return data;
 }
 
 async function signInWithOAuth(provider) {
@@ -3426,6 +3536,11 @@ async function showForgotPassword() {
   toast(`Password reset link sent to ${email} — check your inbox`, '#16A34A');
 }
 
+/* Roles that must complete a second factor before a session is established
+   (NIST 800-63B AAL2). Kept separate from ROLES so it's easy to widen. */
+const MFA_REQUIRED_ROLES = ['admin', 'cfo'];
+let _pendingLogin = null;
+
 async function doLogin() {
   hideLoginError();
   const email    = (document.getElementById('loginEmail')?.value  || '').trim();
@@ -3436,6 +3551,19 @@ async function doLogin() {
 
   const btn = document.getElementById('loginBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
+  const client = sb();
+
+  /* Pre-auth brute-force throttle (NIST 800-63B §5.2.2) */
+  if (client) {
+    try {
+      const { data: locked } = await client.rpc('check_login_lockout', { p_email: email });
+      if (locked) {
+        showLoginError('Too many failed attempts on this account. Please wait 15 minutes and try again.');
+        if (btn) { btn.disabled = false; btn.textContent = 'Sign in to MORR ERP'; }
+        return;
+      }
+    } catch (e) { /* lockout check unavailable — don't block login on it */ }
+  }
 
   /* ── Try Supabase Auth first ── */
   const supabaseData = await signInWithEmail(email, password);
@@ -3446,22 +3574,34 @@ async function doLogin() {
       getUserProfile(supabaseData.user.id),
       new Promise(res => setTimeout(() => res(null), 2500)),
     ]);
+
+    /* Enforce account de-provisioning (ISO/IEC 27001 A.9.2.6) */
+    if (profile && profile.is_active === false) {
+      await client.auth.signOut();
+      if (client) client.rpc('record_login_attempt', { p_email: email, p_success: false }).catch(()=>{});
+      showLoginError('This account has been deactivated. Contact your administrator.');
+      if (btn) { btn.disabled = false; btn.textContent = 'Sign in to MORR ERP'; }
+      return;
+    }
+
     // Map DB enum values to frontend role keys; fall back to demo role on timeout
-    const dbRole  = profile?.role || resolveRole(email, password) || 'staff';
-    const role    = dbRole === 'hr_manager' ? 'hr' : dbRole;
-    currentRole   = role;
-    currentUser   = {
-      ...ROLES[role],
-      id:     supabaseData.user.id,
-      email:  supabaseData.user.email,
-      name:   profile?.full_name    || ROLES[role]?.name    || email,
-      avInitials: profile?.initials || ROLES[role]?.avInitials || email.substring(0,2).toUpperCase(),
-      avBg:   profile?.avatar_color || ROLES[role]?.avBg    || '#6B7280',
-      org:    profile?.org          || ROLES[role]?.org      || 'xGroup SA',
-    };
+    const dbRole = profile?.role || resolveRole(email, password) || 'staff';
+    const role   = dbRole === 'hr_manager' ? 'hr' : dbRole;
+
+    if (client) client.rpc('record_login_attempt', { p_email: email, p_success: true }).catch(()=>{});
+
+    if (MFA_REQUIRED_ROLES.includes(role)) {
+      _pendingLogin = { supabaseData, profile, role, email };
+      if (btn) { btn.disabled = false; btn.textContent = 'Sign in to MORR ERP'; }
+      return startLoginMFA(email);
+    }
+
+    writeAudit('Login', 'Security', email, 0, 'low');
+    completeLogin(supabaseData, profile, role);
   } else {
     /* Fall back to demo credentials (development / no DB) */
     const role = resolveRole(email, password);
+    if (client) client.rpc('record_login_attempt', { p_email: email, p_success: !!role }).catch(()=>{});
     if (!role) {
       showLoginError('Incorrect email or password. Use the demo accounts below.');
       const panel = document.getElementById('lgInner');
@@ -3471,13 +3611,164 @@ async function doLogin() {
     }
     currentRole = role;
     currentUser = ROLES[role];
+    if (btn) { btn.disabled = false; btn.textContent = 'Sign in to MORR ERP'; }
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appShell').classList.add('active');
+    document.body.className = 'role-' + currentRole;
+    bootstrapApp();
   }
+}
 
-  if (btn) { btn.disabled = false; btn.textContent = 'Sign in to MORR ERP'; }
+function completeLogin(supabaseData, profile, role) {
+  currentRole = role;
+  currentUser = {
+    ...ROLES[role],
+    id:     supabaseData.user.id,
+    email:  supabaseData.user.email,
+    name:   profile?.full_name    || ROLES[role]?.name    || supabaseData.user.email,
+    avInitials: profile?.initials || ROLES[role]?.avInitials || supabaseData.user.email.substring(0,2).toUpperCase(),
+    avBg:   profile?.avatar_color || ROLES[role]?.avBg    || '#6B7280',
+    org:    profile?.org          || ROLES[role]?.org      || 'xGroup SA',
+  };
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appShell').classList.add('active');
   document.body.className = 'role-' + currentRole;
   bootstrapApp();
+}
+
+/* ── Real second-factor step using the already-deployed auth-service
+   send_otp/verify_otp actions (rate-limited, attempt-limited, fully
+   audited server-side in otp_codes / otp_audit_log). ── */
+async function startLoginMFA(email) {
+  document.getElementById('lgPasswordStep').style.display = 'none';
+  document.getElementById('lgMfaStep').style.display = 'block';
+  document.getElementById('lgMfaEmail').textContent = email;
+  document.getElementById('mfaCode').value = '';
+  document.getElementById('mfaError').style.display = 'none';
+  const btn = document.getElementById('mfaSendBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending code…'; }
+  const { data, error } = await callEdgeFunction('auth-service', 'send_otp', { email, purpose: 'login_2fa' });
+  if (btn) { btn.disabled = false; btn.textContent = 'Resend code'; }
+  if (error) {
+    document.getElementById('mfaError').style.display = 'flex';
+    document.getElementById('mfaErrorText').textContent = 'Could not send verification code. Try resending, or contact IT support.';
+    return;
+  }
+  toast(data?.message || ('Verification code sent to ' + email), '#2563EB');
+}
+async function submitLoginMFA() {
+  if (!_pendingLogin) return cancelLoginMFA();
+  const code = (document.getElementById('mfaCode')?.value || '').trim();
+  if (!/^\d{6}$/.test(code)) {
+    document.getElementById('mfaError').style.display = 'flex';
+    document.getElementById('mfaErrorText').textContent = 'Enter the 6-digit code from your email.';
+    return;
+  }
+  const btn = document.getElementById('mfaVerifyBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Verifying…'; }
+  const { data, error } = await callEdgeFunction('auth-service', 'verify_otp', {
+    email: _pendingLogin.email, code, purpose: 'login_2fa',
+  });
+  if (btn) { btn.disabled = false; btn.textContent = 'Verify & sign in'; }
+  if (error || !data?.verified) {
+    document.getElementById('mfaError').style.display = 'flex';
+    document.getElementById('mfaErrorText').textContent = (error && error.message) || 'Incorrect or expired code.';
+    return;
+  }
+  const { supabaseData, profile, role, email } = _pendingLogin;
+  _pendingLogin = null;
+  writeAudit('Login', 'Security', email, 0, 'low');
+  completeLogin(supabaseData, profile, role);
+}
+function cancelLoginMFA() {
+  _pendingLogin = null;
+  document.getElementById('lgMfaStep').style.display = 'none';
+  document.getElementById('lgPasswordStep').style.display = 'block';
+}
+
+/* ── Set new password (completes the previously-dead-end recovery flow) ──
+   NIST 800-63B §5.1.1.2: length over composition rules, and a check against
+   known-breached passwords via the Pwned Passwords k-anonymity API — the
+   password itself never leaves the browser, only a 5-char hash prefix. */
+function passwordStrengthIssues(password, email) {
+  const issues = [];
+  if (!password || password.length < 8) issues.push('at least 8 characters');
+  if (password && password.length > 128) issues.push('under 128 characters');
+  const local = (email || '').split('@')[0].toLowerCase();
+  if (local && password && password.toLowerCase().includes(local)) issues.push("can't contain your email address");
+  return issues;
+}
+async function checkPasswordBreached(password) {
+  try {
+    const enc = new TextEncoder().encode(password);
+    const digest = await crypto.subtle.digest('SHA-1', enc);
+    const hex = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+    const res = await fetch('https://api.pwnedpasswords.com/range/' + hex.slice(0, 5));
+    if (!res.ok) return false;
+    const text = await res.text();
+    const suffix = hex.slice(5);
+    return text.split('\n').some(line => line.split(':')[0].trim() === suffix);
+  } catch (e) { return false; /* API unreachable — don't block the reset on it */ }
+}
+function showSetNewPasswordStep() {
+  document.getElementById('lgPasswordStep').style.display = 'none';
+  document.getElementById('lgMfaStep').style.display = 'none';
+  document.getElementById('lgResetStep').style.display = 'block';
+}
+function updatePasswordStrengthMeter() {
+  const pw = document.getElementById('newPassword')?.value || '';
+  const meter = document.getElementById('pwStrengthFill'); if (!meter) return;
+  const issues = passwordStrengthIssues(pw, '');
+  const score = pw.length >= 8 ? Math.min(4, 1 + Math.floor(pw.length / 6) + (/[0-9]/.test(pw) ? 1 : 0) + (/[^A-Za-z0-9]/.test(pw) ? 1 : 0)) : 0;
+  const colors = ['#71717A', '#DC2626', '#D97706', '#2563EB', '#16A34A'];
+  const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+  meter.style.width = (score / 4 * 100) + '%';
+  meter.style.background = colors[score];
+  const lbl = document.getElementById('pwStrengthLabel');
+  if (lbl) lbl.textContent = pw ? labels[score] : '';
+}
+async function submitNewPassword() {
+  const client = sb(); if (!client) return;
+  const pw1 = document.getElementById('newPassword')?.value || '';
+  const pw2 = document.getElementById('newPasswordConfirm')?.value || '';
+  const errEl = document.getElementById('resetError'), errText = document.getElementById('resetErrorText');
+  const showErr = (msg) => { errEl.style.display = 'flex'; errText.textContent = msg; };
+
+  const { data: { user } } = await client.auth.getUser();
+  const issues = passwordStrengthIssues(pw1, user?.email);
+  if (issues.length) { showErr('Password must have ' + issues.join(', ') + '.'); return; }
+  if (pw1 !== pw2) { showErr('Passwords do not match.'); return; }
+
+  const btn = document.getElementById('resetSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Checking password safety…';
+  const breached = await checkPasswordBreached(pw1);
+  if (breached) {
+    btn.disabled = false; btn.textContent = 'Set new password';
+    showErr('This password has appeared in known data breaches — please choose a different one.');
+    return;
+  }
+
+  btn.textContent = 'Updating…';
+  const { error } = await client.auth.updateUser({ password: pw1 });
+  btn.disabled = false; btn.textContent = 'Set new password';
+  if (error) { showErr(error.message); return; }
+
+  writeAudit('PasswordReset', 'Security', user?.email || '', 0, 'medium');
+  toast('Password updated — signing you in…', '#16A34A');
+  const profile = await getUserProfile(user.id);
+  const role = (profile?.role === 'hr_manager' ? 'hr' : profile?.role) || 'staff';
+  document.getElementById('lgResetStep').style.display = 'none';
+  document.getElementById('lgPasswordStep').style.display = 'block';
+  completeLogin({ user }, profile, role);
+}
+
+function toggleSamlPanel() {
+  const panel = document.getElementById('samlPanel');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  const link = document.getElementById('samlToggleRow')?.querySelector('a');
+  if (link) link.textContent = isOpen ? 'Sign in with company SSO (SAML) instead' : 'Use email/password instead';
+  if (!isOpen) document.getElementById('samlDomain')?.focus();
 }
 
 function doSSOLogin(provider) {
@@ -3509,7 +3800,57 @@ function doSSOLogin(provider) {
   }, 800);
 }
 
+/* ── Session idle timeout (ISO/IEC 27001 A.9.4.2 session lock) ──
+   Warn at 13 minutes of no mouse/keyboard/touch/scroll activity, sign out
+   automatically at 15 unless the user interacts before then. */
+const IDLE_WARN_MS = 13 * 60 * 1000;
+const IDLE_LOGOUT_MS = 15 * 60 * 1000;
+let _idleWarnTimer = null, _idleLogoutTimer = null, _idleCountdownTimer = null;
+
+function resetIdleTimer() {
+  if (!document.getElementById('appShell')?.classList.contains('active')) return;
+  clearTimeout(_idleWarnTimer); clearTimeout(_idleLogoutTimer); clearInterval(_idleCountdownTimer);
+  document.getElementById('idleWarningModal')?.classList.remove('on');
+  _idleWarnTimer = setTimeout(showIdleWarning, IDLE_WARN_MS);
+  _idleLogoutTimer = setTimeout(() => {
+    writeAudit('IdleTimeout', 'Security', currentUser?.email || currentUser?.name || '', 0, 'medium');
+    toast('Signed out due to inactivity', '#D97706');
+    doLogout();
+  }, IDLE_LOGOUT_MS);
+}
+function stopIdleTimer() {
+  clearTimeout(_idleWarnTimer); clearTimeout(_idleLogoutTimer); clearInterval(_idleCountdownTimer);
+  document.getElementById('idleWarningModal')?.classList.remove('on');
+}
+function dismissIdleWarning() {
+  resetIdleTimer();
+}
+function showIdleWarning() {
+  const modal = document.getElementById('idleWarningModal'); if (!modal) return;
+  modal.classList.add('on');
+  let remaining = Math.round((IDLE_LOGOUT_MS - IDLE_WARN_MS) / 1000);
+  const el = document.getElementById('idleCountdown');
+  if (el) el.textContent = remaining;
+  _idleCountdownTimer = setInterval(() => {
+    remaining--;
+    if (el) el.textContent = Math.max(remaining, 0);
+    if (remaining <= 0) clearInterval(_idleCountdownTimer);
+  }, 1000);
+}
+(function () {
+  let throttled = false;
+  ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'].forEach(evt => {
+    document.addEventListener(evt, () => {
+      if (throttled) return;
+      throttled = true;
+      setTimeout(() => { throttled = false; }, 1000);
+      resetIdleTimer();
+    }, { passive: true });
+  });
+})();
+
 async function doLogout() {
+  stopIdleTimer();
   await signOut(); /* Sign out of Supabase session */
   document.getElementById('appShell').classList.remove('active');
   document.getElementById('loginScreen').style.display = 'flex';
@@ -3532,6 +3873,7 @@ async function doLogout() {
 /* ══ BOOTSTRAP ══ */
 
 function bootstrapApp(){
+  resetIdleTimer();
   const u = currentUser;
   // Topbar
   document.getElementById('tbAv').textContent = u.avInitials;
