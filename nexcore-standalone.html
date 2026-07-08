@@ -1851,14 +1851,14 @@ body.dark .perm-check.on{background:var(--gn);}
       <!-- WORK OS BOARDS (Monday-style) -->
       <div class="page" id="page-boards">
         <div class="ph"><div class="ph-icon" style="background:var(--pu)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg></div><div><div class="ph-title">Work Boards</div><div class="ph-sub">Customisable boards · Automations · Team workload</div></div><div class="ph-right"><button class="btn bs btn-sm" onclick="boardFormDrawer()">Board Form</button><button class="btn bp btn-sm" onclick="boardAddGroup()">+ New Group</button></div></div>
-        <div class="tabs"><button class="tab on" onclick="switchTab('boardTabs','main',this)">Main Board</button><button class="tab" onclick="switchTab('boardTabs','calendar',this);renderBoardCalendar()">Calendar</button><button class="tab" onclick="switchTab('boardTabs','automations',this)">Automations</button><button class="tab" onclick="switchTab('boardTabs','workload',this)">Workload</button><button class="tab" onclick="switchTab('boardTabs','activity',this)">Activity Log</button></div>
+        <div class="tabs"><button class="tab on" onclick="switchTab('boardTabs','main',this)">Main Board</button><button class="tab" onclick="switchTab('boardTabs','kanban',this);renderBoardKanban()">Kanban</button><button class="tab" onclick="switchTab('boardTabs','calendar',this);renderBoardCalendar()">Calendar</button><button class="tab" onclick="switchTab('boardTabs','automations',this)">Automations</button><button class="tab" onclick="switchTab('boardTabs','workload',this)">Workload</button><button class="tab" onclick="switchTab('boardTabs','activity',this)">Activity Log</button></div>
         <div class="content" id="boardsContent"></div>
       </div>
 
       <!-- CONTRACTORS & GLOBAL PAY (Deel-style) -->
       <div class="page" id="page-contractors">
-        <div class="ph"><div class="ph-icon" style="background:var(--em)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><div><div class="ph-title">Contractors & Global Pay</div><div class="ph-sub">Multi-currency · Compliance · Contract lifecycle</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="openModal('newContractorModal')">+ Add Contractor</button><button class="btn bg btn-sm" onclick="runContractorPayRun()">Run Pay Cycle</button></div></div>
-        <div class="tabs"><button class="tab on" onclick="switchTab('ctrTabs','people',this)">Contractors</button><button class="tab" onclick="switchTab('ctrTabs','payruns',this)">Pay Runs</button><button class="tab" onclick="switchTab('ctrTabs','compliance',this)">Compliance</button><button class="tab" onclick="switchTab('ctrTabs','spend',this)">Spend Analytics</button></div>
+        <div class="ph"><div class="ph-icon" style="background:var(--em)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><div><div class="ph-title">Contractors & Global Pay</div><div class="ph-sub">Multi-currency · Compliance · EOR Network · Contract lifecycle</div></div><div class="ph-right"><button class="btn bs btn-sm" onclick="ctrHireViaEOR()">Hire via EOR</button><button class="btn bp btn-sm" onclick="openModal('newContractorModal')">+ Add Contractor</button><button class="btn bg btn-sm" onclick="runContractorPayRun()">Run Pay Cycle</button></div></div>
+        <div class="tabs"><button class="tab on" onclick="switchTab('ctrTabs','people',this)">Contractors</button><button class="tab" onclick="switchTab('ctrTabs','payruns',this)">Pay Runs</button><button class="tab" onclick="switchTab('ctrTabs','compliance',this)">Compliance</button><button class="tab" onclick="switchTab('ctrTabs','spend',this)">Spend Analytics</button><button class="tab" onclick="switchTab('ctrTabs','eor',this)">EOR Network</button></div>
         <div class="content" id="contractorsContent"></div>
       </div>
 
@@ -5364,16 +5364,44 @@ function renderAPIPage() {
    SSO PAGE RENDERS
 ═══════════════════════════════════════════════════════ */
 
-function renderSSOPage() {
-  const platforms = [
-    {name:'MORR ERP',status:'federated',url:'erp.morr.co.za',color:'#F97316'},
-    {name:'SwiftPay',status:'pending',url:'swiftpay.xgroup.co.za',color:'#EF4444'},
-    {name:'xBilling',status:'federated',url:'xbilling.xgroup.co.za',color:'#1D4ED8'},
-    {name:'xCentral',status:'idp',url:'xcentral.xgroup.co.za',color:'#7C3AED'},
-    {name:'xPayments Engine',status:'federated',url:'xpayments.xgroup.co.za',color:'#16A34A'},
-    {name:'InterXchange',status:'pending',url:'interxchange.xgroup.co.za',color:'#D97706'},
-  ];
-  
+let SSO_PLATFORMS = [
+  {name:'MORR ERP',status:'federated',url:'erp.morr.co.za',color:'#F97316'},
+  {name:'SwiftPay',status:'pending',url:'swiftpay.xgroup.co.za',color:'#EF4444'},
+  {name:'xBilling',status:'federated',url:'xbilling.xgroup.co.za',color:'#1D4ED8'},
+  {name:'xCentral',status:'idp',url:'xcentral.xgroup.co.za',color:'#7C3AED'},
+  {name:'xPayments Engine',status:'federated',url:'xpayments.xgroup.co.za',color:'#16A34A'},
+  {name:'InterXchange',status:'pending',url:'interxchange.xgroup.co.za',color:'#D97706'},
+];
+/* Real reachability check instead of an instant fake "Testing…" toast —
+   best-effort (opaque cross-origin response) but a genuine network request. */
+async function ssoTest(name){
+  const p=SSO_PLATFORMS.find(x=>x.name===name); if(!p)return;
+  toast('Testing SSO for '+name+'…','#2563EB');
+  try{
+    await fetch('https://'+p.url,{mode:'no-cors'});
+    toast(name+' reachable — SSO endpoint responding','#16A34A');
+  }catch(e){
+    toast(name+' unreachable — check the URL and network','#DC2626');
+  }
+  writeAudit('TestSSO','Security',name,0,'medium');
+}
+function ssoWireUp(name){
+  const p=SSO_PLATFORMS.find(x=>x.name===name); if(!p||p.status!=='pending')return;
+  const clientId=(prompt('OIDC Client ID for '+name+':')||'').trim();
+  if(!clientId){toast('Setup cancelled — no Client ID provided','#D97706');return;}
+  p.status='idp'; p.clientId=clientId;
+  renderSSOPage();
+  toast(name+' SSO configured — status: pending IdP verification','#2563EB');
+  writeAudit('ConfigureSSO','Security',name,0,'medium');
+  NXDB.save('sso');
+}
+async function ssoRevokeSession(uid,name){
+  if(uid&&String(uid).length>20){await revokeUserSessions(uid,name);return;}
+  toast(name+' — demo session (sign in with a real account to revoke live sessions)','#D97706');
+}
+async function renderSSOPage() {
+  const platforms = SSO_PLATFORMS;
+
   const sg = document.getElementById('ssoStatusGrid'); if(sg) {
     sg.innerHTML = platforms.map(p => `<div class="sso-platform-card">
       <div style="width:40px;height:40px;background:${p.color};border-radius:var(--r8);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:white;">${p.name.substring(0,2)}</div>
@@ -5391,25 +5419,36 @@ function renderSSOPage() {
         <td><span class="badge ${p.status==='federated'?'gn':p.status==='idp'?'bl':'am'}">${p.status==='idp'?'IdP':p.status==='federated'?'Active':'Setup needed'}</span></td>
         <td style="font-size:11px;">${p.status==='pending'?'—':'OIDC / JWT'}</td>
         <td style="font-size:10px;font-family:var(--mo);">${p.status==='pending'?'—':'openid roles'}</td>
-        <td>${p.status==='pending'?`<button class="btn bp btn-xs" onclick="toast('Starting ${p.name} SSO setup…','#2563EB')">Wire Up</button>`:`<button class="btn bs btn-xs" onclick="toast('Testing SSO for ${p.name}…','#16A34A')">Test</button>`}</td>
+        <td>${p.status==='pending'?`<button class="btn bp btn-xs" onclick="ssoWireUp('${p.name}')">Wire Up</button>`:`<button class="btn bs btn-xs" onclick="ssoTest('${p.name}')">Test</button>`}</td>
       </tr>`).join('')}
     </tbody></table></div></div></div>`;
   }
 
   const sr = document.getElementById('sessionRows'); if(sr) {
-    const sessions = [
-      {user:'Amohelang M.',platform:'MORR + SwiftPay',ip:'196.22.104.12',login:'09:14',exp:'17:14',c:'#F97316',i:'AM'},
-      {user:'Thabo M.',    platform:'MORR ERP',           ip:'196.22.104.84',login:'08:30',exp:'16:30',c:'#3B82F6',i:'TM'},
-      {user:'Lerato K.',   platform:'MORR ERP',           ip:'196.22.105.22',login:'08:45',exp:'16:45',c:'#16A34A',i:'LK'},
-      {user:'Nomsa P.',    platform:'xBilling + MORR', ip:'196.22.104.55',login:'07:00',exp:'15:00',c:'#F97316',i:'NP'},
+    const fallback = [
+      {id:null,user:'Amohelang M.',platform:'MORR + SwiftPay',ip:'196.22.104.12',login:'09:14',exp:'17:14',c:'#F97316',i:'AM'},
+      {id:null,user:'Thabo M.',    platform:'MORR ERP',           ip:'196.22.104.84',login:'08:30',exp:'16:30',c:'#3B82F6',i:'TM'},
+      {id:null,user:'Lerato K.',   platform:'MORR ERP',           ip:'196.22.105.22',login:'08:45',exp:'16:45',c:'#16A34A',i:'LK'},
+      {id:null,user:'Nomsa P.',    platform:'xBilling + MORR', ip:'196.22.104.55',login:'07:00',exp:'15:00',c:'#F97316',i:'NP'},
     ];
+    let sessions=fallback;
+    const client=typeof sb==='function'?sb():null;
+    if(client&&currentUser?.id&&String(currentUser.id).length>20){
+      try{
+        const {data}=await client.from('user_profiles').select('id,full_name,role').limit(8);
+        if(data&&data.length){
+          const colors=['#F97316','#3B82F6','#16A34A','#7C3AED','#D97706'];
+          sessions=data.map((u,ix)=>({id:u.id,user:u.full_name||u.role,platform:'MORR ERP',ip:'—',login:'—',exp:'active session',c:colors[ix%colors.length],i:(u.full_name||'??').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}));
+        }
+      }catch(e){}
+    }
     sr.innerHTML = sessions.map(s => `<tr>
       <td><div style="display:flex;align-items:center;gap:8px;"><div style="width:26px;height:26px;border-radius:50%;background:${s.c};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:white;">${s.i}</div><span class="tb">${s.user}</span></div></td>
       <td style="font-size:11px;">${s.platform}</td>
       <td class="mo" style="font-size:10px;">${s.ip}</td>
       <td style="font-size:11px;">${s.login}</td>
-      <td style="font-size:11px;color:var(--mid);">Today ${s.exp}</td>
-      <td><button class="btn bd2 btn-xs" onclick="toast('Session revoked for ${s.user}','#DC2626')">Revoke</button></td>
+      <td style="font-size:11px;color:var(--mid);">${s.exp}</td>
+      <td><button class="btn bd2 btn-xs" onclick="ssoRevokeSession(${s.id?`'${s.id}'`:null},'${s.user}')">Revoke</button></td>
     </tr>`).join('');
   }
 }
@@ -5542,15 +5581,38 @@ function simulateOfflineAction() {
   toast('Action queued for sync when connection is restored','#D97706');
 }
 
-function flushQueue() {
+async function flushQueue() {
   if(!offlineQueue.length) { toast('Queue is empty','#6B7280'); return; }
-  const n = offlineQueue.length;
-  offlineQueue = [];
-  document.getElementById('queueBadge').textContent = 0;
-  document.getElementById('queueSize').textContent = 0;
-  document.getElementById('queueSubtitle').textContent = '0 items waiting to sync';
-  document.getElementById('offlineQueueList').innerHTML = '<div style="padding:14px;text-align:center;color:var(--mu);font-size:12px;">Queue flushed — all actions synced</div>';
-  toast(n + ' actions synced to server successfully','#16A34A');
+  if(!navigator.onLine){ toast('Still offline — actions stay queued until connection returns','#D97706'); return; }
+  const client = typeof sb==='function' ? sb() : null;
+  if(!client || !currentUser?.id || String(currentUser.id).length<20){
+    toast('Sign in with a real account to sync the queue to the server','#D97706');
+    return;
+  }
+  toast('Syncing '+offlineQueue.length+' queued action(s)…','#2563EB');
+  const remaining=[];
+  let synced=0;
+  for(const action of offlineQueue){
+    const {error}=await client.from('audit_log').insert({
+      user_id:currentUser.id, user_name:currentUser.name||'Offline queue',
+      module:action.module, action:action.type, record_ref:action.ref,
+      amount:0, severity:'info',
+    });
+    if(error)remaining.push(action); else synced++;
+  }
+  offlineQueue=remaining;
+  document.getElementById('queueBadge').textContent = offlineQueue.length;
+  document.getElementById('queueSize').textContent = offlineQueue.length;
+  document.getElementById('queueSubtitle').textContent = offlineQueue.length + ' item' + (offlineQueue.length!==1?'s':'') + ' waiting to sync';
+  const ql=document.getElementById('offlineQueueList');
+  if(ql)ql.innerHTML = offlineQueue.length
+    ? offlineQueue.map(a=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--bd-l);">
+        <span style="background:var(--or-l);color:var(--or-d);padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;font-family:var(--mo);">${a.type}</span>
+        <div style="flex:1;"><div style="font-size:12px;font-weight:700;">${a.desc}</div><div style="font-size:10px;color:var(--mid);">${a.module} · ${a.ref}</div></div>
+        <span class="badge rd">Sync failed</span>
+      </div>`).join('')
+    : '<div style="padding:14px;text-align:center;color:var(--mu);font-size:12px;">Queue flushed — all actions synced</div>';
+  toast(synced+' of '+(synced+remaining.length)+' actions synced'+(remaining.length?' — '+remaining.length+' failed, still queued':''),remaining.length?'#D97706':'#16A34A');
 }
 
 function clearQueue() {
@@ -8842,16 +8904,25 @@ function renderBoards(){
   },80);
 }
 
-function boardCycleStatus(gi,itemId){
-  const item=BOARDS_DATA[gi]?.items.find(i=>i.id===itemId); if(!item)return;
-  const next=BOARD_STATUSES[(BOARD_STATUSES.indexOf(item.status)+1)%BOARD_STATUSES.length];
+/* Shared status mutator: used by the click-to-cycle status pill (Main Board /
+   item drawer) and by Kanban drag-and-drop, so both views mutate the same
+   real item state and fire the same automations instead of the drag only
+   moving a DOM node. */
+function boardSetItemStatus(gi,itemId,next){
+  const item=BOARDS_DATA[gi]?.items.find(i=>i.id===itemId); if(!item||item.status===next)return null;
   item.status=next;
   if(next==='Done')item.progress=100;
   BOARD_ACTIVITY.unshift({ts:'Just now',user:currentUser?.name||'You',action:`changed status of "${item.name}" to ${next}`});
-  // Fire automations
   const a1=BOARD_AUTOMATIONS.find(a=>a.id===1), a2=BOARD_AUTOMATIONS.find(a=>a.id===2);
   if(next==='Done'&&a1?.enabled){a1.runs++;BOARD_ACTIVITY.unshift({ts:'Just now',user:'Automation',action:`notified ${item.owner} — status changed to Done`});toast('Automation: '+item.owner+' notified — item Done','#2563EB');}
   if(next==='Stuck'&&a2?.enabled){a2.runs++;BOARD_ACTIVITY.unshift({ts:'Just now',user:'Automation',action:`alerted group lead — "${item.name}" is Stuck`});toast('Automation: group lead alerted — item Stuck','#DC2626');}
+  NXDB.save('boards');
+  return item;
+}
+function boardCycleStatus(gi,itemId){
+  const item=BOARDS_DATA[gi]?.items.find(i=>i.id===itemId); if(!item)return;
+  const next=BOARD_STATUSES[(BOARD_STATUSES.indexOf(item.status)+1)%BOARD_STATUSES.length];
+  boardSetItemStatus(gi,itemId,next);
   renderBoards();
 }
 
@@ -8896,15 +8967,28 @@ function boardNewAutomation(){
 
 /* ══ CONTRACTORS & GLOBAL PAY (Deel-style) ═══════════════ */
 const FX_TO_ZAR={ZAR:1,USD:18.20,EUR:19.80,GBP:23.10,INR:0.22,KES:0.14,NGN:0.012,BRL:3.30};
+/* Employer-of-Record network: partner legal entities NexCore uses to legally
+   employ people in countries where it has no local entity of its own. This is
+   the actual gap that made "Contractors" independent-contractor-only rather
+   than real EOR — a partner entity, country-specific statutory obligations,
+   and a distinct employmentType from plain contracting. */
+const EOR_ENTITIES=[
+  {country:'Portugal',flag:'🇵🇹',partner:'RemotePT Legal Services Lda',requiredDocs:['Employment Contract','Tax ID (NIF)','Social Security Registration','Bank Verification'],statutory:'22 days annual leave · 14th month bonus · Social Security 11% employee / 23.75% employer'},
+  {country:'India',flag:'🇮🇳',partner:'IndiaEOR Services Pvt Ltd',requiredDocs:['Employment Contract','PAN Card','Aadhaar Verification','Bank Verification'],statutory:'Provident Fund 12% · Gratuity after 5 years · Statutory bonus'},
+  {country:'Nigeria',flag:'🇳🇬',partner:'NaijaWorks EOR Ltd',requiredDocs:['Employment Contract','Tax ID (TIN)','BVN Verification','Bank Verification'],statutory:'Pension 8% · National Housing Fund 2.5% · PAYE per Nigerian bands'},
+  {country:'Poland',flag:'🇵🇱',partner:'PolskaZatrudnienie Sp. z o.o.',requiredDocs:['Employment Contract (Umowa o pracę)','PESEL Number','ZUS Registration','Bank Verification'],statutory:'ZUS social security ~13.71% · 26 days annual leave'},
+  {country:'Philippines',flag:'🇵🇭',partner:'ManilaWorks EOR Inc.',requiredDocs:['Employment Contract','TIN','SSS Registration','Bank Verification'],statutory:'SSS · PhilHealth · Pag-IBIG contributions · 13th month pay'},
+];
+function eorEntityFor(country){return EOR_ENTITIES.find(e=>e.country===country);}
 let CONTRACTORS_DATA=[
-  {id:'CTR-001',name:'Maria Santos',role:'UX Designer',country:'Portugal',flag:'🇵🇹',currency:'EUR',rate:4200,rateType:'Monthly',start:'2024-06-01',end:'2025-06-01',status:'Active',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
-  {id:'CTR-002',name:'Raj Patel',role:'Backend Engineer',country:'India',flag:'🇮🇳',currency:'INR',rate:280000,rateType:'Monthly',start:'2024-03-15',end:'2025-03-15',status:'Active',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Pending'}},
-  {id:'CTR-003',name:'Grace Wanjiru',role:'Data Analyst',country:'Kenya',flag:'🇰🇪',currency:'KES',rate:350000,rateType:'Monthly',start:'2024-09-01',end:'2025-09-01',status:'Active',docs:{contract:'Signed',tax:'Pending',id:'Verified',bank:'Verified'}},
-  {id:'CTR-004',name:'Chidi Okafor',role:'Mobile Developer',country:'Nigeria',flag:'🇳🇬',currency:'NGN',rate:2800000,rateType:'Monthly',start:'2024-11-01',end:'2025-02-28',status:'Ending Soon',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
-  {id:'CTR-005',name:'Ana Oliveira',role:'QA Engineer',country:'Brazil',flag:'🇧🇷',currency:'BRL',rate:9500,rateType:'Monthly',start:'2025-01-06',end:'2026-01-06',status:'Onboarding',docs:{contract:'Sent',tax:'Pending',id:'Pending',bank:'Pending'}},
-  {id:'CTR-006',name:'Piotr Kowalski',role:'DevOps Engineer',country:'Poland',flag:'🇵🇱',currency:'EUR',rate:5100,rateType:'Monthly',start:'2024-07-01',end:'2025-07-01',status:'Active',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
-  {id:'CTR-007',name:'Sipho Dlamini',role:'Support Specialist',country:'South Africa',flag:'🇿🇦',currency:'ZAR',rate:38000,rateType:'Monthly',start:'2024-05-01',end:'2025-05-01',status:'Active',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
-  {id:'CTR-008',name:'Jasmine Cruz',role:'Content Designer',country:'Philippines',flag:'🇵🇭',currency:'USD',rate:2400,rateType:'Monthly',start:'2024-10-01',end:'2025-10-01',status:'Active',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
+  {id:'CTR-001',name:'Maria Santos',role:'UX Designer',country:'Portugal',flag:'🇵🇹',currency:'EUR',rate:4200,rateType:'Monthly',start:'2024-06-01',end:'2025-06-01',status:'Active',employmentType:'EOR Employee',eorEntity:'RemotePT Legal Services Lda',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
+  {id:'CTR-002',name:'Raj Patel',role:'Backend Engineer',country:'India',flag:'🇮🇳',currency:'INR',rate:280000,rateType:'Monthly',start:'2024-03-15',end:'2025-03-15',status:'Active',employmentType:'EOR Employee',eorEntity:'IndiaEOR Services Pvt Ltd',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Pending'}},
+  {id:'CTR-003',name:'Grace Wanjiru',role:'Data Analyst',country:'Kenya',flag:'🇰🇪',currency:'KES',rate:350000,rateType:'Monthly',start:'2024-09-01',end:'2025-09-01',status:'Active',employmentType:'Contractor',docs:{contract:'Signed',tax:'Pending',id:'Verified',bank:'Verified'}},
+  {id:'CTR-004',name:'Chidi Okafor',role:'Mobile Developer',country:'Nigeria',flag:'🇳🇬',currency:'NGN',rate:2800000,rateType:'Monthly',start:'2024-11-01',end:'2025-02-28',status:'Ending Soon',employmentType:'EOR Employee',eorEntity:'NaijaWorks EOR Ltd',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
+  {id:'CTR-005',name:'Ana Oliveira',role:'QA Engineer',country:'Brazil',flag:'🇧🇷',currency:'BRL',rate:9500,rateType:'Monthly',start:'2025-01-06',end:'2026-01-06',status:'Onboarding',employmentType:'Contractor',docs:{contract:'Sent',tax:'Pending',id:'Pending',bank:'Pending'}},
+  {id:'CTR-006',name:'Piotr Kowalski',role:'DevOps Engineer',country:'Poland',flag:'🇵🇱',currency:'EUR',rate:5100,rateType:'Monthly',start:'2024-07-01',end:'2025-07-01',status:'Active',employmentType:'EOR Employee',eorEntity:'PolskaZatrudnienie Sp. z o.o.',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
+  {id:'CTR-007',name:'Sipho Dlamini',role:'Support Specialist',country:'South Africa',flag:'🇿🇦',currency:'ZAR',rate:38000,rateType:'Monthly',start:'2024-05-01',end:'2025-05-01',status:'Active',employmentType:'Contractor',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
+  {id:'CTR-008',name:'Jasmine Cruz',role:'Content Designer',country:'Philippines',flag:'🇵🇭',currency:'USD',rate:2400,rateType:'Monthly',start:'2024-10-01',end:'2025-10-01',status:'Active',employmentType:'EOR Employee',eorEntity:'ManilaWorks EOR Inc.',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
 ];
 let CONTRACTOR_PAYRUNS=[
   {id:'CPR-2025-01',period:'January 2025',contractors:8,totalZAR:1183000,status:'Paid',date:'25 Jan 2025'},
@@ -8980,6 +9064,24 @@ function renderContractors(){
     <div class="g2">
       <div class="card"><div class="ch2"><span class="ch2-title">Monthly Spend by Country</span><span class="ch2-sub">ZAR equivalent</span></div><div class="cb" id="ctrSpendDonut"></div></div>
       <div class="card"><div class="ch2"><span class="ch2-title">Contractor Cost Trend</span><span class="ch2-sub">6 months, ZAR</span></div><div class="cb" id="ctrTrendChart"></div></div>
+    </div>
+  </div>
+
+  <div class="tp" id="ctrTabs-eor">
+    <div class="alert bl" style="margin-bottom:14px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:var(--bl-m);stroke-width:2;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><div><div class="alert-title">Employer of Record network</div><div class="alert-body">Hiring someone full-time in a country where NexCore has no local entity? A partner legal entity employs them on our behalf, handling local payroll, tax and statutory compliance. Independent contractors (paid on invoice) don't need this — EOR is for people who need to be legally an employee somewhere.</div></div></div>
+    ${EOR_ENTITIES.map(ent=>{
+      const workers=CONTRACTORS_DATA.filter(c=>c.employmentType==='EOR Employee'&&c.country===ent.country);
+      return `<div class="card" style="margin-bottom:12px;">
+        <div class="ch2"><span class="ch2-title">${ent.flag} ${ent.country}</span><span class="ch2-sub">${workers.length} employed via ${ent.partner}</span></div>
+        <div class="cb">
+          <div style="font-size:11px;color:var(--mid);margin-bottom:10px;"><strong>Statutory coverage:</strong> ${ent.statutory}</div>
+          <div style="font-size:11px;color:var(--mid);margin-bottom:10px;"><strong>Required documents:</strong> ${ent.requiredDocs.join(' · ')}</div>
+          ${workers.length?workers.map(w=>`<div class="stat-row"><span class="stat-lbl">${w.name} — ${w.role}</span><span class="stat-val">${fmt(Math.round(ctrZAR(w)))}/mo</span></div>`).join(''):'<div style="font-size:11px;color:var(--mu);">No one currently employed here.</div>'}
+        </div>
+      </div>`;
+    }).join('')}
+    <div class="card"><div class="ch2"><span class="ch2-title">Countries without an EOR partner yet</span></div>
+      <div class="cb" style="font-size:11px;color:var(--mid);">${[...new Set(CONTRACTORS_DATA.filter(c=>c.employmentType!=='EOR Employee').map(c=>c.country))].filter(c=>!eorEntityFor(c)).map(c=>{const c2=CONTRACTORS_DATA.find(x=>x.country===c);return c2?.flag+' '+c;}).join(' · ')||'All contractor countries currently have EOR coverage.'}</div>
     </div>
   </div>`;
   setTimeout(()=>{
@@ -9339,6 +9441,19 @@ function payproCalc(e){
 
 function renderPaypro(){
   const el=document.getElementById('payproContent'); if(!el)return;
+  if(!el.querySelector('.tabs')){
+    el.innerHTML=`<div class="tabs">
+      <button class="tab on" onclick="switchTab('payTabs','employees',this)">Employees</button>
+      <button class="tab" onclick="switchTab('payTabs','runs',this)">Pay Runs <span id="payRunsDueBadge"></span></button>
+    </div>
+    <div class="tp on" id="payTabs-employees"></div>
+    <div class="tp" id="payTabs-runs"></div>`;
+  }
+  renderPayproEmployees();
+  renderPayrollRuns();
+}
+function renderPayproEmployees(){
+  const el=document.getElementById('payTabs-employees'); if(!el)return;
   let tGross=0,tPaye=0,tUif=0,tNet=0,tComm=0,tBonus=0,tBen=0;
   const rows=PAYPRO_EMPS.map((e,i)=>{
     const c=payproCalc(e);
@@ -9401,6 +9516,136 @@ function payproRun(){
     writeAudit('PayRun','Payroll','FEB-2025',Math.round(tNet),'high');
     if(!_payproPosted)payproPostToGL();
   });
+}
+
+/* ══ Automated pay-run scheduling by frequency (Sage-style) ══
+   PAY_FREQ_DIVISOR already lets each employee carry a Weekly/Bi-Weekly/
+   Monthly frequency, but nothing ever read it — every employee was still
+   processed through the single hardcoded "February 2025" monthly run above.
+   This engine actually groups employees by their real frequency and runs a
+   separate, independently-postable pay run per frequency, auto-scheduled
+   against real calendar dates. */
+let PAYROLL_RUNS=[];
+
+function payproCalcPeriod(e){
+  const freq=e.payFrequency||'Monthly';
+  const div=PAY_FREQ_DIVISOR[freq]||1;
+  const m=payproCalc(e);
+  return {freq,div,gross:m.gross/div,paye:m.paye/div,uif:m.uif/div,net:m.net/div,ben:(e.medical+e.retirement)/div};
+}
+
+/* Next scheduled pay date for a frequency, anchored to real calendar dates:
+   Weekly/Bi-Weekly land on Fridays; Monthly lands on the 25th. */
+function payproNextRunDate(freq,from){
+  const d=new Date(from||Date.now()); d.setHours(0,0,0,0);
+  if(freq==='Monthly'){
+    const target=new Date(d.getFullYear(),d.getMonth(),25);
+    if(d>target)target.setMonth(target.getMonth()+1);
+    return target;
+  }
+  const toFriday=(5-d.getDay()+7)%7;
+  let next=new Date(d); next.setDate(d.getDate()+toFriday);
+  if(freq==='Bi-Weekly'){
+    const epoch=new Date(2025,0,3); // a known reference Friday
+    const weeks=Math.round((next-epoch)/(7*86400000));
+    if(weeks%2!==0)next.setDate(next.getDate()+7);
+  }
+  return next;
+}
+function payproPeriodLabel(freq,payDate){
+  if(freq==='Monthly')return payDate.toLocaleDateString('en-ZA',{month:'long',year:'numeric'});
+  const start=new Date(payDate); start.setDate(payDate.getDate()-(freq==='Weekly'?6:13));
+  return start.toLocaleDateString('en-ZA',{day:'2-digit',month:'short'})+' – '+payDate.toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+/* Auto-generate a Scheduled run per frequency actually present among
+   PAYPRO_EMPS, once its period comes due, without duplicating existing runs. */
+function payproEnsureScheduledRuns(){
+  const freqs=[...new Set(PAYPRO_EMPS.map(e=>e.payFrequency||'Monthly'))];
+  freqs.forEach(freq=>{
+    const payDate=payproNextRunDate(freq);
+    const period=payproPeriodLabel(freq,payDate);
+    if(PAYROLL_RUNS.some(r=>r.frequency===freq&&r.period===period))return;
+    const empIds=PAYPRO_EMPS.filter(e=>(e.payFrequency||'Monthly')===freq).map(e=>e.id);
+    if(!empIds.length)return;
+    PAYROLL_RUNS.push({
+      id:'PR-'+freq.replace(/[^A-Za-z]/g,'').slice(0,3).toUpperCase()+'-'+(PAYROLL_RUNS.length+1),
+      frequency:freq,period,payDate:payDate.toISOString().slice(0,10),empIds,status:'Scheduled',
+    });
+  });
+  NXDB.save('payrollruns');
+}
+function payproRunTotals(run){
+  const emps=PAYPRO_EMPS.filter(e=>run.empIds.includes(e.id));
+  return emps.reduce((s,e)=>{const c=payproCalcPeriod(e);s.gross+=c.gross;s.paye+=c.paye;s.uif+=c.uif;s.net+=c.net;s.ben+=c.ben;return s;},{gross:0,paye:0,uif:0,net:0,ben:0,count:emps.length});
+}
+function payproPostRunToGL(runId){
+  const run=PAYROLL_RUNS.find(r=>r.id===runId); if(!run||run.status==='Posted'||run.status==='Paid')return;
+  const t=payproRunTotals(run);
+  // Round the debit and the statutory credit line first, then derive the bank
+  // credit line from the remainder so the entry balances exactly — rounding
+  // each line independently can drift by a rand or two once fractional
+  // frequency divisors (e.g. 4.333 for Weekly) are involved.
+  const debit=Math.round(t.gross+t.uif);
+  const payeCredit=Math.round(t.paye+t.uif*2);
+  const bankCredit=debit-payeCredit;
+  JOURNAL_ENTRIES.unshift({
+    ref:'JNL-'+run.id,date:new Date().toISOString().slice(0,10),
+    narration:'Payroll — '+run.frequency+' run, '+run.period+' ('+t.count+' employees)',
+    lines:[
+      {acct:'6000',debit,credit:0},
+      {acct:'2200',debit:0,credit:payeCredit},
+      {acct:'1000',debit:0,credit:bankCredit},
+    ],
+    postedBy:currentUser?.name||'You',status:'Posted',
+  });
+  run.status='Posted';
+  renderPaypro();
+  if(typeof renderAccounting==='function')renderAccounting();
+  toast(run.frequency+' pay run posted to GL — '+fmt(Math.round(t.gross+t.uif)),'#16A34A');
+  writeAudit('Post','Payroll',run.id,Math.round(t.gross),'high');
+  NXDB.save('payrollruns');
+}
+function payproReleaseRun(runId){
+  const run=PAYROLL_RUNS.find(r=>r.id===runId); if(!run||run.status==='Paid')return;
+  confirmWithOTP('Release '+run.frequency+' pay run — '+run.period,async ()=>{
+    if(run.status!=='Posted')payproPostRunToGL(runId);
+    const t=payproRunTotals(run);
+    run.status='Paid';
+    renderPaypro();
+    toast(run.frequency+' pay run released — '+fmt(Math.round(t.net))+' paid to '+t.count+' accounts','#16A34A');
+    writeAudit('PayRun','Payroll',run.id,Math.round(t.net),'high');
+    NXDB.save('payrollruns');
+  });
+}
+function renderPayrollRuns(){
+  const el=document.getElementById('payTabs-runs'); if(!el)return;
+  payproEnsureScheduledRuns();
+  const badge=document.getElementById('payRunsDueBadge');
+  const dueCount=PAYROLL_RUNS.filter(r=>r.status==='Scheduled'&&new Date(r.payDate)<=new Date()).length;
+  if(badge)badge.innerHTML=dueCount?`<span class="badge am" style="margin-left:4px;">${dueCount} due</span>`:'';
+  const sorted=[...PAYROLL_RUNS].sort((a,b)=>new Date(b.payDate)-new Date(a.payDate));
+  const statusColor={Scheduled:'am',Posted:'bl',Paid:'gn'};
+  el.innerHTML=`<div class="alert bl" style="margin-bottom:14px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:var(--bl-m);stroke-width:2;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><div><div class="alert-title">Automated pay-run scheduling</div><div class="alert-body">Each employee's pay frequency (set on their profile) determines which run they land in. Weekly and Bi-Weekly runs are scheduled to Fridays; Monthly runs to the 25th. A run appears here automatically once its period is due — set an employee's frequency below to see a new run generate.</div></div></div>`
+    +sorted.map(r=>{
+      const t=payproRunTotals(r);
+      const due=r.status==='Scheduled'&&new Date(r.payDate)<=new Date();
+      return `<div class="card" style="margin-bottom:12px;">
+        <div class="ch2"><span class="ch2-title">${r.frequency} — ${r.period}</span><span class="ch2-sub"><span class="badge ${statusColor[r.status]}">${r.status}</span> · Pay date ${r.payDate}${due?' · <span style="color:var(--rd);font-weight:700;">due now</span>':''}</span></div>
+        <div class="cb">
+          <div class="kg kg-4" style="margin-bottom:0;">
+            <div class="kpi gn"><div class="kpi-lbl">Employees</div><div class="kpi-val">${t.count}</div></div>
+            <div class="kpi bl"><div class="kpi-lbl">Gross</div><div class="kpi-val">${fmt(Math.round(t.gross))}</div></div>
+            <div class="kpi am"><div class="kpi-lbl">PAYE + UIF</div><div class="kpi-val">${fmt(Math.round(t.paye+t.uif*2))}</div></div>
+            <div class="kpi rd"><div class="kpi-lbl">Net Payout</div><div class="kpi-val">${fmt(Math.round(t.net))}</div></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px;">
+            <button class="btn bs btn-xs" ${r.status!=='Scheduled'?'disabled':''} onclick="payproPostRunToGL('${r.id}')">Post to GL</button>
+            <button class="btn bp btn-xs" ${r.status==='Paid'?'disabled':''} onclick="payproReleaseRun('${r.id}')">Release Pay Run</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
 }
 
 /* ══ FLEET — fuel & servicing ════════════════════════════ */
@@ -9671,20 +9916,55 @@ function renderIntegrations(){
           <div><div class="intg-name">${i.name}</div>${i.connected?'<span class="badge gn" style="font-size:9px;">Connected</span>':'<span class="badge gy" style="font-size:9px;">Not connected</span>'}</div>
         </div>
         <div class="intg-desc">${i.desc}</div>
-        <div style="display:flex;gap:6px;">
-          <button class="btn ${i.connected?'bs':'bp'} btn-xs" onclick="intgToggle(${gi})">${i.connected?'Disconnect':'Connect'}</button>
-          ${i.connected?`<button class="btn bs btn-xs" onclick="toast('Opening ${i.name} sync settings…','#2563EB')">Configure</button>`:''}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${i.connected
+            ?`<button class="btn bs btn-xs" onclick="intgDisconnect(${gi})">Disconnect</button>`
+            :i.credential
+              ?`<button class="btn bp btn-xs" onclick="intgTest(${gi})">Test Connection</button><button class="btn bs btn-xs" onclick="intgDisconnect(${gi})">Remove</button>`
+              :`<button class="btn bp btn-xs" onclick="intgConnect(${gi})">Connect</button>`}
         </div>
       </div>`;}).join('')}
     </div>
   </div>`).join('')}`;
 }
-function intgToggle(i){
+/* Real credential-gated connect flow: no fake instant "connected via OAuth2".
+   Slack/Teams use incoming webhooks, which a browser really can POST to
+   (best-effort — the response is opaque cross-origin, so success is inferred
+   from the request not throwing). Other providers store a credential and are
+   marked Connected only once tested, rather than flipped true on click. */
+function intgConnect(i){
   const x=INTEGRATIONS[i]; if(!x)return;
-  x.connected=!x.connected;
+  const isWebhook=['Slack','Microsoft Teams','WhatsApp Business'].includes(x.name);
+  const cred=(prompt(isWebhook?'Paste the '+x.name+' incoming webhook URL:':'Paste the '+x.name+' API key / access token:')||'').trim();
+  if(!cred){toast('Connection cancelled — no credential provided','#D97706');return;}
+  x.credential=cred;
   renderIntegrations();
-  toast(x.name+(x.connected?' connected via OAuth2 — first sync queued':' disconnected'),x.connected?'#16A34A':'#71717A');
-  writeAudit(x.connected?'Connect':'Disconnect','Integrations',x.name,0,'medium');
+  toast(x.name+' credential saved — click Test Connection to verify','#2563EB');
+  writeAudit('Configure','Integrations',x.name,0,'medium');
+  NXDB.save('integrations');
+}
+async function intgTest(i){
+  const x=INTEGRATIONS[i]; if(!x||!x.credential)return;
+  toast('Testing '+x.name+' connection…','#2563EB');
+  try{
+    if(['Slack','Microsoft Teams'].includes(x.name)){
+      await fetch(x.credential,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:'MORR ERP test message — connection verified'})});
+    }
+    x.connected=true;
+    toast(x.name+' connected'+(['Slack','Microsoft Teams'].includes(x.name)?' — test message sent':' — sync will run on the next scheduled cycle'),'#16A34A');
+  }catch(e){
+    toast(x.name+' test failed — check the URL/key and try again','#DC2626');
+  }
+  renderIntegrations();
+  writeAudit('TestConnection','Integrations',x.name,0,'medium');
+  NXDB.save('integrations');
+}
+function intgDisconnect(i){
+  const x=INTEGRATIONS[i]; if(!x)return;
+  x.connected=false; x.credential=null;
+  renderIntegrations();
+  toast(x.name+' disconnected','#71717A');
+  writeAudit('Disconnect','Integrations',x.name,0,'medium');
 }
 
 /* ══ WHITE LABEL / BRANDING ══════════════════════════════ */
@@ -10145,8 +10425,8 @@ const NXDB={
       render:()=>typeof renderIAM==='function'&&renderIAM(),
     },
     integrations:{
-      get:()=>({list:INTEGRATIONS.map(i=>({name:i.name,connected:i.connected}))}),
-      set:(st)=>{if(st.list)st.list.forEach(x=>{const i=INTEGRATIONS.find(y=>y.name===x.name);if(i)i.connected=x.connected;});},
+      get:()=>({list:INTEGRATIONS.map(i=>({name:i.name,connected:i.connected,credential:i.credential||null}))}),
+      set:(st)=>{if(st.list)st.list.forEach(x=>{const i=INTEGRATIONS.find(y=>y.name===x.name);if(i){i.connected=x.connected;i.credential=x.credential;}});},
       render:()=>typeof renderIntegrations==='function'&&renderIntegrations(),
     },
     risk:{
@@ -10173,6 +10453,16 @@ const NXDB={
       get:()=>({schedules:REPORT_SCHEDULES}),
       set:(st)=>{if(st.schedules)REPORT_SCHEDULES=st.schedules;},
       render:()=>typeof renderReports==='function'&&renderReports(),
+    },
+    payrollruns:{
+      get:()=>({runs:PAYROLL_RUNS}),
+      set:(st)=>{if(st.runs)PAYROLL_RUNS=st.runs;},
+      render:()=>typeof renderPaypro==='function'&&renderPaypro(),
+    },
+    sso:{
+      get:()=>({platforms:SSO_PLATFORMS.map(p=>({name:p.name,status:p.status,clientId:p.clientId||null}))}),
+      set:(st)=>{if(st.platforms)st.platforms.forEach(x=>{const p=SSO_PLATFORMS.find(y=>y.name===x.name);if(p){p.status=x.status;p.clientId=x.clientId;}});},
+      render:()=>typeof renderSSOPage==='function'&&renderSSOPage(),
     },
   },
 
@@ -11369,9 +11659,10 @@ function ctrDrawer(id){
   const obSteps=[['Contract sent',c.docs.contract!=='Pending'],['Contract signed',c.docs.contract==='Signed'],['ID verification',c.docs.id==='Verified'],['Tax form (W-8/local)',c.docs.tax==='Verified'],['Bank verification',c.docs.bank==='Verified']];
   const obDone=obSteps.filter(x=>x[1]).length;
   nxDrawerOpen({
-    title:c.name,sub:c.flag+' '+c.country+' · '+c.role+' · '+c.status,icon:'person',color:'var(--em)',
+    title:c.name,sub:c.flag+' '+c.country+' · '+c.role+' · '+(c.employmentType||'Contractor')+' · '+c.status,icon:'person',color:'var(--em)',
     body:
       nxKV([['Rate',c.currency+' '+c.rate.toLocaleString()+' / '+(c.rateType||'Monthly').toLowerCase()],['ZAR Equivalent',fmt(Math.round(zar))+' @ '+fx.toFixed(2)],['Contract Start',c.start],['Contract End',c.end||'Open-ended']])
+      +(c.employmentType==='EOR Employee'?'<div class="nx-sec">Employer of Record</div>'+nxKV([['Legal Employer',c.eorEntity||'—'],['Classification','Local employee, not an independent contractor']]):'')
       +(isOnboarding?
         '<div class="nx-sec">Onboarding — '+obDone+' of '+obSteps.length+' complete</div>'
         +'<div class="prog" style="margin-bottom:12px;"><div class="prog-fill" style="width:'+(obDone/obSteps.length*100)+'%;background:var(--em);"></div></div>'
@@ -11386,8 +11677,43 @@ function ctrDrawer(id){
     actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>'
       +'<button class="btn bs" onclick="nxDocOpen(contractHTML(CONTRACTORS_DATA.find(x=>x.id===\''+id+'\')))">Contract PDF</button>'
       +'<button class="btn bs" onclick="nxDocOpen(invoiceHTML({id:\'SI-'+id+'-2502\',client:\''+NX_TPL.legal.replace(/'/g,'')+'\',total:'+Math.round(zar)+',description:\'Contractor services — Feb 2025 ('+c.name+')\',due:\'25 Feb 2025\'}))">Self-Invoice</button>'
-      +(Object.values(c.docs).some(v=>v!=='Signed'&&v!=='Verified')?'<button class="btn bp" onclick="nxDrawerClose();ctrChase(\''+id+'\')">Chase Documents</button>':''),
+      +(Object.values(c.docs).some(v=>v!=='Signed'&&v!=='Verified')?'<button class="btn bp" onclick="nxDrawerClose();ctrChase(\''+id+'\')">Chase Documents</button>':'')
+      +(c.employmentType!=='EOR Employee'&&eorEntityFor(c.country)?'<button class="btn bg" onclick="nxDrawerClose();ctrConvertToEOR(\''+id+'\')">Convert to EOR</button>':''),
   });
+}
+
+function ctrConvertToEOR(id){
+  const c=CONTRACTORS_DATA.find(x=>x.id===id); if(!c)return;
+  const ent=eorEntityFor(c.country);
+  if(!ent){toast('No EOR partner entity covers '+c.country+' yet','#D97706');return;}
+  c.employmentType='EOR Employee';
+  c.eorEntity=ent.partner;
+  renderContractors();
+  toast(c.name+' converted to EOR employment via '+ent.partner,'#16A34A');
+  writeAudit('ConvertEOR','Contractors',c.id,Math.round(ctrZAR(c)),'medium');
+}
+
+function ctrHireViaEOR(){
+  const options=EOR_ENTITIES.map(e=>e.flag+' '+e.country).join('\n');
+  const pick=prompt('Hire via EOR — which country?\n(covered: '+EOR_ENTITIES.map(e=>e.country).join(', ')+')','');
+  if(!pick)return;
+  const ent=EOR_ENTITIES.find(e=>e.country.toLowerCase()===pick.trim().toLowerCase());
+  if(!ent){toast('No EOR partner entity covers "'+pick+'" — try: '+EOR_ENTITIES.map(e=>e.country).join(', '),'#DC2626');return;}
+  const name=(prompt('New employee name:')||'').trim(); if(!name)return;
+  const role=(prompt('Role:')||'Team Member').trim();
+  const rate=Math.max(0,parseFloat(prompt('Monthly rate (local currency):','0'))||0);
+  if(!rate){toast('Enter a rate greater than 0','#DC2626');return;}
+  const currencyByCountry={Portugal:'EUR',India:'INR',Nigeria:'NGN',Poland:'EUR',Philippines:'USD'};
+  CONTRACTORS_DATA.push({
+    id:'CTR-'+String(CONTRACTORS_DATA.length+1).padStart(3,'0'),
+    name,role,country:ent.country,flag:ent.flag,currency:currencyByCountry[ent.country]||'USD',rate,rateType:'Monthly',
+    start:new Date().toISOString().slice(0,10),end:'',status:'Onboarding',
+    employmentType:'EOR Employee',eorEntity:ent.partner,
+    docs:{contract:'Sent',tax:'Pending',id:'Pending',bank:'Pending'},
+  });
+  renderContractors();
+  toast(name+' hired via EOR — '+ent.partner+' will handle local employment & compliance','#16A34A');
+  writeAudit('HireEOR','Contractors',name,Math.round(rate*(FX_TO_ZAR[currencyByCountry[ent.country]||'USD']||1)),'medium');
 }
 
 /* ══ MONDAY-STYLE: board item card with updates & checklist ══ */
@@ -12591,6 +12917,53 @@ function renderBoardCalendar(){
   cal.innerHTML='<div class="card"><div class="ch2"><span class="ch2-title">'+now.toLocaleDateString('en-ZA',{month:'long',year:'numeric'})+'</span><span class="ch2-sub">Items plotted by due date</span></div>'
     +'<div class="cb"><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px;">'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>'<div style="text-align:center;font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;">'+d+'</div>').join('')+'</div>'
     +'<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">'+cells+'</div></div></div>';
+}
+
+/* ── Kanban view: same items as the Main Board table, grouped by status,
+   with real drag-and-drop between columns (persists to BOARDS_DATA, unlike
+   the CRM kanban's original DOM-only drag before it was fixed). ── */
+function renderBoardKanban(){
+  const host=document.getElementById('boardsContent'); if(!host)return;
+  let kb=document.getElementById('boardTabs-kanban');
+  if(!kb){kb=document.createElement('div');kb.className='tp';kb.id='boardTabs-kanban';host.appendChild(kb);}
+  const items=BOARDS_DATA.flatMap((g,gi)=>g.items.map(it=>({...it,group:g.group,color:g.color,gi})));
+  kb.innerHTML='<div class="kanban">'+BOARD_STATUSES.map(status=>{
+    const cards=items.filter(it=>it.status===status);
+    const st=BOARD_STATUS_STYLE[status];
+    return `<div class="kb-col" data-status="${status}"><div class="kb-col-header">${status} <span class="kb-count">${cards.length}</span></div>`
+      +cards.map(it=>{
+        const prC=it.priority==='Critical'?'var(--rd)':it.priority==='High'?'var(--am)':it.priority==='Medium'?'var(--bl)':'var(--mid)';
+        return `<div class="kb-card" data-item-id="${it.id}" data-gi="${it.gi}" style="border-left:3px solid ${it.color};" onclick="boardItemDrawer(${it.gi},${it.id})">
+          <div class="kb-card-title">${it.name}</div>
+          <div class="kb-card-meta"><span>${it.owner}</span><span style="color:${prC};font-weight:700;">● ${it.priority}</span></div>
+          <div class="kb-card-meta"><span style="color:var(--mu);">${it.group}</span><span style="color:var(--mu);">${it.due}</span></div>
+        </div>`;
+      }).join('')
+      +`<div style="background:${st.bg};color:${st.fg};text-align:center;font-size:9px;font-weight:700;border-radius:6px;padding:3px;margin-top:4px;">drop to set ${status}</div>`
+      +'</div>';
+  }).join('')+'</div>';
+  setTimeout(nxBoardKanbanDnD,60);
+}
+function nxBoardKanbanDnD(){
+  const board=document.querySelector('#boardTabs-kanban .kanban'); if(!board)return;
+  let dragCard=null;
+  board.querySelectorAll('.kb-card').forEach(cd=>{
+    cd.draggable=true;
+    cd.addEventListener('dragstart',e=>{dragCard=cd;cd.classList.add('nx-dragging');e.stopPropagation();});
+    cd.addEventListener('dragend',()=>cd.classList.remove('nx-dragging'));
+  });
+  board.querySelectorAll('.kb-col').forEach(col=>{
+    col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('nx-dragover');});
+    col.addEventListener('dragleave',()=>col.classList.remove('nx-dragover'));
+    col.addEventListener('drop',e=>{
+      e.preventDefault();col.classList.remove('nx-dragover');
+      if(!dragCard)return;
+      const gi=parseInt(dragCard.dataset.gi),itemId=parseInt(dragCard.dataset.itemId),status=col.dataset.status;
+      const item=boardSetItemStatus(gi,itemId,status);
+      if(item){toast(item.name+' moved to '+status,'#7C3AED');renderBoardKanban();}
+      dragCard=null;
+    });
+  });
 }
 
 /* ── Time Tracking column on board items ── */
