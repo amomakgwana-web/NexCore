@@ -10223,16 +10223,41 @@ function accessIssue(){
 }
 
 /* ══ IAM CONFIGURATION ═══════════════════════════════════ */
-const IAM_PERMS=['View Finance','Approve POs','Run Payroll','Manage Users','Export Data','API Access','Delete Records','View Audit Trail'];
-let IAM_MATRIX={
-  admin:  [1,1,1,1,1,1,1,1],
-  cfo:    [1,1,1,0,1,1,0,1],
-  manager:[1,1,0,0,1,0,0,0],
-  hr:     [0,0,1,1,1,0,0,1],
-  staff:  [0,0,0,0,0,0,0,0],
-  vendor: [0,0,0,0,0,0,0,0],
-};
+/* Module → submodule permission tree (replaces the old flat 8-permission
+   list). Each role gets a 0/1 grant per module.submodule pair rather than
+   per module only, matching how IAM products like Azure AD / Okta scope
+   access — a role can e.g. view Payroll payslips without running payroll. */
+const IAM_MODULES=[
+  {key:'finance',   label:'Finance & Accounting', perms:['View Ledger','Post Journal Entries','Approve Journal Entries','Export Reports','Manage Chart of Accounts']},
+  {key:'procurement',label:'Procurement',         perms:['Create Purchase Orders','Approve Purchase Orders','Manage Vendors']},
+  {key:'payroll',   label:'Payroll & Tax',        perms:['Run Payroll','Adjust Salaries','View Payslips','Post Payroll to GL']},
+  {key:'hr',        label:'HR & People',          perms:['Manage Users','Approve Leave','View Employee Records','Onboard / Offboard']},
+  {key:'crm',       label:'CRM',                  perms:['Manage Deals','View Pipeline','Assign Leads']},
+  {key:'fleet',     label:'Fleet Management',     perms:['Log Fuel','Approve Service','View Fleet Analytics']},
+  {key:'vendor',    label:'Vendor Portal',        perms:['View Vendor Invoices','Approve Vendor Payments']},
+  {key:'access',    label:'Access Control',       perms:['Issue Credentials','Configure Devices','View Access Events']},
+  {key:'system',    label:'System & Compliance',  perms:['API Access','Delete Records','View Audit Trail','Manage Integrations']},
+];
+function iamDefaultMatrix(){
+  const allOn=(r)=>Object.fromEntries(IAM_MODULES.map(m=>[m.key,Object.fromEntries(m.perms.map(p=>[p,r]))]));
+  const grant=(map)=>Object.fromEntries(IAM_MODULES.map(m=>[m.key,Object.fromEntries(m.perms.map(p=>[p,(map[m.key]||[]).includes(p)?1:0]))]));
+  return {
+    admin:  allOn(1),
+    cfo:    grant({finance:['View Ledger','Post Journal Entries','Approve Journal Entries','Export Reports','Manage Chart of Accounts'],procurement:['Approve Purchase Orders'],payroll:['Run Payroll','View Payslips','Post Payroll to GL'],system:['Export Data','View Audit Trail']}),
+    manager:grant({finance:['View Ledger'],procurement:['Create Purchase Orders','Approve Purchase Orders'],hr:['Approve Leave','View Employee Records'],crm:['Manage Deals','View Pipeline']}),
+    hr:     grant({hr:['Manage Users','Approve Leave','View Employee Records','Onboard / Offboard'],payroll:['View Payslips'],system:['View Audit Trail']}),
+    staff:  grant({}),
+    vendor: grant({vendor:['View Vendor Invoices']}),
+  };
+}
+function iamIsValidMatrix(m){
+  return !!m && typeof m==='object' && IAM_MODULES.every(mod=>{
+    const rm=m.admin?.[mod.key]; return rm && typeof rm==='object' && !Array.isArray(rm);
+  });
+}
+let IAM_MATRIX=iamDefaultMatrix();
 let IAM_POLICY={mfaAll:true,mfaFinance:true,ssoOnly:false,sessionTimeout:true};
+let IAM_EXPANDED={};
 
 function renderIAM(){
   const el=document.getElementById('iamContent'); if(!el)return;
@@ -10254,22 +10279,38 @@ function renderIAM(){
       <div class="stat-row"><span class="stat-lbl">Privileged roles</span><span class="stat-val">12</span></div>
     </div></div>
   </div>
-  <div class="card"><div class="ch2"><span class="ch2-title">Role × Permission Matrix</span><span class="ch2-sub">Click a cell to toggle</span></div>
-  <div class="cb" style="padding:0;"><div class="tw"><table>
-    <thead><tr><th>Permission</th>${roles.map(r=>`<th style="text-align:center;text-transform:capitalize;">${r}</th>`).join('')}</tr></thead>
-    <tbody>${IAM_PERMS.map((p,pi)=>`<tr><td class="tb">${p}</td>
-      ${roles.map(r=>`<td style="text-align:center;"><span class="perm-check ${IAM_MATRIX[r][pi]?'on':''}" onclick="iamToggle('${r}',${pi})">${IAM_MATRIX[r][pi]?'✓':''}</span></td>`).join('')}
-    </tr>`).join('')}</tbody></table></div></div></div>`;
+  <div class="card"><div class="ch2"><span class="ch2-title">Role × Module × Permission Matrix</span><span class="ch2-sub">Click a module to expand its permissions</span></div>
+  <div class="cb" style="padding:0;">${IAM_MODULES.map(mod=>{
+    const open=!!IAM_EXPANDED[mod.key];
+    const grantedCount=roles.reduce((s,r)=>s+mod.perms.filter(p=>IAM_MATRIX[r]?.[mod.key]?.[p]).length,0);
+    return `<div style="border-bottom:1px solid var(--bd-l);">
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;" onclick="iamToggleModule('${mod.key}')">
+        <span style="font-size:11px;color:var(--mid);width:14px;">${open?'▾':'▸'}</span>
+        <span style="font-size:12px;font-weight:700;flex:1;">${mod.label}</span>
+        <span style="font-size:10px;color:var(--mu);">${mod.perms.length} permissions · ${grantedCount} grants</span>
+      </div>
+      ${open?`<div class="tw"><table>
+        <thead><tr><th>Permission</th>${roles.map(r=>`<th style="text-align:center;text-transform:capitalize;">${r}</th>`).join('')}</tr></thead>
+        <tbody>${mod.perms.map(p=>`<tr><td class="tb">${p}</td>
+          ${roles.map(r=>`<td style="text-align:center;"><span class="perm-check ${IAM_MATRIX[r][mod.key][p]?'on':''}" onclick="event.stopPropagation();iamToggle('${r}','${mod.key}','${p}')">${IAM_MATRIX[r][mod.key][p]?'✓':''}</span></td>`).join('')}
+        </tr>`).join('')}</tbody></table></div>`:''}
+    </div>`;
+  }).join('')}</div></div>`;
 }
-function iamToggle(role,pi){
-  if(role==='admin'){toast('Administrator permissions are locked','#D97706');return;}
-  IAM_MATRIX[role][pi]=IAM_MATRIX[role][pi]?0:1;
+function iamToggleModule(key){
+  IAM_EXPANDED[key]=!IAM_EXPANDED[key];
   renderIAM();
-  writeAudit('Permission','IAM',role+':'+IAM_PERMS[pi],0,'high');
+}
+function iamToggle(role,moduleKey,perm){
+  if(role==='admin'){toast('Administrator permissions are locked','#D97706');return;}
+  IAM_MATRIX[role][moduleKey][perm]=IAM_MATRIX[role][moduleKey][perm]?0:1;
+  renderIAM();
+  NXDB.save('iam');
+  writeAudit('Permission','IAM',role+':'+moduleKey+'.'+perm,0,'high');
 }
 function iamExport(){
   const a=document.createElement('a');
-  a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify({policies:IAM_POLICY,matrix:IAM_MATRIX,permissions:IAM_PERMS},null,2));
+  a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify({policies:IAM_POLICY,matrix:IAM_MATRIX,modules:IAM_MODULES},null,2));
   a.download='iam-policy.json';a.click();
   toast('IAM policy exported as JSON','#16A34A');
 }
@@ -10811,7 +10852,7 @@ const NXDB={
     },
     iam:{
       get:()=>({matrix:IAM_MATRIX,policy:IAM_POLICY}),
-      set:(st)=>{if(st.matrix)IAM_MATRIX=st.matrix;if(st.policy)IAM_POLICY=st.policy;},
+      set:(st)=>{if(st.matrix&&iamIsValidMatrix(st.matrix))IAM_MATRIX=st.matrix;if(st.policy)IAM_POLICY=st.policy;},
       render:()=>typeof renderIAM==='function'&&renderIAM(),
     },
     integrations:{
