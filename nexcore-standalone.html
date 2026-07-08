@@ -4310,41 +4310,66 @@ const SETTINGS_PANELS = {
   },
   branding: {
     title: 'Branding',
-    html: () => `
+    html: () => {
+      const saved=JSON.parse(localStorage.getItem('nexcore-brand')||'{}');
+      const fontLabel=(BRAND_FONTS.find(f=>f[0]===saved.font)||BRAND_FONTS[0])[1];
+      return `
       <div style="font-size:16px;font-weight:800;margin-bottom:4px;">Branding</div>
-      <div style="font-size:12px;color:var(--mid);margin-bottom:18px;">Colours · Logo · Platform appearance</div>
-      <div class="frow"><div class="fg"><label class="fl">Primary Colour (Orange)</label><div style="display:flex;gap:8px;align-items:center;"><input class="fi" value="#F97316" id="colPrimary"/><div style="width:32px;height:32px;border-radius:var(--r6);background:#F97316;border:1px solid var(--bd);"></div></div></div>
-      <div class="fg"><label class="fl">Secondary Colour (Blue)</label><div style="display:flex;gap:8px;align-items:center;"><input class="fi" value="#1D4ED8"/><div style="width:32px;height:32px;border-radius:var(--r6);background:#1D4ED8;border:1px solid var(--bd);"></div></div></div></div>
-      <div class="fg"><label class="fl">Platform Name</label><input class="fi" value="MORR ERP"/></div>
-      <div class="fg"><label class="fl">Logo Upload</label><div style="border:1px dashed var(--bd);border-radius:var(--r6);padding:12px;text-align:center;cursor:pointer;background:var(--sf);" onclick="toast('Logo upload ready in production','#2563EB')"><div style="font-size:11px;color:var(--mid);">Click to upload logo (SVG or PNG · Max 500KB)</div></div></div>
-      <button class="btn bp" onclick="toast('Branding saved','#16A34A')" style="margin-top:4px;">Apply Branding</button>`
+      <div style="font-size:12px;color:var(--mid);margin-bottom:18px;">Colours, logo and fonts are configured in one place — the White Label & Branding studio — so this panel always reflects the live, currently-applied brand rather than a second copy that can drift out of sync.</div>
+      <div class="card"><div class="cb" style="display:flex;align-items:center;gap:14px;">
+        <div style="width:44px;height:44px;border-radius:12px;overflow:hidden;background:${saved.logoDataUrl?'transparent':(saved.accent||'#F97316')};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;flex-shrink:0;">${saved.logoDataUrl?`<img src="${saved.logoDataUrl}" style="width:100%;height:100%;object-fit:cover;"/>`:(saved.initials||'M')}</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:800;">${saved.name||'MORR ERP'}</div>
+          <div style="font-size:11px;color:var(--mid);">Accent ${saved.accent||'#F97316'} · Font ${fontLabel} · ${saved.logoDataUrl?'Custom logo uploaded':'Using initials logo'}${saved.domain?' · '+saved.domain:''}</div>
+        </div>
+      </div></div>
+      <button class="btn bp" onclick="openPage('brand')" style="margin-top:14px;">Open White Label & Branding Studio →</button>`;
+    }
   },
   users: {
     title: 'Users & Roles',
-    html: () => `
+    html: () => {
+      const rows=[
+        {role:'Admin',   var:'--or-d', seats:3,   access:'Full system'},
+        {role:'CFO',     var:'--am',   seats:1,   access:'Finance + Assets + Approvals'},
+        {role:'Manager', var:'--bl-m', seats:12,  access:'Procurement + HR + CRM'},
+        {role:'HR',      var:'--gn',   seats:3,   access:'HR + Onboarding + ESS'},
+        {role:'Staff',   var:'--pu',   seats:655, access:'Self-service only'},
+        {role:'Vendor',  var:'--cy',   seats:8,   access:'Vendor portal only'},
+      ];
+      return `
       <div style="font-size:16px;font-weight:800;margin-bottom:4px;">Users & Roles</div>
-      <div style="font-size:12px;color:var(--mid);margin-bottom:18px;">Role definitions · Permissions · Seat limits</div>
-      <div class="card"><div class="cb" style="padding:0;"><div class="tw"><table><thead><tr><th>Role</th><th>Seats Used</th><th>Access Level</th><th>MFA Required</th></tr></thead><tbody>
-        <tr><td class="tb" style="color:var(--or-d);">Admin</td><td>3</td><td>Full system</td><td><span class="badge gn">Required</span></td></tr>
-        <tr><td class="tb" style="color:var(--am);">CFO</td><td>1</td><td>Finance + Assets + Approvals</td><td><span class="badge gn">Required</span></td></tr>
-        <tr><td class="tb" style="color:var(--bl-m);">Manager</td><td>12</td><td>Procurement + HR + CRM</td><td><span class="badge am">Recommended</span></td></tr>
-        <tr><td class="tb" style="color:var(--gn);">HR</td><td>3</td><td>HR + Onboarding + ESS</td><td><span class="badge gy">Optional</span></td></tr>
-        <tr><td class="tb" style="color:var(--pu);">Staff</td><td>655</td><td>Self-service only</td><td><span class="badge gy">Optional</span></td></tr>
-        <tr><td class="tb" style="color:var(--cy);">Vendor</td><td>8</td><td>Vendor portal only</td><td><span class="badge am">Recommended</span></td></tr>
-      </tbody></table></div></div></div>
-      <button class="btn bp" onclick="toast('Role settings saved','#16A34A')" style="margin-top:12px;">Save Role Config</button>`
+      <div style="font-size:12px;color:var(--mid);margin-bottom:18px;">Role definitions · Permissions · Seat limits · Click a role to configure its access type and device access</div>
+      <div class="card"><div class="cb" style="padding:0;"><div class="tw"><table><thead><tr><th>Role</th><th>Seats Used</th><th>Access Level</th><th>MFA Required</th><th>Access Type</th><th></th></tr></thead><tbody>${
+        rows.map(r=>{
+          const cfg=ROLE_ACCESS_CONFIG[r.role]||{};
+          return `<tr>
+            <td class="tb" style="color:var(${r.var});">${r.role}</td>
+            <td>${r.seats}</td>
+            <td>${r.access}</td>
+            <td><span class="badge ${r.role==='Admin'||r.role==='CFO'?'gn':r.role==='Staff'||r.role==='HR'?'gy':'am'}">${r.role==='Admin'||r.role==='CFO'?'Required':r.role==='Staff'||r.role==='HR'?'Optional':'Recommended'}</span></td>
+            <td style="font-size:11px;color:var(--mid);">${cfg.accessType||'Office Only'}${cfg.remoteAllowed?' · Remote OK':''}</td>
+            <td><button class="btn bs btn-xs" onclick="settOpenRoleAccess('${r.role}')">Configure</button></td>
+          </tr>`;
+        }).join('')
+      }</tbody></table></div></div></div>`;
+    }
   },
   permissions: {
     title: 'Module Permissions',
-    html: () => `
+    html: () => {
+      const roles=['admin','cfo','manager','hr','staff','vendor'];
+      return `
       <div style="font-size:16px;font-weight:800;margin-bottom:4px;">Module Permissions</div>
-      <div style="font-size:12px;color:var(--mid);margin-bottom:18px;">Control which roles can access each module</div>
-      <div class="card"><div class="cb" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Module</th><th style="text-align:center;">Admin</th><th style="text-align:center;">CFO</th><th style="text-align:center;">Manager</th><th style="text-align:center;">HR</th><th style="text-align:center;">Staff</th></tr></thead><tbody>${
-        [['Finance','✓','✓','—','—','—'],['Procurement','✓','—','✓','—','—'],['HR & Payroll','✓','—','✓','✓','—'],['Approvals','✓','✓','✓','—','—'],['Budget/Assets','✓','✓','—','—','—'],['Vendor Portal','✓','—','✓','—','—'],['ESS (My Portal)','✓','✓','✓','✓','✓'],['xBilling','✓','✓','—','—','—'],['Audit Trail','✓','✓','—','—','—'],['AI Assistant','✓','✓','✓','—','—']].map(row =>
-          `<tr>${row.map((c,i)=>`<td ${i>0?'style="text-align:center;"':'class="tb"'}>${c==='✓'?'<span class="badge gn">✓</span>':c==='—'?'<span style="color:var(--mu);">—</span>':c}</td>`).join('')}</tr>`
-        ).join('')
+      <div style="font-size:12px;color:var(--mid);margin-bottom:18px;">Live view of the IAM module/submodule matrix — a role shows ✓ for a module when it holds at least one permission there. Edit granular submodule permissions from IAM Configuration.</div>
+      <div class="card"><div class="cb" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Module</th>${roles.map(r=>`<th style="text-align:center;text-transform:capitalize;">${r}</th>`).join('')}</tr></thead><tbody>${
+        IAM_MODULES.map(m=>`<tr><td class="tb">${m.label}</td>${roles.map(r=>{
+          const has=m.perms.some(p=>IAM_MATRIX[r]?.[m.key]?.[p]);
+          return `<td style="text-align:center;">${has?'<span class="badge gn">✓</span>':'<span style="color:var(--mu);">—</span>'}</td>`;
+        }).join('')}</tr>`).join('')
       }</tbody></table></div></div>
-      <button class="btn bp" onclick="toast('Permissions matrix saved','#16A34A')" style="margin-top:12px;">Save Permissions</button>`
+      <button class="btn bp" onclick="openPage('iam')" style="margin-top:12px;">Open IAM Configuration →</button>`;
+    }
   },
   apiwebhooks: {
     title: 'API & Webhooks',
@@ -4416,6 +4441,34 @@ const SETTINGS_PANELS = {
       <button class="btn bp" onclick="toast('Security settings saved','#16A34A')" style="margin-top:12px;">Save Security Config</button>`
   },
 };
+
+/* ── Per-role access-type & device-access config (Settings > Users & Roles) ── */
+let ROLE_ACCESS_CONFIG=JSON.parse(localStorage.getItem('nexcore-role-access')||'{}');
+function settOpenRoleAccess(role){
+  const c=ROLE_ACCESS_CONFIG[role]||{accessType:'Office Only',deviceAccess:'Any Device',remoteAllowed:false};
+  nxDrawerOpen({
+    title:role+' — Access Configuration',sub:'Where and how this role is allowed to sign in',icon:'shield',color:'var(--bl)',
+    body:`<div class="fg"><label class="fl">Access Type</label><select class="fi" id="raAccessType">${['Office Only','Remote Allowed','Hybrid (Office + Remote)'].map(o=>`<option ${o===c.accessType?'selected':''}>${o}</option>`).join('')}</select></div>
+      <div class="fg" style="margin-top:10px;"><label class="fl">Device Access</label><select class="fi" id="raDeviceAccess">${['Any Device','Managed Devices Only','Mobile Blocked','Desktop Only'].map(o=>`<option ${o===c.deviceAccess?'selected':''}>${o}</option>`).join('')}</select>
+      <div style="font-size:10px;color:var(--mu);margin-top:4px;">Controls which device types remote employees in this role may sign in from.</div></div>
+      <div class="fg" style="margin-top:10px;"><label class="fl">Allow remote employees (no office network / VPN required)</label><button class="tgl ${c.remoteAllowed?'on':''}" id="raRemote" onclick="this.classList.toggle('on')"><span></span></button></div>`,
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Cancel</button>
+      <button class="btn bp" onclick="settSaveRoleAccess('${role}')">Save</button>`,
+  });
+}
+function settSaveRoleAccess(role){
+  ROLE_ACCESS_CONFIG[role]={
+    accessType:document.getElementById('raAccessType').value,
+    deviceAccess:document.getElementById('raDeviceAccess').value,
+    remoteAllowed:document.getElementById('raRemote').classList.contains('on'),
+  };
+  localStorage.setItem('nexcore-role-access',JSON.stringify(ROLE_ACCESS_CONFIG));
+  nxDrawerClose();
+  const body=document.getElementById('settingsBody');
+  if(body)body.innerHTML=`<div style="max-width:640px;">${SETTINGS_PANELS.users.html()}</div>`;
+  toast(role+' access configuration saved','#16A34A');
+  writeAudit('AccessConfig','IAM',role,0,'medium');
+}
 
 // Override the renderSettingsNav function entirely
 
