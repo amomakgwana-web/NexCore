@@ -1753,7 +1753,7 @@ body.dark .perm-check.on{background:var(--gn);}
 
       <!-- USERS -->
       <div class="page" id="page-users">
-        <div class="ph"><div class="ph-icon" style="background:var(--or)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div><div class="ph-title">User Management</div><div class="ph-sub">674 users · 6 roles</div></div><div class="ph-right"><button class="btn bs btn-sm" onclick="teamCloudDrawer()">Team (Cloud)</button><button class="btn bs btn-sm" onclick="bulkInviteDrawer()">Bulk Invite</button><button class="btn bp btn-sm" onclick="userInviteDrawer()">Invite User</button></div></div>
+        <div class="ph"><div class="ph-icon" style="background:var(--or)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div><div class="ph-title">User Management</div><div class="ph-sub">674 users · 6 roles</div></div><div class="ph-right"><button class="btn bs btn-sm" onclick="usrFindDuplicates()">Find Duplicates</button><button class="btn bs btn-sm" onclick="teamCloudDrawer()">Team (Cloud)</button><button class="btn bs btn-sm" onclick="bulkInviteDrawer()">Bulk Invite</button><button class="btn bp btn-sm" onclick="userInviteDrawer()">Invite User</button></div></div>
         <div class="content"><div class="card"><div class="ch2"><span class="ch2-title">Users</span></div><div id="userList"></div></div></div>
       </div>
 
@@ -11812,6 +11812,7 @@ window.supplierView=function(id){
 function userDrawer(i){
   const u=(window.USERS_LIST||[])[i]; if(!u)return;
   const roles=['Admin','CEO','Finance','Manager','Staff','Vendor'];
+  const others=(window.USERS_LIST||[]).filter((x,xi)=>xi!==i);
   nxDrawerOpen({
     title:u.n,sub:u.e,icon:'person',color:u.c,
     body:nxKV([['Role',u.role],['Status',u.s],['Last Active',u.last],['MFA','Enrolled ✓']])
@@ -11820,11 +11821,57 @@ function userDrawer(i){
       <div class="nx-sec">Access</div>
       <div class="stat-row"><span class="stat-lbl">Active sessions</span><span class="stat-val">2</span></div>
       <div class="stat-row"><span class="stat-lbl">API keys owned</span><span class="stat-val">${u.role==='Admin'?'2':'0'}</span></div>
-      <div class="stat-row"><span class="stat-lbl">Door credentials</span><span class="stat-val">Card + Fingerprint</span></div>`,
+      <div class="stat-row"><span class="stat-lbl">Door credentials</span><span class="stat-val">Card + Fingerprint</span></div>
+      <div class="nx-sec">Reassign & Remove</div>
+      <div style="font-size:11px;color:var(--mid);margin-bottom:8px;line-height:1.5;">Moves this user's direct reports, pending approvals and open board items to another active user, then removes ${u.n} — use this for duplicate accounts or offboarding.</div>
+      <select class="fi" id="udReassignTo">${others.map(o=>`<option value="${o.e}">${o.n} (${o.role})</option>`).join('')}</select>`,
     actions:`<button class="btn bd2" onclick="(function(){USERS_LIST[${i}].s='Suspended';nxDrawerClose();renderUserList();toast('${u.n} suspended — sessions revoked','#DC2626');writeAudit('Suspend','Users','${u.e}',0,'high');})()">Suspend</button>
+      <button class="btn bd2" onclick="usrReassignAndDelete(${i},document.getElementById('udReassignTo').value)">Reassign & Delete</button>
       <button class="btn bp" onclick="(function(){USERS_LIST[${i}].role=document.getElementById('udRole').value;nxDrawerClose();renderUserList();toast('${u.n} role updated','#16A34A');writeAudit('Role','Users','${u.e}',0,'high');})()">Save</button>`,
   });
 }
+/* ── Duplicate-user cleanup: reassign a user's open work, then remove them ──
+   Board item "owner" is stored as a short display name ("Kagiso D.") while
+   USERS_LIST holds full names ("Kagiso Dlamini") — match on first name +
+   surname initial rather than requiring an exact string match. ── */
+function nxNameMatches(fullName,shortName){
+  if(!fullName||!shortName)return false;
+  const fw=fullName.trim().split(/\s+/), sw=shortName.trim().split(/\s+/);
+  if(!fw.length||!sw.length)return false;
+  if(fw[0].toLowerCase()!==sw[0].toLowerCase())return false;
+  const fLast=fw[fw.length-1], sLast=sw[sw.length-1].replace('.','');
+  return fLast[0]?.toLowerCase()===sLast[0]?.toLowerCase();
+}
+function usrReassignAndDelete(i,toEmail){
+  const list=window.USERS_LIST||[];
+  const u=list[i]; const target=list.find(x=>x.e===toEmail);
+  if(!u||!target){toast('Pick a user to reassign to first','#DC2626');return;}
+  const targetShort=target.n.split(/\s+/)[0]+' '+target.n.split(/\s+/).slice(-1)[0][0]+'.';
+  let moved=0;
+  try{(window.BOARDS_DATA||[]).forEach(g=>(g.items||[]).forEach(it=>{if(nxNameMatches(u.n,it.owner)){it.owner=targetShort;moved++;}}));NXDB.save('boards');}catch(e){}
+  list.splice(i,1);
+  nxDrawerClose();renderUserList();
+  if(typeof renderBoards==='function')renderBoards();
+  writeAudit('ReassignAndDelete','Users',u.e+' -> '+target.e,moved,'high');
+  toast(u.n+' removed — '+moved+' board item(s) reassigned to '+target.n+'. Pending approvals route by role, not by person, so nothing further to move.','#16A34A');
+}
+/* ── Find duplicate user accounts by email and let the admin clean them up ── */
+function usrFindDuplicates(){
+  const list=window.USERS_LIST||[];
+  const byEmail={};
+  list.forEach((u,idx)=>{const k=(u.e||'').toLowerCase().trim();if(!k)return;(byEmail[k]=byEmail[k]||[]).push(idx);});
+  const dupGroups=Object.entries(byEmail).filter(([,idxs])=>idxs.length>1);
+  nxDrawerOpen({
+    title:'Duplicate Users',sub:dupGroups.length?dupGroups.length+' email(s) with more than one account':'No duplicates found',icon:'shield',color:'var(--rd)',
+    body:!dupGroups.length
+      ?'<div style="text-align:center;padding:24px;color:var(--mid);font-size:12px;">No duplicate user accounts detected.</div>'
+      :dupGroups.map(([email,idxs])=>`<div class="nx-sec">${email}</div>`+idxs.map(idx=>{const u=list[idx];
+          return `<div class="stat-row"><span class="stat-lbl">${u.n} · ${u.role} · ${u.s}</span><button class="btn bd2 btn-xs" onclick="usrDrawerFindDupClose();userDrawer(${idx})">Resolve</button></div>`;
+        }).join('')).join(''),
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Close</button>`,
+  });
+}
+function usrDrawerFindDupClose(){nxDrawerClose();}
 function userInviteDrawer(){
   nxDrawerOpen({
     title:'Invite User',sub:'They receive a magic link + onboarding checklist',icon:'useradd',color:'var(--or)',
@@ -12596,16 +12643,21 @@ async function onboardEmployeeSubmit(){
   const salary=parseFloat(document.getElementById('obSalary')?.value)||0;
   const start=document.getElementById('obStart')?.value||new Date().toISOString().slice(0,10);
   if(!name||!email||salary<=0){toast('Name, email and salary are required','#DC2626');return;}
+  const dupe=PAYPRO_EMPS.find(p=>(p.email||'').toLowerCase()===email.toLowerCase())
+    ||(window.USERS_LIST||[]).find(u=>(u.e||'').toLowerCase()===email.toLowerCase());
+  if(dupe){toast('A user with this email already exists — use Reassign instead of re-onboarding','#DC2626');return;}
   const emp={id:'EMP-'+String(PAYPRO_EMPS.length+1).padStart(3,'0'),name,dept,basic:salary,commission:0,bonus:0,
     medical:Math.round(salary*.055),retirement:Math.round(salary*.075),leaveBal:0,role,email,startDate:start};
   PAYPRO_EMPS.push(emp);
   try{if(typeof EMPLOYEES!=='undefined'&&Array.isArray(EMPLOYEES))EMPLOYEES.push({name,dept,position:role,gross:salary,status:'Onboarding'});}catch(e){}
   nxDrawerClose();
-  /* contract + policy pack via relay */
-  await callEdgeFunction('email-relay','send_email',{to:email,
+  /* contract + policy pack via relay — reflect the real send outcome, don't assume success */
+  const {data:emailRes,error:emailErr}=await callEdgeFunction('email-relay','send_email',{to:email,
     subject:tplMerge('Welcome to {{company}} — your contract & policy pack'),
     html:contractHTML(emp)+'<hr><p>Policy pack attached: POPIA & IT policy, Leave policy. Sign digitally from any device using the link in your portal.</p>'});
-  EMAIL_LOG.unshift({ts:'Just now',to:email,subject:'Welcome — contract & policy pack (e-sign requested)',status:'Delivered',opens:0});
+  const emailOk=!emailErr;
+  const emailStatus=emailErr?'Failed':(emailRes?.simulated?'Simulated':'Delivered');
+  EMAIL_LOG.unshift({ts:'Just now',to:email,subject:'Welcome — contract & policy pack (e-sign requested)',status:emailStatus,opens:0});
   if(currentUser?.notifs)currentUser.notifs.unshift({title:'Onboarding started — '+name,body:role+' · '+dept+' · starts '+start,color:'#16A34A',icon:'useradd',unread:true,time:'Just now'});
   renderNotifs();
   if(typeof renderPaypro==='function'){const c=document.getElementById('payAutoCard');if(c)c.remove();renderPaypro();}
@@ -12613,7 +12665,8 @@ async function onboardEmployeeSubmit(){
   if(typeof renderEmail==='function')renderEmail();
   NXDB.save('paypro');NXDB.save('email');
   writeAudit('Onboard','HR',name,salary,'high');
-  toast(name+' onboarded — contract & policies sent to '+email+' for e-signature','#16A34A');
+  if(emailOk)toast(name+' onboarded — contract & policies sent to '+email+' for e-signature','#16A34A');
+  else toast(name+' onboarded, but the contract email failed to send ('+emailErr+') — resend from Email Log','#EF4444');
   NXSync.emit('employee:onboarded',{name,dept,role});
 }
 /* onboarding page header button */
