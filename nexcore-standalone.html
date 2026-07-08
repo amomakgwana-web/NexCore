@@ -1738,7 +1738,7 @@ body.dark .perm-check.on{background:var(--gn);}
 
       <!-- AUDIT -->
       <div class="page" id="page-audit">
-        <div class="ph"><div class="ph-icon" style="background:var(--ch)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><div class="ph-title">Audit Trail</div><div class="ph-sub">Immutable · POPIA compliant</div></div><div class="ph-right"><button class="btn bs btn-sm" onclick="exportAuditCSV()">Export CSV</button></div></div>
+        <div class="ph"><div class="ph-icon" style="background:var(--ch)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><div class="ph-title">Audit Trail</div><div class="ph-sub">Immutable · POPIA compliant · <span class="status-dot live"></span> Live</div></div><div class="ph-right"><button class="btn bs btn-sm" onclick="exportAuditCSV()">Export CSV</button></div></div>
         <div class="content">
           <div class="fb"><div class="sb2"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="auditSearch" placeholder="Search audit log…" oninput="filterAudit()"/></div><select class="fsel" id="auditModule" onchange="filterAudit()"><option value="">All Modules</option><option>Procurement</option><option>Finance</option><option>HR</option><option>Approvals</option><option>xVault</option><option>Auth</option></select></div>
           <div class="card"><div class="cb" style="padding:0;"><div class="tw"><table><thead><tr><th>Timestamp</th><th>User</th><th>Module</th><th>Action</th><th>Record</th><th>Amount</th><th>Severity</th></tr></thead><tbody id="auditBody"></tbody></table></div></div></div>
@@ -2938,14 +2938,25 @@ async function loadAuditTrail() {
   AUDIT_DATA = data.map(r => ({
     ts:     new Date(r.created_at).toLocaleString('en-ZA'),
     user:   r.user_name || 'System',
-    mod:    r.module,
+    module: r.module,
     action: r.action,
-    rec:    r.record_ref || '—',
-    amt:    r.amount ? 'R ' + Number(r.amount).toLocaleString() : '—',
+    record: r.record_ref || '—',
+    amount: r.amount ? 'R ' + Number(r.amount).toLocaleString() : '—',
     sev:    r.severity || 'Info',
   }));
   filteredAudit = [...AUDIT_DATA];
   renderAudit();
+}
+function auditRowFromRealtime(r){
+  return {
+    ts:     new Date(r.created_at).toLocaleString('en-ZA'),
+    user:   r.user_name || 'System',
+    module: r.module,
+    action: r.action,
+    record: r.record_ref || '—',
+    amount: r.amount ? 'R ' + Number(r.amount).toLocaleString() : '—',
+    sev:    r.severity || 'Info',
+  };
 }
 
 async function writeAudit(action, module, recordRef, amount, severity) {
@@ -4191,7 +4202,7 @@ const BUDGET_DATA = [
   {dept:'Finance',      budget:220000, actual:188000, color:'#D97706'},
 ];
 
-const AUDIT_DATA = [
+let AUDIT_DATA = [
   {ts:'2025-01-15 14:22',user:'Amohelang M.',module:'Procurement',action:'APPROVE_PO',      record:'PO-2025-0891',amount:'R 124,000',sev:'High'},
   {ts:'2025-01-15 13:44',user:'SwiftPay System',module:'SwiftPay',  action:'SETTLEMENT',      record:'STLMT-0115',  amount:'R 2,840,000',sev:'Critical'},
   {ts:'2025-01-15 12:18',user:'Lerato K.',     module:'xVault',    action:'DOC_UPLOAD',      record:'CONTRACT-084',amount:'—',sev:'Info'},
@@ -6155,7 +6166,7 @@ function showSettingsPanel(key, el) {
 function exportAuditCSV() {
   const rows = [
     ['Timestamp','User','Module','Action','Record','Amount','Severity'],
-    ...AUDIT_DATA.map(r => [r.ts, r.user, r.mod, r.action, r.rec, r.amt, r.sev])
+    ...AUDIT_DATA.map(r => [r.ts, r.user, r.module, r.action, r.record, r.amount, r.sev])
   ];
   const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
   const blob = new Blob([csv], {type: 'text/csv'});
@@ -13366,8 +13377,16 @@ function nxStartRealtime(){
     else if(table==='notifications'){if(typeof loadNotifications==='function')loadNotifications();}
     else if(table==='nx_sign_requests'){/* status drawer refreshes on open */}
     else if(table==='nx_module_state'){/* NXDB reconciles on next load */}
+    else if(table==='audit_log'){
+      if(payload.eventType==='INSERT'&&payload.new){
+        AUDIT_DATA.unshift(auditRowFromRealtime(payload.new));
+        if(document.getElementById('page-audit')?.classList.contains('on')){
+          filterAudit();
+        }
+      }
+    }
   };
-  ['nx_claims','nx_journals','notifications','nx_sign_requests','nx_module_state','nx_payments'].forEach(table=>{
+  ['nx_claims','nx_journals','notifications','nx_sign_requests','nx_module_state','nx_payments','audit_log'].forEach(table=>{
     const ch=client.channel('nx-'+table)
       .on('postgres_changes',{event:'*',schema:'public',table},payload=>onChange(table,payload))
       .subscribe();
