@@ -3553,10 +3553,14 @@ async function doLogin() {
   if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
   const client = sb();
 
-  /* Pre-auth brute-force throttle (NIST 800-63B §5.2.2) */
+  /* Pre-auth brute-force throttle (NIST 800-63B §5.2.2). Raced against a
+     short timeout like every other network call in this flow — a slow or
+     unreachable lockout check must never block login itself. */
   if (client) {
     try {
-      const { data: locked } = await client.rpc('check_login_lockout', { p_email: email });
+      const lockoutCheck = client.rpc('check_login_lockout', { p_email: email });
+      const timeout = new Promise(res => setTimeout(() => res({ data: false }), 2000));
+      const { data: locked } = await Promise.race([lockoutCheck, timeout]);
       if (locked) {
         showLoginError('Too many failed attempts on this account. Please wait 15 minutes and try again.');
         if (btn) { btn.disabled = false; btn.textContent = 'Sign in to MORR ERP'; }
