@@ -10202,10 +10202,12 @@ let ACCESS_CREDS=[
   {id:'AC-105',emp:'Nomsa Petersen',type:'Card + PIN',sites:'Sandton HQ · Floors 1–3',status:'Active',issued:'2024-09-15'},
   {id:'AC-106',emp:'Contractor: M. Santos',type:'Temp Card',sites:'Sandton HQ · Floor 2',status:'Expiring',issued:'2025-01-06'},
 ];
-const ACCESS_SITES=[
-  {name:'Sandton HQ',doors:14,online:14,readers:'HID + ZKTeco biometric'},
-  {name:'Midrand Data Centre',doors:6,online:6,readers:'Biometric + mantrap'},
-  {name:'Cape Town Office',doors:8,online:7,readers:'HID card'},
+const ACCESS_TYPES=['Card','Fingerprint','PIN','Card + Fingerprint','Card + PIN','Device (Mobile Credential)'];
+const ACCESS_DEVICE_MODELS=['HID R40 Card Reader','ZKTeco SpeedFace Biometric','Suprema BioStation 2','Salto XS4 Wireless Lock','Mobile Credential Gateway (BLE/NFC)'];
+let ACCESS_SITES=[
+  {name:'Sandton HQ',doors:14,online:14,readers:'HID + ZKTeco biometric',deviceModel:'ZKTeco SpeedFace Biometric',connection:'Network (TCP/IP)',ip:'10.0.1.40'},
+  {name:'Midrand Data Centre',doors:6,online:6,readers:'Biometric + mantrap',deviceModel:'Suprema BioStation 2',connection:'Network (TCP/IP)',ip:'10.0.2.10'},
+  {name:'Cape Town Office',doors:8,online:7,readers:'HID card',deviceModel:'HID R40 Card Reader',connection:'Wiegand (26-bit)',ip:'10.0.3.15'},
 ];
 let ACCESS_EVENTS=[
   {ts:'11:42',emp:'Sipho Nkosi',door:'HQ Main Entrance',method:'Fingerprint',result:'Granted'},
@@ -10233,16 +10235,17 @@ function renderAccess(){
         <td class="mo tb">${c.id}</td><td class="tb">${c.emp}</td><td>${c.type}</td>
         <td style="font-size:11px;">${c.sites}</td>
         <td><span class="badge ${stB[c.status]}">${c.status}</span></td>
-        <td>${c.status==='Active'||c.status==='Expiring'?`<button class="btn bd2 btn-xs" onclick="accessRevoke(${i})">Revoke</button>`:`<button class="btn bs btn-xs" onclick="accessReissue(${i})">Re-issue</button>`}</td>
+        <td style="white-space:nowrap;"><button class="btn bs btn-xs" onclick="accessChangeType(${i})">Change Type</button> ${c.status==='Active'||c.status==='Expiring'?`<button class="btn bd2 btn-xs" onclick="accessRevoke(${i})">Revoke</button>`:`<button class="btn bs btn-xs" onclick="accessReissue(${i})">Re-issue</button>`}</td>
       </tr>`).join('')}</tbody></table></div></div></div>
   </div>
   <div class="tp" id="accTabs-sites">
     <div class="card"><div class="ch2"><span class="ch2-title">Sites & Door Controllers</span></div>
-    <div class="cb" style="padding:0;">${ACCESS_SITES.map(s=>`
+    <div class="cb" style="padding:0;">${ACCESS_SITES.map((s,si)=>`
       <div class="stock-card">
         <div class="stock-icon" style="background:${s.online===s.doors?'var(--gn-l)':'var(--am-l)'};">${svgIcon('building','14px',s.online===s.doors?'var(--gn)':'var(--am)')}</div>
-        <div style="flex:1;"><div class="stock-name">${s.name}</div><div class="stock-sku">${s.readers}</div></div>
-        <div style="text-align:right;"><div class="stock-qty">${s.online}/${s.doors} online</div><div style="font-size:9px;color:var(--mu);">doors</div></div>
+        <div style="flex:1;"><div class="stock-name">${s.name}</div><div class="stock-sku">${s.readers} · ${s.deviceModel} · ${s.connection}</div></div>
+        <div style="text-align:right;margin-right:10px;"><div class="stock-qty">${s.online}/${s.doors} online</div><div style="font-size:9px;color:var(--mu);">doors</div></div>
+        <button class="btn bs btn-xs" onclick="accessConfigureDevice(${si})">Configure Device</button>
       </div>`).join('')}</div></div>
   </div>
   <div class="tp" id="accTabs-events">
@@ -10267,12 +10270,72 @@ function accessReissue(i){
   toast('Credential '+c.id+' re-issued','#16A34A');
 }
 function accessIssue(){
-  const emp=prompt('Employee / visitor name:');
-  if(!emp)return;
-  ACCESS_CREDS.unshift({id:'AC-'+(107+ACCESS_CREDS.length),emp,type:'Card',sites:'Sandton HQ · Floor 1',status:'Active',issued:new Date().toISOString().slice(0,10)});
+  nxDrawerOpen({
+    title:'Issue Credential',sub:'Card · Fingerprint · PIN · Device — pick what this person will use',icon:'shield',color:'var(--pu)',
+    body:`<div class="fg"><label class="fl">Employee / Visitor Name</label><input class="fi" id="acIssueName" placeholder="e.g. Naledi Mokgadi"/></div>
+      <div class="fg" style="margin-top:10px;"><label class="fl">Access Type</label><select class="fi" id="acIssueType">${ACCESS_TYPES.map(t=>`<option>${t}</option>`).join('')}</select></div>
+      <div class="fg" style="margin-top:10px;"><label class="fl">Site / Scope</label><select class="fi" id="acIssueSite">${ACCESS_SITES.map(s=>`<option>${s.name}</option>`).join('')}</select></div>`,
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Cancel</button>
+      <button class="btn bp" onclick="accessIssueSubmit()">Issue Credential</button>`,
+  });
+}
+function accessIssueSubmit(){
+  const emp=document.getElementById('acIssueName')?.value.trim();
+  const type=document.getElementById('acIssueType')?.value||'Card';
+  const site=document.getElementById('acIssueSite')?.value||ACCESS_SITES[0].name;
+  if(!emp){toast('Enter a name first','#DC2626');return;}
+  ACCESS_CREDS.unshift({id:'AC-'+(107+ACCESS_CREDS.length),emp,type,sites:site,status:'Active',issued:new Date().toISOString().slice(0,10)});
+  nxDrawerClose();
   renderAccess();
-  toast('Credential issued to '+emp+' — collect card at reception','#16A34A');
-  writeAudit('Issue','Access',emp,0,'medium');
+  NXDB.save('access');
+  toast(type+' credential issued to '+emp+' for '+site,'#16A34A');
+  writeAudit('Issue','Access',emp+' ('+type+')',0,'medium');
+}
+function accessChangeType(i){
+  const c=ACCESS_CREDS[i]; if(!c)return;
+  nxDrawerOpen({
+    title:'Change Access Type — '+c.emp,sub:c.id,icon:'shield',color:'var(--bl)',
+    body:`<div class="fg"><label class="fl">Access Type</label><select class="fi" id="acType">${ACCESS_TYPES.map(t=>`<option ${t===c.type?'selected':''}>${t}</option>`).join('')}</select>
+      <div style="font-size:10px;color:var(--mu);margin-top:6px;">Changing type re-provisions the credential on the device(s) covering ${c.sites}.</div></div>`,
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Cancel</button>
+      <button class="btn bp" onclick="accessChangeTypeSave(${i})">Save</button>`,
+  });
+}
+function accessChangeTypeSave(i){
+  const c=ACCESS_CREDS[i]; if(!c)return;
+  const newType=document.getElementById('acType').value;
+  const oldType=c.type;
+  c.type=newType;
+  nxDrawerClose();
+  renderAccess();
+  NXDB.save('access');
+  toast(c.emp+"'s access type changed to "+newType,'#16A34A');
+  writeAudit('ChangeAccessType','Access',c.id+' '+oldType+' -> '+newType,0,'medium');
+}
+function accessConfigureDevice(si){
+  const s=ACCESS_SITES[si]; if(!s)return;
+  nxDrawerOpen({
+    title:'Configure Access Device — '+s.name,sub:'Hardware reader / biometric device setup',icon:'shield',color:'var(--pu)',
+    body:`<div class="fg"><label class="fl">Device Model</label><select class="fi" id="acdModel">${ACCESS_DEVICE_MODELS.map(m=>`<option ${m===s.deviceModel?'selected':''}>${m}</option>`).join('')}</select></div>
+      <div class="fg" style="margin-top:10px;"><label class="fl">Connection</label><select class="fi" id="acdConn">${['Network (TCP/IP)','Wiegand (26-bit)','RS-485 Serial','Bluetooth LE / NFC'].map(c=>`<option ${c===s.connection?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div class="fg" style="margin-top:10px;"><label class="fl">Device IP / Address</label><input class="fi" id="acdIp" value="${s.ip||''}" placeholder="10.0.1.40"/></div>
+      <div class="fg" style="margin-top:10px;"><label class="fl">Doors Controlled</label><input class="fi" id="acdDoors" type="number" value="${s.doors}"/></div>`,
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Cancel</button>
+      <button class="btn bp" onclick="accessConfigureDeviceSave(${si})">Save & Sync Device</button>`,
+  });
+}
+function accessConfigureDeviceSave(si){
+  const s=ACCESS_SITES[si]; if(!s)return;
+  s.deviceModel=document.getElementById('acdModel').value;
+  s.connection=document.getElementById('acdConn').value;
+  s.ip=document.getElementById('acdIp').value.trim();
+  s.doors=parseInt(document.getElementById('acdDoors').value)||s.doors;
+  s.online=Math.min(s.online,s.doors);
+  nxDrawerClose();
+  renderAccess();
+  NXDB.save('access');
+  toast(s.name+' device configuration saved — '+s.deviceModel,'#16A34A');
+  writeAudit('ConfigureDevice','Access',s.name+' '+s.deviceModel,0,'medium');
 }
 
 /* ══ IAM CONFIGURATION ═══════════════════════════════════ */
@@ -10958,8 +11021,8 @@ const NXDB={
       render:()=>typeof renderFleet==='function'&&renderFleet(),
     },
     access:{
-      get:()=>({creds:ACCESS_CREDS,events:ACCESS_EVENTS.slice(0,40)}),
-      set:(st)=>{if(st.creds)ACCESS_CREDS=st.creds;if(st.events)ACCESS_EVENTS=st.events;},
+      get:()=>({creds:ACCESS_CREDS,events:ACCESS_EVENTS.slice(0,40),sites:ACCESS_SITES}),
+      set:(st)=>{if(st.creds)ACCESS_CREDS=st.creds;if(st.events)ACCESS_EVENTS=st.events;if(st.sites)ACCESS_SITES=st.sites;},
       render:()=>typeof renderAccess==='function'&&renderAccess(),
     },
     iam:{
