@@ -621,7 +621,6 @@ tr:hover td{background:var(--sf);}
 .mod-card-stat{font-size:11px;font-weight:700;color:var(--or-d);margin-top:4px;}
 
 /* ═══ CHART BARS ═══ */
-.chart-wrap{display:flex;align-items:flex-end;gap:5px;height:100px;padding-bottom:18px;}
 .chart-bar{flex:1;border-radius:3px 3px 0 0;position:relative;cursor:pointer;transition:opacity .15s;min-width:16px;}
 .chart-bar:hover{opacity:.8;}
 .chart-bar-lbl{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--mid);font-weight:600;white-space:nowrap;}
@@ -9499,12 +9498,41 @@ let CONTRACTORS_DATA=[
   {id:'CTR-007',name:'Sipho Dlamini',role:'Support Specialist',country:'South Africa',flag:'🇿🇦',currency:'ZAR',rate:38000,rateType:'Monthly',start:'2024-05-01',end:'2025-05-01',status:'Active',employmentType:'Contractor',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
   {id:'CTR-008',name:'Jasmine Cruz',role:'Content Designer',country:'Philippines',flag:'🇵🇭',currency:'USD',rate:2400,rateType:'Monthly',start:'2024-10-01',end:'2025-10-01',status:'Active',employmentType:'EOR Employee',eorEntity:'ManilaWorks EOR Inc.',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
 ];
+function ctrPayRunLinesFromSnapshot(list,factor){
+  return list.map(c=>({name:c.name,country:c.country,currency:c.currency,rate:c.rate,fx:FX_TO_ZAR[c.currency]||1,zar:Math.round(ctrZAR(c)*factor)}));
+}
 let CONTRACTOR_PAYRUNS=[
-  {id:'CPR-2025-01',period:'January 2025',contractors:8,totalZAR:1183000,status:'Paid',date:'25 Jan 2025'},
-  {id:'CPR-2024-12',period:'December 2024',contractors:7,totalZAR:1054000,status:'Paid',date:'20 Dec 2024'},
+  {id:'CPR-2025-01',period:'January 2025',contractors:8,totalZAR:1183000,status:'Paid',date:'25 Jan 2025',
+    lines:ctrPayRunLinesFromSnapshot(CONTRACTORS_DATA.filter(c=>c.status!=='Onboarding'),1)},
+  {id:'CPR-2024-12',period:'December 2024',contractors:7,totalZAR:1054000,status:'Paid',date:'20 Dec 2024',
+    lines:ctrPayRunLinesFromSnapshot(CONTRACTORS_DATA.filter(c=>c.status!=='Onboarding').slice(0,7),0.97)},
 ];
 
 function ctrZAR(c){return c.rate*(FX_TO_ZAR[c.currency]||1);}
+/* Real live FX pull (Frankfurter/ECB, no API key) with an honest cached-rate
+   fallback if the feed is unreachable — never silently pretend to be live. */
+async function ctrRefreshFX(){
+  toast('Fetching live exchange rates…','#2563EB');
+  try{
+    const currencies=Object.keys(FX_TO_ZAR).filter(c=>c!=='ZAR');
+    const res=await fetch('https://api.frankfurter.app/latest?from=ZAR&to='+currencies.join(','));
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    if(!data.rates)throw new Error('No rates in response');
+    Object.entries(data.rates).forEach(([cur,zarToCur])=>{
+      if(FX_TO_ZAR[cur]!==undefined&&zarToCur>0)FX_TO_ZAR[cur]=1/zarToCur;
+    });
+    window.CTR_FX_LIVE=true;
+    window.CTR_FX_LAST_UPDATED=new Date().toISOString();
+    renderContractors();
+    toast('Exchange rates refreshed from live market data','#16A34A');
+    writeAudit('RefreshFX','Contractors','FX rates',0,'low');
+  }catch(e){
+    window.CTR_FX_LIVE=false;
+    renderContractors();
+    toast('Live FX feed unreachable — showing cached reference rates ('+(e.message||e)+')','#D97706');
+  }
+}
 
 function renderContractors(){
   const el=document.getElementById('contractorsContent'); if(!el)return;
@@ -9526,7 +9554,7 @@ function renderContractors(){
       <thead><tr><th>Contractor</th><th>Country</th><th>Rate</th><th>ZAR / month</th><th>Contract End</th><th>Status</th><th></th></tr></thead>
       <tbody>${CONTRACTORS_DATA.map(c=>`<tr>
         <td class="tb">${c.name}<div style="font-size:10px;color:var(--mu);font-weight:400;">${c.role}</div></td>
-        <td>${c.flag} ${c.country}</td>
+        <td>${c.country}</td>
         <td class="mo">${c.currency} ${c.rate.toLocaleString()}</td>
         <td class="mo">${fmt(Math.round(ctrZAR(c)))}</td>
         <td style="font-size:11px;">${c.end}</td>
@@ -9540,7 +9568,7 @@ function renderContractors(){
     <div class="cb" style="padding:0;"><div class="tw"><table>
       <thead><tr><th>Contractor</th><th>Local Amount</th><th>FX Rate</th><th>ZAR Equivalent</th><th>Method</th></tr></thead>
       <tbody>${CONTRACTORS_DATA.filter(c=>c.status!=='Onboarding').map(c=>`<tr>
-        <td class="tb">${c.flag} ${c.name}</td>
+        <td class="tb">${c.name}</td>
         <td class="mo">${c.currency} ${c.rate.toLocaleString()}</td>
         <td class="mo">${FX_TO_ZAR[c.currency].toFixed(2)}</td>
         <td class="mo">${fmt(Math.round(ctrZAR(c)))}</td>
@@ -9550,8 +9578,8 @@ function renderContractors(){
       </tbody></table></div></div></div>
     <div class="card"><div class="ch2"><span class="ch2-title">Pay Run History</span></div>
     <div class="cb" style="padding:0;"><div class="tw"><table>
-      <thead><tr><th>Run</th><th>Period</th><th>Contractors</th><th>Total (ZAR)</th><th>Status</th><th>Date</th></tr></thead>
-      <tbody>${CONTRACTOR_PAYRUNS.map(p=>`<tr><td class="mo tb">${p.id}</td><td>${p.period}</td><td>${p.contractors}</td><td class="mo">${fmt(p.totalZAR)}</td><td><span class="badge ${p.status==='Paid'?'gn':'am'}">${p.status}</span></td><td>${p.date}</td></tr>`).join('')}</tbody></table></div></div></div>
+      <thead><tr><th>Run</th><th>Period</th><th>Contractors</th><th>Total (ZAR)</th><th>Status</th><th>Date</th><th></th></tr></thead>
+      <tbody>${CONTRACTOR_PAYRUNS.map((p,pi)=>`<tr><td class="mo tb">${p.id}</td><td>${p.period}</td><td>${p.contractors}</td><td class="mo">${fmt(p.totalZAR)}</td><td><span class="badge ${p.status==='Paid'?'gn':'am'}">${p.status}</span></td><td>${p.date}</td><td><button class="btn bs btn-xs" onclick="ctrPayRunDetail(${pi})">View Lines</button></td></tr>`).join('')}</tbody></table></div></div></div>
   </div>
 
   <div class="tp" id="ctrTabs-compliance">
@@ -9560,7 +9588,7 @@ function renderContractors(){
     <div class="cb" style="padding:0;"><div class="tw"><table>
       <thead><tr><th>Contractor</th><th>Contract</th><th>Tax Form</th><th>ID Check</th><th>Bank</th><th></th></tr></thead>
       <tbody>${CONTRACTORS_DATA.map(c=>`<tr>
-        <td class="tb">${c.flag} ${c.name}</td>
+        <td class="tb">${c.name}</td>
         <td><span class="badge ${docBadge(c.docs.contract)}">${c.docs.contract}</span></td>
         <td><span class="badge ${docBadge(c.docs.tax)}">${c.docs.tax}</span></td>
         <td><span class="badge ${docBadge(c.docs.id)}">${c.docs.id}</span></td>
@@ -9574,6 +9602,18 @@ function renderContractors(){
       <div class="card"><div class="ch2"><span class="ch2-title">Monthly Spend by Country</span><span class="ch2-sub">ZAR equivalent</span></div><div class="cb" id="ctrSpendDonut"></div></div>
       <div class="card"><div class="ch2"><span class="ch2-title">Contractor Cost Trend</span><span class="ch2-sub">6 months, ZAR</span></div><div class="cb" id="ctrTrendChart"></div></div>
     </div>
+    <div class="g2" style="margin-top:14px;">
+      <div class="card"><div class="ch2"><span class="ch2-title">Cost by Employment Type</span><span class="ch2-sub">EOR vs. direct contractor</span></div><div class="cb" id="ctrTypeChart"></div></div>
+      <div class="card"><div class="ch2"><span class="ch2-title">Live Currency Exchange</span><span class="ch2-sub" id="ctrFXStatus">${window.CTR_FX_LIVE?'Live':'Cached'}</span></div>
+        <div class="cb" style="padding:0;">
+          <div class="tw"><table><thead><tr><th>Currency</th><th>Rate → ZAR</th></tr></thead><tbody>${Object.entries(FX_TO_ZAR).filter(([c])=>c!=='ZAR').map(([c,r])=>`<tr><td class="tb">${c}</td><td class="mo">${r.toFixed(3)}</td></tr>`).join('')}</tbody></table></div>
+        </div>
+        <div class="cb" style="padding:10px 14px;border-top:1px solid var(--bd-l);display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:10px;color:var(--mu);" id="ctrFXUpdated">${window.CTR_FX_LAST_UPDATED?'Updated '+new Date(window.CTR_FX_LAST_UPDATED).toLocaleTimeString('en-ZA'):'Using built-in reference rates'}</span>
+          <button class="btn bs btn-xs" onclick="ctrRefreshFX()">Refresh Rates</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="tp" id="ctrTabs-eor">
@@ -9581,7 +9621,7 @@ function renderContractors(){
     ${EOR_ENTITIES.map(ent=>{
       const workers=CONTRACTORS_DATA.filter(c=>c.employmentType==='EOR Employee'&&c.country===ent.country);
       return `<div class="card" style="margin-bottom:12px;">
-        <div class="ch2"><span class="ch2-title">${ent.flag} ${ent.country}</span><span class="ch2-sub">${workers.length} employed via ${ent.partner}</span></div>
+        <div class="ch2"><span class="ch2-title">${ent.country}</span><span class="ch2-sub">${workers.length} employed via ${ent.partner}</span></div>
         <div class="cb">
           <div style="font-size:11px;color:var(--mid);margin-bottom:10px;"><strong>Statutory coverage:</strong> ${ent.statutory}</div>
           <div style="font-size:11px;color:var(--mid);margin-bottom:10px;"><strong>Required documents:</strong> ${ent.requiredDocs.join(' · ')}</div>
@@ -9590,7 +9630,7 @@ function renderContractors(){
       </div>`;
     }).join('')}
     <div class="card"><div class="ch2"><span class="ch2-title">Countries without an EOR partner yet</span></div>
-      <div class="cb" style="font-size:11px;color:var(--mid);">${[...new Set(CONTRACTORS_DATA.filter(c=>c.employmentType!=='EOR Employee').map(c=>c.country))].filter(c=>!eorEntityFor(c)).map(c=>{const c2=CONTRACTORS_DATA.find(x=>x.country===c);return c2?.flag+' '+c;}).join(' · ')||'All contractor countries currently have EOR coverage.'}</div>
+      <div class="cb" style="font-size:11px;color:var(--mid);">${[...new Set(CONTRACTORS_DATA.filter(c=>c.employmentType!=='EOR Employee').map(c=>c.country))].filter(c=>!eorEntityFor(c)).map(c=>{const c2=CONTRACTORS_DATA.find(x=>x.country===c);return c;}).join(' · ')||'All contractor countries currently have EOR coverage.'}</div>
     </div>
   </div>`;
   setTimeout(()=>{
@@ -9602,6 +9642,12 @@ function renderContractors(){
     }
     const trend=document.getElementById('ctrTrendChart');
     if(trend)svgLineChart(trend,[{label:'Contractor spend (ZAR)',values:[890000,915000,960000,1010000,1054000,Math.round(monthlyZAR)]}],['Sep','Oct','Nov','Dec','Jan','Feb'],{h:130,zeroBase:true});
+    const typeChart=document.getElementById('ctrTypeChart');
+    if(typeChart){
+      const byType={};
+      CONTRACTORS_DATA.filter(c=>c.status!=='Onboarding').forEach(c=>{const t=c.employmentType||'Contractor';byType[t]=(byType[t]||0)+ctrZAR(c);});
+      svgDonutChart(typeChart,Object.entries(byType).map(([lbl,v])=>({lbl,v:Math.round(v)})),{size:120,stroke:24,centerVal:'R'+(monthlyZAR/1e6).toFixed(1)+'M'});
+    }
   },80);
 }
 
@@ -9614,7 +9660,7 @@ function ctrRenew(id){
     toast('Renewal contract sent to '+c.name+' — new end date '+c.end,'#16A34A');
     writeAudit('Renew','Contractors',c.id,Math.round(ctrZAR(c)),'medium');
   } else {
-    toast(c.name+' — '+c.role+' · '+c.flag+' '+c.country+' · '+c.currency+' '+c.rate.toLocaleString()+'/mo','#3B82F6');
+    toast(c.name+' — '+c.role+' · '+c.country+' · '+c.currency+' '+c.rate.toLocaleString()+'/mo','#3B82F6');
   }
 }
 
@@ -9650,10 +9696,30 @@ function runContractorPayRun(){
   confirmWithOTP('Run contractor pay cycle',async ()=>{
     const payable=CONTRACTORS_DATA.filter(c=>c.status!=='Onboarding');
     const total=payable.reduce((s,c)=>s+ctrZAR(c),0);
-    CONTRACTOR_PAYRUNS.unshift({id:'CPR-2025-02',period:'February 2025',contractors:payable.length,totalZAR:Math.round(total),status:'Paid',date:new Date().toLocaleDateString('en-ZA')});
+    CONTRACTOR_PAYRUNS.unshift({
+      id:'CPR-'+new Date().getFullYear()+'-'+String(CONTRACTOR_PAYRUNS.length+2).padStart(2,'0'),
+      period:new Date().toLocaleDateString('en-ZA',{month:'long',year:'numeric'}),
+      contractors:payable.length,totalZAR:Math.round(total),status:'Paid',date:new Date().toLocaleDateString('en-ZA'),
+      lines:ctrPayRunLinesFromSnapshot(payable,1),
+    });
     renderContractors();
+    NXDB.save('contractors');
     toast('Pay cycle complete — '+payable.length+' contractors paid, '+fmt(Math.round(total))+' total','#16A34A');
-    writeAudit('PayRun','Contractors','CPR-2025-02',Math.round(total),'high');
+    writeAudit('PayRun','Contractors',CONTRACTOR_PAYRUNS[0].id,Math.round(total),'high');
+  });
+}
+function ctrPayRunDetail(pi){
+  const p=CONTRACTOR_PAYRUNS[pi]; if(!p)return;
+  const lines=p.lines||[];
+  nxDrawerOpen({
+    title:p.id,sub:p.period+' · '+p.contractors+' contractors · '+fmt(p.totalZAR)+' total',icon:'file',color:'var(--em)',
+    body:!lines.length
+      ?'<div style="text-align:center;padding:24px;color:var(--mid);font-size:12px;">No line-level detail recorded for this run.</div>'
+      :'<div class="tw"><table><thead><tr><th>Contractor</th><th>Country</th><th>Local Amount</th><th>FX Rate</th><th>ZAR</th></tr></thead><tbody>'
+        +lines.map(l=>`<tr><td class="tb">${l.name}</td><td>${l.country}</td><td class="mo">${l.currency} ${l.rate.toLocaleString()}</td><td class="mo">${l.fx.toFixed(2)}</td><td class="mo">${fmt(l.zar)}</td></tr>`).join('')
+        +`<tr><td class="tb" style="font-weight:900;">Total</td><td></td><td></td><td></td><td class="mo" style="font-weight:900;color:var(--em);">${fmt(p.totalZAR)}</td></tr>`
+        +'</tbody></table></div>',
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>',
   });
 }
 
@@ -12382,7 +12448,7 @@ function ctrDrawer(id){
   const obSteps=[['Contract sent',c.docs.contract!=='Pending'],['Contract signed',c.docs.contract==='Signed'],['ID verification',c.docs.id==='Verified'],['Tax form (W-8/local)',c.docs.tax==='Verified'],['Bank verification',c.docs.bank==='Verified']];
   const obDone=obSteps.filter(x=>x[1]).length;
   nxDrawerOpen({
-    title:c.name,sub:c.flag+' '+c.country+' · '+c.role+' · '+(c.employmentType||'Contractor')+' · '+c.status,icon:'person',color:'var(--em)',
+    title:c.name,sub:c.country+' · '+c.role+' · '+(c.employmentType||'Contractor')+' · '+c.status,icon:'person',color:'var(--em)',
     body:
       nxKV([['Rate',c.currency+' '+c.rate.toLocaleString()+' / '+(c.rateType||'Monthly').toLowerCase()],['ZAR Equivalent',fmt(Math.round(zar))+' @ '+fx.toFixed(2)],['Contract Start',c.start],['Contract End',c.end||'Open-ended']])
       +(c.employmentType==='EOR Employee'?'<div class="nx-sec">Employer of Record</div>'+nxKV([['Legal Employer',c.eorEntity||'—'],['Classification','Local employee, not an independent contractor']]):'')
@@ -12398,11 +12464,42 @@ function ctrDrawer(id){
       +'<div class="nx-sec">Cost Analysis</div>'
       +nxKV([['Monthly (ZAR)',fmt(Math.round(zar))],['Annualised',fmt(Math.round(zar*12))],['vs Local Hire','−'+Math.round((1-zar/(zar*1.32))*100)+'% (no UIF/SDL/office)'],['Payment Method',c.currency==='ZAR'?'SwiftPay':'SWIFT wire']]),
     actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>'
+      +'<button class="btn bs" onclick="ctrEditDrawer(\''+id+'\')">Edit</button>'
       +'<button class="btn bs" onclick="nxDocOpen(contractHTML(CONTRACTORS_DATA.find(x=>x.id===\''+id+'\')))">Contract PDF</button>'
       +'<button class="btn bs" onclick="nxDocOpen(invoiceHTML({id:\'SI-'+id+'-2502\',client:\''+NX_TPL.legal.replace(/'/g,'')+'\',total:'+Math.round(zar)+',description:\'Contractor services — Feb 2025 ('+c.name+')\',due:\'25 Feb 2025\'}))">Self-Invoice</button>'
       +(Object.values(c.docs).some(v=>v!=='Signed'&&v!=='Verified')?'<button class="btn bp" onclick="nxDrawerClose();ctrChase(\''+id+'\')">Chase Documents</button>':'')
       +(c.employmentType!=='EOR Employee'&&eorEntityFor(c.country)?'<button class="btn bg" onclick="nxDrawerClose();ctrConvertToEOR(\''+id+'\')">Convert to EOR</button>':''),
   });
+}
+function ctrEditDrawer(id){
+  const c=CONTRACTORS_DATA.find(x=>x.id===id); if(!c)return;
+  nxDrawerOpen({
+    title:'Edit '+c.name,sub:c.id,icon:'person',color:'var(--em)',
+    body:`<div class="fg"><label class="fl">Full Name</label><input class="fi" id="ceName" value="${c.name}"/></div>
+      <div class="frow"><div class="fg"><label class="fl">Role</label><input class="fi" id="ceRole" value="${c.role}"/></div>
+      <div class="fg"><label class="fl">Country</label><input class="fi" id="ceCountry" value="${c.country}"/></div></div>
+      <div class="frow"><div class="fg"><label class="fl">Currency</label><select class="fi" id="ceCurrency">${Object.keys(FX_TO_ZAR).map(cur=>`<option ${cur===c.currency?'selected':''}>${cur}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">Rate</label><input class="fi" id="ceRate" type="number" value="${c.rate}"/></div></div>
+      <div class="frow"><div class="fg"><label class="fl">Contract End</label><input class="fi" id="ceEnd" type="date" value="${c.end||''}"/></div>
+      <div class="fg"><label class="fl">Status</label><select class="fi" id="ceStatus">${['Active','Ending Soon','Onboarding','Ended'].map(s=>`<option ${s===c.status?'selected':''}>${s}</option>`).join('')}</select></div></div>`,
+    actions:`<button class="btn bs" onclick="ctrDrawer('${id}')">Cancel</button>
+      <button class="btn bp" onclick="ctrEditSave('${id}')">Save Changes</button>`,
+  });
+}
+function ctrEditSave(id){
+  const c=CONTRACTORS_DATA.find(x=>x.id===id); if(!c)return;
+  c.name=document.getElementById('ceName').value.trim()||c.name;
+  c.role=document.getElementById('ceRole').value.trim()||c.role;
+  c.country=document.getElementById('ceCountry').value.trim()||c.country;
+  c.currency=document.getElementById('ceCurrency').value;
+  c.rate=parseFloat(document.getElementById('ceRate').value)||c.rate;
+  c.end=document.getElementById('ceEnd').value||c.end;
+  c.status=document.getElementById('ceStatus').value;
+  renderContractors();
+  NXDB.save('contractors');
+  ctrDrawer(id);
+  toast(c.name+"'s profile updated",'#16A34A');
+  writeAudit('EditProfile','Contractors',id,0,'medium');
 }
 
 function ctrConvertToEOR(id){
