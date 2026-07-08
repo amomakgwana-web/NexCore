@@ -41,7 +41,7 @@ Deno.serve(async (req: Request) => {
       if (uid) {
         await admin.from("user_profiles").upsert({
           id: uid, role: u.role, full_name: u.name,
-          initials: u.initials, avatar_color: u.color, org: "xGroup SA",
+          initials: u.initials, avatar_color: u.color, org: "Bipra",
         }, { onConflict: "id" });
       }
     } catch (e) {
