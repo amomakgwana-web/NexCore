@@ -2496,6 +2496,7 @@ function dbError(module, error) {
 const _RL_LIMITS = {
   'payroll-service:run_payroll':    { max: 2,  window: 60000 },
   'auth-service:send_otp':          { max: 3,  window: 60000 },
+  'ai-assistant:chat':              { max: 10, window: 60000 },
   default:                          { max: 30, window: 60000 },
 };
 const _RL_LOG = {};
@@ -4418,32 +4419,68 @@ function renderAudit(){
 
 /* ═══ CRM KANBAN ═══ */
 
+const CRM_STAGES = [
+  { key:'qualified',   label:'Qualified' },
+  { key:'proposal',    label:'Proposal' },
+  { key:'negotiation', label:'Negotiation' },
+  { key:'won',         label:'Won' },
+];
+const CRM_FALLBACK_DATA = [
+  {id:'fallback-1',title:'xPayments',company:'City of Mangaung',value:4200000,stage:'qualified',probability:40},
+  {id:'fallback-2',title:'Full stack',company:'Buffalo City Metro',value:2800000,stage:'qualified',probability:25},
+  {id:'fallback-3',title:'xPayments+Bill',company:'Nelson Mandela Bay',value:5800000,stage:'proposal',probability:55},
+  {id:'fallback-4',title:'Renewal',company:'Interfile Holdings',value:2400000,stage:'proposal',probability:60},
+  {id:'fallback-5',title:'Full platform',company:'eThekwini Metro',value:8400000,stage:'negotiation',probability:75},
+  {id:'fallback-6',title:'Upgrade',company:'Ekurhuleni',value:3200000,stage:'negotiation',probability:70},
+  {id:'fallback-7',title:'Full eco',company:'City of Johannesburg',value:12400000,stage:'won',probability:100},
+  {id:'fallback-8',title:'Full eco',company:'City of Tshwane',value:9800000,stage:'won',probability:100},
+];
+function crmFmtM(v){ v=Number(v)||0; return v>=1e6?'R '+(v/1e6).toFixed(1)+'M':'R '+Math.round(v/1000)+'k'; }
+function crmHotness(p){ p=Number(p)||0; return p>=70?{label:'Hot',cls:'bl'}:p>=40?{label:'Warm',cls:'gn'}:{label:'Prospect',cls:'or'}; }
+
 function renderCRMKanban(){
   const el=document.getElementById('crmKanban');if(!el)return;
+  const deals=(window.CRM_DATA&&window.CRM_DATA.length)?window.CRM_DATA:CRM_FALLBACK_DATA;
+  const open=deals.filter(d=>d.stage!=='lost');
+  const won=deals.filter(d=>d.stage==='won');
+  const pipeline=open.reduce((s,d)=>s+Number(d.value||0),0);
+  const wonAmt=won.reduce((s,d)=>s+Number(d.value||0),0);
+  const avgDeal=open.length?pipeline/open.length:0;
+  const closedCount=deals.filter(d=>d.stage==='won'||d.stage==='lost').length;
+  const winRate=closedCount?Math.round(won.length/closedCount*100):0;
   el.innerHTML=`<div class="kg kg-4" style="margin-bottom:12px;">
-    <div class="kpi pu"><div class="kpi-lbl">Pipeline</div><div class="kpi-val">R 24.8M</div></div>
-    <div class="kpi or"><div class="kpi-lbl">Won This Month</div><div class="kpi-val">R 8.4M</div></div>
-    <div class="kpi bl"><div class="kpi-lbl">Avg Deal Size</div><div class="kpi-val">R 2.1M</div></div>
-    <div class="kpi gn"><div class="kpi-lbl">Win Rate</div><div class="kpi-val">62%</div></div>
+    <div class="kpi pu"><div class="kpi-lbl">Pipeline</div><div class="kpi-val">${crmFmtM(pipeline)}</div></div>
+    <div class="kpi or"><div class="kpi-lbl">Won This Month</div><div class="kpi-val">${crmFmtM(wonAmt)}</div></div>
+    <div class="kpi bl"><div class="kpi-lbl">Avg Deal Size</div><div class="kpi-val">${crmFmtM(avgDeal)}</div></div>
+    <div class="kpi gn"><div class="kpi-lbl">Win Rate</div><div class="kpi-val">${winRate}%</div></div>
   </div>
   <div class="kanban">
-    <div class="kb-col"><div class="kb-col-header">Qualified <span class="kb-count">3</span></div>
-      <div class="kb-card"><div class="kb-card-title">City of Mangaung</div><div class="kb-card-amt">R 4.2M</div><div class="kb-card-meta"><span>xPayments</span><span class="badge bl">Hot</span></div></div>
-      <div class="kb-card"><div class="kb-card-title">Buffalo City Metro</div><div class="kb-card-amt">R 2.8M</div><div class="kb-card-meta"><span>Full stack</span><span class="badge or">Prospect</span></div></div>
-    </div>
-    <div class="kb-col"><div class="kb-col-header">Proposal <span class="kb-count">2</span></div>
-      <div class="kb-card"><div class="kb-card-title">Nelson Mandela Bay</div><div class="kb-card-amt">R 5.8M</div><div class="kb-card-meta"><span>xPayments+Bill</span><span class="badge bl">Hot</span></div></div>
-      <div class="kb-card"><div class="kb-card-title">Interfile Holdings</div><div class="kb-card-amt">R 2.4M</div><div class="kb-card-meta"><span>Renewal</span><span class="badge gn">Warm</span></div></div>
-    </div>
-    <div class="kb-col"><div class="kb-col-header">Negotiation <span class="kb-count">2</span></div>
-      <div class="kb-card"><div class="kb-card-title">eThekwini Metro</div><div class="kb-card-amt">R 8.4M</div><div class="kb-card-meta"><span>Full platform</span><span class="badge bl">Priority</span></div></div>
-      <div class="kb-card"><div class="kb-card-title">Ekurhuleni Expand</div><div class="kb-card-amt">R 3.2M</div><div class="kb-card-meta"><span>Upgrade</span><span class="badge bl">Hot</span></div></div>
-    </div>
-    <div class="kb-col"><div class="kb-col-header">Won <span class="kb-count">2</span></div>
-      <div class="kb-card" style="border-color:var(--gn-l)"><div class="kb-card-title">City of Johannesburg</div><div class="kb-card-amt" style="color:var(--gn)">R 12.4M</div><div class="kb-card-meta"><span>Full eco</span><span class="badge gn">Closed</span></div></div>
-      <div class="kb-card" style="border-color:var(--gn-l)"><div class="kb-card-title">City of Tshwane</div><div class="kb-card-amt" style="color:var(--gn)">R 9.8M</div><div class="kb-card-meta"><span>Full eco</span><span class="badge gn">Closed</span></div></div>
-    </div>
+    ${CRM_STAGES.map(st=>{
+      const cards=deals.filter(d=>d.stage===st.key);
+      return `<div class="kb-col" data-stage="${st.key}"><div class="kb-col-header">${st.label} <span class="kb-count">${cards.length}</span></div>
+      ${cards.map(d=>{
+        const hot=crmHotness(d.probability);
+        const won2=st.key==='won';
+        return `<div class="kb-card" data-deal-id="${d.id}" style="${won2?'border-color:var(--gn-l)':''}">
+          <div class="kb-card-title">${d.company||d.title||'Deal'}</div>
+          <div class="kb-card-amt" style="${won2?'color:var(--gn)':''}">${crmFmtM(d.value)}</div>
+          <div class="kb-card-meta"><span>${d.title||''}</span><span class="badge ${won2?'gn':hot.cls}">${won2?'Closed':hot.label}</span></div>
+        </div>`;
+      }).join('')}
+    </div>`;
+    }).join('')}
   </div>`;
+}
+
+/* Persist a stage change back to crm_deals (falls back to local-only for demo/fallback rows) */
+async function crmUpdateDealStage(dealId, newStage){
+  const deal=(window.CRM_DATA||[]).find(d=>String(d.id)===String(dealId));
+  if(deal)deal.stage=newStage;
+  writeAudit('Stage','CRM',dealId,0,'low');
+  if(!deal||String(dealId).startsWith('fallback-'))return;
+  const client=sb();if(!client)return;
+  const{error}=await client.from('crm_deals').update({stage:newStage}).eq('id',dealId);
+  if(error)dbError('crm_deals',error);
 }
 
 /* ═══ ANALYTICS ═══ */
@@ -5201,33 +5238,30 @@ Format numbers as South African Rand: R 1,234,567`;
   aiHistory.push({ role: 'user', content: q });
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: messages,
-      })
+    const { data, error } = await callEdgeFunction('ai-assistant', 'chat', {
+      system: systemPrompt,
+      messages: messages,
     });
-    
-    const data = await response.json();
-    
+
     if(typingMsg) typingMsg.remove();
-    
-    if(data.content && data.content[0]?.text) {
-      const reply = data.content[0].text;
-      appendAIMessage('ai', reply);
+
+    const errStatus = error === 'rate_limited' ? 429 : (error?.context?.status || null);
+    if(errStatus === 429) {
+      appendAIMessage('ai', `⚠️ Too many questions in a short time — please wait a moment and try again.`);
+    } else if(errStatus === 401) {
+      appendAIMessage('ai', `⚠️ Your session expired — please log in again.`);
+    } else if(data?.text) {
+      const reply = data.text;
+      appendAIMessage('ai', reply + (data.simulated ? '\n\n_(AI not yet connected — showing a placeholder reply. See IAM/Integrations to configure it.)_' : ''));
       aiHistory.push({ role: 'assistant', content: reply });
       // Keep history manageable
       if(aiHistory.length > 20) aiHistory = aiHistory.slice(-20);
-    } else if(data.error) {
-      appendAIMessage('ai', `⚠️ Error: ${data.error.message || 'API error'}. Check your API key and network connection.`);
+    } else {
+      appendAIMessage('ai', `⚠️ Error: ${error || 'API error'}. Please try again shortly.`);
     }
   } catch(err) {
     if(typingMsg) typingMsg.remove();
-    appendAIMessage('ai', `⚠️ Connection error: ${err.message}. The API may not be reachable from this environment.`);
+    appendAIMessage('ai', `⚠️ Connection error: ${err.message}.`);
   }
   
   if(btn) btn.disabled = false;
@@ -7060,7 +7094,15 @@ function budgetToggleRestriction(deptId, restrict) {
 function budgetAddDept()       { if(typeof toast==='function') toast('Opening New Budget Line form…','#F97316'); }
 function budgetEditDept(id)    { if(typeof toast==='function') toast(`Editing budget for ${BUDGET_DEPTS.find(d=>d.id===id)?.name}…`,'#3B82F6'); }
 function budgetViewHistory(id) { if(typeof toast==='function') toast(`Loading spend history…`,'#3B82F6'); }
-function budgetEditCategory(id){ if(typeof toast==='function') toast(`Editing category limit…`,'#3B82F6'); }
+function budgetEditCategory(id){
+  const c=BUDGET_CATEGORIES.find(x=>x.id===id); if(!c)return;
+  const val=parseFloat(prompt('New spend limit for '+c.name+' (R):',c.limit));
+  if(!Number.isFinite(val)||val<0)return;
+  c.limit=val;
+  toast(c.name+' limit updated to '+fmt(val),'#16A34A');
+  writeAudit('Update','Budget',c.name+' limit',val,'medium');
+  if(typeof renderBudgetPage==='function')renderBudgetPage();
+}
 function budgetExport() {
   const rows = (window.BUDGET_DATA || []).length
     ? window.BUDGET_DATA
@@ -7424,6 +7466,8 @@ function renderClockWidget(containerId){
       const {error} = await callEdgeFunction('attendance-service','clock_in');
       if (error && error!=='no_client' && error!=='not_authenticated')
         toast('Clocked in locally — DB sync pending','#D97706');
+      else
+        NXSync.emit('attendance:clockin',{name:currentUser?.name||'You'});
     });
     document.getElementById('clk-out-btn')?.addEventListener('click', async () => {
       const t=new Date();
@@ -7610,6 +7654,7 @@ function renderLeaveManagementPage(){
         r.status='pending'; draw(); toast('Approval failed — try again','#DC2626'); return;
       }
       toast(`Leave approved for ${r.name}`,'#16A34A');
+      nxSyncLeaveDecision(r,'Approved');
     }));
     page.querySelectorAll('.lv-rej[data-id]').forEach(b=>b.addEventListener('click', async e=>{
       const r=recs.find(x=>String(x.id)===String(e.target.dataset.id));
@@ -7620,6 +7665,7 @@ function renderLeaveManagementPage(){
         r.status='pending'; draw(); toast('Rejection failed — try again','#DC2626'); return;
       }
       toast(`Leave rejected for ${r.name}`,'#DC2626');
+      nxSyncLeaveDecision(r,'Rejected');
     }));
   }
   draw();
@@ -8100,18 +8146,86 @@ function renderReports(){
   </div>`).join('');
 }
 
+/* Each builder returns {headers, rows, total?} computed from live app state,
+   falling back to the module's own demo arrays when nothing has loaded yet. */
+const REPORT_BUILDERS = {
+  pl(){ const f=nxComputePnL(); return {headers:['Line Item','Amount'],
+    rows:[['Revenue',fmt(Math.round(f.revenue))],['Cost of Sales',fmt(Math.round(f.cogs))],['Gross Profit',fmt(Math.round(f.grossProfit))],['Operating Expenses',fmt(Math.round(f.opex))],['EBITDA',fmt(Math.round(f.ebitda))]],
+    total:['EBITDA',fmt(Math.round(f.ebitda))] }; },
+  cashflow(){ const rows=BANK_STATEMENT.map(b=>[b.date,b.desc,fmt(b.amount)]);
+    const net=BANK_STATEMENT.reduce((s,b)=>s+b.amount,0);
+    return {headers:['Date','Description','Amount'],rows,total:['Net Movement',fmt(net)]}; },
+  trialbal(){ const rows=COA.map(a=>[a.code+' '+a.name,a.balance>=0?fmt(a.balance):'',a.balance<0?fmt(-a.balance):'']);
+    const dr=COA.reduce((s,a)=>s+(a.balance>0?a.balance:0),0), cr=COA.reduce((s,a)=>s+(a.balance<0?-a.balance:0),0);
+    return {headers:['Account','Debit','Credit'],rows,total:['DR = CR',fmt(dr)+' = '+fmt(cr)]}; },
+  vatrecon(){ const invs=window.INVOICE_DATA||INVOICES_DATA||[]; const pos=window.PO_DATA||[];
+    const outputVat=invs.reduce((s,i)=>s+Number(i.total_amount||i.total||0),0)*0.15/1.15;
+    const inputVat=pos.reduce((s,p)=>s+Number(p.total||p.amount||0),0)*0.15/1.15;
+    return {headers:['Line','Amount'],rows:[['Output VAT (on sales)',fmt(Math.round(outputVat))],['Input VAT (on purchases)',fmt(Math.round(inputVat))],['Net VAT Payable',fmt(Math.round(outputVat-inputVat))]],total:['Net Payable',fmt(Math.round(outputVat-inputVat))]}; },
+  payerecon(){ const rows=PAYPRO_EMPS.map(e=>{const c=payproCalc(e);return[e.name,fmt(Math.round(c.gross)),fmt(Math.round(c.paye)),fmt(Math.round(c.uif))];});
+    const totPaye=PAYPRO_EMPS.reduce((s,e)=>s+payproCalc(e).paye,0);
+    return {headers:['Employee','Gross','PAYE','UIF'],rows,total:['Total PAYE',fmt(Math.round(totPaye))]}; },
+  headcount(){ const byDept={}; PAYPRO_EMPS.forEach(e=>{byDept[e.dept]=(byDept[e.dept]||0)+1;});
+    const rows=Object.entries(byDept).map(([d,n])=>[d,n]);
+    return {headers:['Department','Headcount'],rows,total:['Total',String(PAYPRO_EMPS.length)]}; },
+  leave(){ const rows=TK_BALANCES.map(b=>[b.name,b.paid+'/'+b.paidMax,b.sick+'/'+b.sickMax]);
+    return {headers:['Employee','Annual Used/Max','Sick Used/Max'],rows}; },
+  payslips(){ const rows=PAYPRO_EMPS.map(e=>{const c=payproCalc(e);return[e.name,e.dept,fmt(Math.round(c.net))];});
+    const totNet=PAYPRO_EMPS.reduce((s,e)=>s+payproCalc(e).net,0);
+    return {headers:['Employee','Department','Net Pay'],rows,total:['Total Net Pay',fmt(Math.round(totNet))]}; },
+  budgetvar(){ const rows=BUDGET_DEPTS.map(d=>[d.name,fmt(d.allocated),fmt(d.spent),fmt(d.allocated-d.spent)]);
+    const totVar=BUDGET_DEPTS.reduce((s,d)=>s+(d.allocated-d.spent),0);
+    return {headers:['Department','Budget','Spent','Variance'],rows,total:['Total Variance',fmt(totVar)]}; },
+  poaging(){ const pos=window.PO_DATA||[]; if(!pos.length)return {headers:['Info'],rows:[['No purchase orders loaded — sign in to view live POs']]};
+    const rows=pos.map(p=>[p.po_number||p.id,p.vendor||p.vendor_name||'-',fmt(Number(p.total||p.amount||0)),p.status||'-']);
+    return {headers:['PO','Vendor','Amount','Status'],rows}; },
+  invoiceaging(){ const invs=window.INVOICE_DATA||INVOICES_DATA||[];
+    const rows=invs.map(i=>[i.invoice_number||i.id,i.client_name||i.client||'-',fmt(Number(i.total_amount||i.total||0)),i.status||'-']);
+    const outstanding=invs.filter(i=>i.status==='Outstanding'||i.status==='Overdue').reduce((s,i)=>s+Number(i.total_amount||i.total||0),0);
+    return {headers:['Invoice','Client','Amount','Status'],rows,total:['Outstanding',fmt(Math.round(outstanding))]}; },
+  auditsum(){ const rows=AUDIT_DATA.slice(0,25).map(a=>[a.ts,a.user,a.module,a.action,a.sev]);
+    return {headers:['Time','User','Module','Action','Severity'],rows,total:['Total Entries',String(AUDIT_DATA.length)]}; },
+};
+
+let REPORT_SCHEDULES={};
+
 function runReport(id, name){
+  const build=REPORT_BUILDERS[id];
+  const entry=REPORT_CATALOG.find(r=>r.id===id);
+  if(!build){ toast('Report not available','#D97706'); return; }
   toast('Generating '+name+'…','#2563EB');
-  setTimeout(()=>toast(name+' ready — 12 rows, R 84.7M total','#16A34A'),1200);
+  const {headers,rows,total}=build();
+  const p=nxPDFStart('Report',name);
+  if(p){
+    p.sec(name).table(headers,rows.length?rows:[['No data available']]);
+    if(total)p.total(total[0],total[1]);
+    p.note('Generated live from current NexCore data · '+new Date().toLocaleString('en-ZA'));
+    p.save(name.toLowerCase().replace(/[^\w]+/g,'-')+'.pdf');
+  }
+  if(entry)entry.lastRun='Just now';
+  renderReports();
+  writeAudit('Run','Reports',name,0,'low');
 }
 function scheduleReport(name){
   if(!name) name='Selected report';
-  toast('Schedule dialog for '+name+'…','#F97316');
-  setTimeout(()=>toast(name+' scheduled — daily at 08:00','#16A34A'),800);
+  const entry=REPORT_CATALOG.find(r=>r.name===name);
+  const key=entry?entry.id:name;
+  const already=!!REPORT_SCHEDULES[key];
+  if(already)delete REPORT_SCHEDULES[key];
+  else REPORT_SCHEDULES[key]={name,cadence:'daily',time:'08:00'};
+  NXDB.save('reportschedules');
+  toast(already?(name+' schedule removed'):(name+' scheduled — daily at 08:00'),already?'#F97316':'#16A34A');
+  writeAudit(already?'Unschedule':'Schedule','Reports',name,0,'low');
+  renderReports();
 }
 function exportReport(id){
-  toast('Exporting report to CSV…','#2563EB');
-  setTimeout(()=>toast('Report exported and ready for download','#16A34A'),900);
+  const build=REPORT_BUILDERS[id];
+  const entry=REPORT_CATALOG.find(r=>r.id===id);
+  if(!build){ toast('Report not available','#D97706'); return; }
+  const {headers,rows}=build();
+  if(!rows.length){ toast('No data to export','#D97706'); return; }
+  exportToCSV(rows.map(r=>Object.fromEntries(headers.map((h,i)=>[h,r[i]]))),(entry?entry.id:id)+'.csv');
+  writeAudit('Export','Reports',entry?entry.name:id,0,'low');
 }
 
 /* ── Risk Management ── */
@@ -8389,29 +8503,6 @@ function markAllRead(){
   toast('All notifications marked as read','#16A34A');
 }
 
-/* ── Enhanced Leave Approval ── */
-function approveLeaveRow(empName, rowEl){
-  if(rowEl){
-    const statusCell=rowEl.querySelector('.badge');
-    if(statusCell){statusCell.className='badge gn';statusCell.textContent='Approved';}
-    const btn=rowEl.querySelector('.btn.bg');
-    if(btn){btn.textContent='Approved';btn.disabled=true;btn.style.opacity='.5';}
-  }
-  toast(empName+' leave approved','#16A34A');
-  writeAudit('Approve','HR',empName+' leave',0,'low');
-}
-
-function rejectLeaveRow(empName, rowEl){
-  if(rowEl){
-    const statusCell=rowEl.querySelector('.badge');
-    if(statusCell){statusCell.className='badge rd';statusCell.textContent='Rejected';}
-    const btn=rowEl.querySelector('.btn.bg');
-    if(btn)btn.remove();
-  }
-  toast(empName+' leave rejected','#DC2626');
-  writeAudit('Reject','HR',empName+' leave',0,'low');
-}
-
 /* ── Employee Profile Modal ── */
 function openEmpProfile(emp){
   const modal=document.getElementById('empDetailModal');
@@ -8511,20 +8602,49 @@ function renderEnhancedStock(){
         <div class="stock-meter">
           <div class="stock-meter-fill" style="width:${pct}%;background:${isLow?'var(--rd)':pct<60?'var(--am)':'var(--gn)'}"></div>
         </div>
-        ${isLow?`<button class="btn bp btn-xs" onclick="reorderStock('${s.sku}','${s.name}')">Reorder</button>`:'<span class="badge gn" style="font-size:9px;">OK</span>'}
+        ${s.poPending?'<span class="badge am" style="font-size:9px;">PO Pending</span>':isLow?`<button class="btn bp btn-xs" onclick="reorderStock('${s.sku}','${s.name}')">Reorder</button>`:'<span class="badge gn" style="font-size:9px;">OK</span>'}
       </div>
     </div>`;
   }).join('')}`;
 }
 
-function reorderStock(sku, name){
-  toast('Creating PO for '+name+'…','#F97316');
-  setTimeout(()=>{toast('PO created for '+name+' — pending approval','#16A34A');writeAudit('Reorder','Inventory',sku,0,'low');},800);
+async function reorderStock(sku, name, silent){
+  const item=STOCK_DATA.find(s=>s.sku===sku); if(!item)return null;
+  const qty=Math.max(item.max-item.onHand,item.reorder);
+  if(!silent)toast('Creating PO for '+name+'…','#F97316');
+  const po=await createPurchaseOrder({
+    vendor:'Restock — '+item.cat,
+    description:'Restock: '+name+' ('+sku+') × '+qty+' '+item.unit,
+    qty, unitPrice:item.cost,
+    budgetLine:item.cat,
+    requiredBy:new Date(Date.now()+7*86400000).toISOString().slice(0,10),
+  });
+  if(!po){
+    // No live/authorised Supabase session — still create a real, inspectable
+    // local PO record instead of just toasting, matching the demo-fallback
+    // pattern used elsewhere (e.g. CRM fallback deals).
+    window.PO_DATA=window.PO_DATA||[];
+    window.PO_DATA.unshift({
+      po_number:'PO-'+new Date().getFullYear()+'-'+String(Date.now()).slice(-4),
+      vendor_name:'Restock — '+item.cat,
+      description:'Restock: '+name+' ('+sku+') × '+qty+' '+item.unit,
+      total_amount:Math.round(qty*item.cost*1.15),
+      status:'Pending Approval',
+    });
+    if(typeof renderProcurementTable==='function')renderProcurementTable();
+    writeAudit('Reorder','Inventory',sku,Math.round(qty*item.cost),'low');
+    if(!silent)toast('PO created locally for '+name+' — pending approval','#16A34A');
+  }
+  item.poPending=true;
+  renderEnhancedStock();
+  return po;
 }
-function reorderAllLow(){
-  const low=STOCK_DATA.filter(s=>s.onHand<=s.reorder);
+async function reorderAllLow(){
+  const low=STOCK_DATA.filter(s=>s.onHand<=s.reorder&&!s.poPending);
+  if(!low.length){toast('No low-stock items to reorder','#16A34A');return;}
   toast('Creating POs for '+low.length+' low-stock items…','#F97316');
-  setTimeout(()=>toast(low.length+' POs created — pending approval','#16A34A'),1000);
+  for(const s of low) await reorderStock(s.sku,s.name,true);
+  toast(low.length+' POs created — pending approval','#16A34A');
 }
 
 /* ── Settings Save ── */
@@ -9794,6 +9914,7 @@ function nxRefresh(){
 }
 
 /* ── Attendance card — same data, three audiences ── */
+let _attLiveData=false;
 function renderAttendanceSyncCard(){
   const dash=document.getElementById('dashContent');
   if(!dash||document.getElementById('attSyncCard'))return;
@@ -9803,7 +9924,7 @@ function renderAttendanceSyncCard(){
   const card=document.createElement('div');
   card.className='card';card.id='attSyncCard';card.style.marginTop='14px';
   card.innerHTML=`
-  <div class="ch2">${svgIcon('clock','13px','var(--bl)')}<span class="ch2-title">Attendance Today</span><span class="ch2-sub"><span class="status-dot live"></span> synced live · ${a.lastEvent}</span></div>
+  <div class="ch2">${svgIcon('clock','13px','var(--bl)')}<span class="ch2-title">Attendance Today</span><span class="ch2-sub"><span class="status-dot ${_attLiveData?'live':'warn'}"></span> ${_attLiveData?'synced live':'demo estimate — sign in for live data'} · ${a.lastEvent}</span></div>
   <div class="cb">
     <div class="kg kg-4" style="margin-bottom:0;">
       <div class="kpi gn"><div class="kpi-lbl">Present On-site</div><div class="kpi-val">${a.present}</div><div class="kpi-sub">${pct}% of ${a.total}</div></div>
@@ -9813,17 +9934,30 @@ function renderAttendanceSyncCard(){
     </div>
     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
       <button class="btn bs btn-xs" onclick="openPage('attendance')">Open Attendance Tracker</button>
-      <button class="btn bs btn-xs" onclick="nxSimulateClockIn()">Simulate Clock-in Event</button>
       ${currentRole==='cfo'||currentRole==='admin'?'<button class="btn bs btn-xs" onclick="openPage(\'paypro\')">Impact on Payroll →</button>':''}
     </div>
   </div>`;
   dash.appendChild(card);
+  nxLoadRealAttendanceToday();
 }
-function nxSimulateClockIn(){
-  const names=['Zanele Sithole','Bongani Zulu','Kagiso Dube','Thandi Mabaso'];
-  const n=names[Math.floor(Math.random()*names.length)];
-  NX_ATTENDANCE.present++;NX_ATTENDANCE.lastEvent=n+' clocked in '+new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'})+' (HQ biometric)';
-  NXSync.emit('attendance:clockin',{name:n});
+/* Overlay real clock_events data (admin/manager/cfo/hr_manager can read all rows
+   per RLS) instead of the card silently ticking up from a random-name simulator. */
+async function nxLoadRealAttendanceToday(){
+  const client=sb(); if(!client)return;
+  const today=new Date().toISOString().slice(0,10);
+  const {data,error}=await client.from('clock_events').select('employee_id,event_type,event_time').eq('event_date',today);
+  if(error||!data||!data.length)return;
+  const byEmp={};
+  data.forEach(r=>{ if(!byEmp[r.employee_id]||r.event_type==='in')byEmp[r.employee_id]=r; });
+  const present=Object.keys(byEmp).length;
+  const late=Object.values(byEmp).filter(r=>r.event_type==='in'&&r.event_time>'09:00').length;
+  const onLeave=NX_LEAVE_REQUESTS.filter(r=>r.status==='Approved').length;
+  NX_ATTENDANCE.present=present; NX_ATTENDANCE.late=late; NX_ATTENDANCE.onLeave=onLeave;
+  NX_ATTENDANCE.total=Math.max(present+onLeave+NX_ATTENDANCE.sick+NX_ATTENDANCE.remote,present);
+  NX_ATTENDANCE.lastEvent='Live clock data · '+new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+  _attLiveData=true;
+  const c=document.getElementById('attSyncCard'); if(c)c.remove();
+  renderAttendanceSyncCard();
 }
 
 /* ── Wire cross-module flows ── */
@@ -9846,6 +9980,21 @@ NXSync.on('leave:created',(lv)=>{
   renderNotifs();nxRefresh();
   toast('Leave request routed → manager approvals, HR queue and dashboards','#2563EB');
 });
+
+/* Bridge: the admin Leave Management page's approve/reject buttons operate on
+   TK_LEAVE (its own demo/live-loaded record set), separate from NX_LEAVE_REQUESTS
+   (fed by the ESS "submit leave" flow). Without this, an admin decision there
+   never reached payroll/attendance. Find-or-create the matching NX_LEAVE_REQUESTS
+   entry so the real cross-module sync (leaveBal, attendance, dashboards) fires. */
+function nxSyncLeaveDecision(tkRecord,decision){
+  const id='TK-'+tkRecord.id;
+  let lv=NX_LEAVE_REQUESTS.find(x=>x.id===id);
+  if(!lv){
+    lv={id,emp:tkRecord.name,type:tkRecord.type||'Annual',dates:(tkRecord.from||'')+' – '+(tkRecord.to||''),days:tkRecord.days||1,status:'Pending',stage:'Manager'};
+    NX_LEAVE_REQUESTS.unshift(lv);
+  }
+  NXSync.emit('leave:decided',{id,decision});
+}
 
 /* 3. Leave decided → attendance forecast + ESS + payroll leave balance */
 NXSync.on('leave:decided',({id,decision})=>{
@@ -9921,23 +10070,6 @@ NXSync.on('payroll:run',({count,total})=>{
       _pr.apply(this,arguments);
       const total=PAYPRO_EMPS.reduce((s,e)=>s+payproCalc(e).net,0);
       NXSync.emit('payroll:run',{count:PAYPRO_EMPS.length,total:Math.round(total)});
-    };
-  }
-  /* leave approve/reject row buttons */
-  if(typeof approveLeaveRow==='function'){
-    const _al=approveLeaveRow;
-    window.approveLeaveRow=function(empName,rowEl){
-      _al.apply(this,arguments);
-      const lv=NX_LEAVE_REQUESTS.find(x=>x.emp===empName&&x.status==='Pending');
-      NXSync.emit('leave:decided',{id:lv?lv.id:'LV-????',decision:'Approved'});
-    };
-  }
-  if(typeof rejectLeaveRow==='function'){
-    const _rl=rejectLeaveRow;
-    window.rejectLeaveRow=function(empName,rowEl){
-      _rl.apply(this,arguments);
-      const lv=NX_LEAVE_REQUESTS.find(x=>x.emp===empName&&x.status==='Pending');
-      NXSync.emit('leave:decided',{id:lv?lv.id:'LV-????',decision:'Rejected'});
     };
   }
 })();
@@ -10036,6 +10168,11 @@ const NXDB={
       get:()=>({requests:NX_LEAVE_REQUESTS,attendance:NX_ATTENDANCE}),
       set:(st)=>{if(st.requests)NX_LEAVE_REQUESTS=st.requests;if(st.attendance)NX_ATTENDANCE=st.attendance;},
       render:()=>{},
+    },
+    reportschedules:{
+      get:()=>({schedules:REPORT_SCHEDULES}),
+      set:(st)=>{if(st.schedules)REPORT_SCHEDULES=st.schedules;},
+      render:()=>typeof renderReports==='function'&&renderReports(),
     },
   },
 
@@ -10722,10 +10859,12 @@ function nxKanbanDnD(){
         const n=c.querySelectorAll('.kb-card').length;
         const cnt=c.querySelector('.kb-count');if(cnt)cnt.textContent=n;
       });
-      const stage=col.querySelector('.kb-col-header')?.childNodes[0]?.textContent.trim()||'stage';
+      const stageKey=col.dataset.stage||'qualified';
+      const stageLabel=col.querySelector('.kb-col-header')?.childNodes[0]?.textContent.trim()||'stage';
+      const dealId=dragCard.dataset.dealId;
       const deal=dragCard.querySelector('.kb-card-title')?.textContent||'Deal';
-      toast(deal+' moved to '+stage,'#7C3AED');
-      writeAudit('Stage','CRM',deal+' → '+stage,0,'low');
+      toast(deal+' moved to '+stageLabel,'#7C3AED');
+      if(dealId)crmUpdateDealStage(dealId,stageKey);
       dragCard=null;
     });
   });
@@ -11433,15 +11572,48 @@ function pdfEMP201(){
    .save('EMP201-2025-02.pdf',false);
   writeAudit('PDF','Payroll','EMP201-2025-02',Math.round(paye+uif*2+sdl),'high');
 }
+/* Live P&L / Balance Sheet computed from the Chart of Accounts (Income/Liability/
+   Equity balances are stored as negative credit balances per COA convention above). */
+function nxComputePnL(){
+  const income=COA.filter(a=>a.type==='Income'), expense=COA.filter(a=>a.type==='Expense');
+  const cos=expense.find(a=>/cost of sales/i.test(a.name));
+  const revenue=income.reduce((s,a)=>s-a.balance,0);
+  const cogs=cos?cos.balance:0;
+  const grossProfit=revenue-cogs;
+  const opex=expense.filter(a=>a!==cos).reduce((s,a)=>s+a.balance,0);
+  const ebitda=grossProfit-opex;
+  return {income,expense,revenue,cogs,grossProfit,opex,ebitda};
+}
+function nxComputeBalanceSheet(){
+  const assets=COA.filter(a=>a.type==='Asset'), liabilities=COA.filter(a=>a.type==='Liability'), equity=COA.filter(a=>a.type==='Equity');
+  return {
+    assets,liabilities,equity,
+    totalAssets:assets.reduce((s,a)=>s+a.balance,0),
+    totalLiabilities:liabilities.reduce((s,a)=>s-a.balance,0),
+    totalEquity:equity.reduce((s,a)=>s-a.balance,0),
+  };
+}
 function pdfPnL(){
-  const rows=[['Revenue',7000000,7200000],['Cost of Sales',2100000,2040000],['Gross Profit',4900000,5160000],['Operating Expenses',3600000,3130000],['EBITDA',1300000,2030000]];
-  const p=nxPDFStart('Management Accounts','P&L Jan 2025');
+  const f=nxComputePnL(), b=nxComputeBalanceSheet();
+  const p=nxPDFStart('Management Accounts','Live');
   if(!p){financeReportPDF();return;}
-  p.sec('Profit & Loss - January 2025')
-   .table(['Line Item','Budget','Actual','Variance'],rows.map(([l,b,a])=>[l,fmt(b),fmt(a),(a-b>=0?'+':'')+fmt(a-b)]),['left','right','right','right'])
-   .note('Commentary: EBITDA beat budget by R 730,000 (56%) driven by SwiftPay settlement growth (+32% MoM) and operating under-spend. Marketing exceeded its line by 4% - flagged in Budget vs Actual.')
-   .save('management-accounts-jan2025.pdf',false);
-  writeAudit('PDF','Finance','PL-JAN-2025',0,'low');
+  p.sec('Profit & Loss')
+   .table(['Line Item','Amount'],[
+     ['Revenue',fmt(Math.round(f.revenue))],
+     ['Cost of Sales',fmt(Math.round(f.cogs))],
+     ['Gross Profit',fmt(Math.round(f.grossProfit))],
+     ['Operating Expenses',fmt(Math.round(f.opex))],
+   ],['left','right'])
+   .total('EBITDA',fmt(Math.round(f.ebitda)))
+   .sec('Balance Sheet — Assets')
+   .table(['Account','Balance'],b.assets.map(a=>[a.name,fmt(Math.abs(a.balance))]),['left','right'])
+   .total('Total Assets',fmt(Math.round(b.totalAssets)))
+   .sec('Balance Sheet — Liabilities & Equity')
+   .table(['Account','Balance'],[...b.liabilities,...b.equity].map(a=>[a.name,fmt(Math.abs(a.balance))]),['left','right'])
+   .total('Total Liabilities + Equity',fmt(Math.round(b.totalLiabilities+b.totalEquity)))
+   .note('Computed live from the Chart of Accounts and posted journal entries as of '+new Date().toLocaleString('en-ZA')+'.')
+   .save('management-accounts.pdf',false);
+  writeAudit('PDF','Finance','PL',Math.round(f.ebitda),'low');
 }
 
 /* ── Universal table exports: CSV + PDF buttons on every card ── */
@@ -11742,19 +11914,30 @@ async function onboardEmployeeSubmit(){
 })();
 
 /* ══ E-SIGN: submit stores signature, stamps PDFs ════════ */
-function nxSignSubmit(){
-  const c=document.getElementById('sigCanvas');
-  if(c){
-    const blank=document.createElement('canvas');blank.width=c.width;blank.height=c.height;
-    if(c.toDataURL()===blank.toDataURL()){toast('Draw your signature first','#DC2626');return;}
-    window.NX_SIGNATURE=c.toDataURL('image/png');
-    localStorage.setItem('nx-signature',window.NX_SIGNATURE);
-  }
-  closeModal('signContractModal');
-  toast('Signature captured — it will be stamped onto contracts you sign (SHA-256 sealed, stored in xVault)','#16A34A');
-  writeAudit('eSign','xVault','signature-capture',0,'medium');
+async function nxSha256Hex(buf){
+  const digest=await crypto.subtle.digest('SHA-256',buf);
+  return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
 }
-(function(){try{const sig=localStorage.getItem('nx-signature');if(sig)window.NX_SIGNATURE=sig;}catch(e){}})();
+async function nxSignSubmit(){
+  const c=document.getElementById('sigCanvas');
+  if(!c){closeModal('signContractModal');return;}
+  const blank=document.createElement('canvas');blank.width=c.width;blank.height=c.height;
+  if(c.toDataURL()===blank.toDataURL()){toast('Draw your signature first','#DC2626');return;}
+  window.NX_SIGNATURE=c.toDataURL('image/png');
+  localStorage.setItem('nx-signature',window.NX_SIGNATURE);
+  const blob=await (await fetch(window.NX_SIGNATURE)).blob();
+  const hash=await nxSha256Hex(await blob.arrayBuffer());
+  window.NX_SIGNATURE_HASH=hash;
+  localStorage.setItem('nx-signature-hash',hash);
+  const path=await NXCloud.upload('vault',(currentUser?.id||'anon')+'/signature-'+Date.now()+'.png',blob);
+  closeModal('signContractModal');
+  toast('Signature captured — SHA-256 '+hash.slice(0,12)+'… '+(path?'stored in xVault':'sealed locally (sign in to sync to xVault)'),'#16A34A');
+  writeAudit('eSign','xVault',hash.slice(0,16),0,'medium');
+}
+(function(){try{
+  const sig=localStorage.getItem('nx-signature');if(sig)window.NX_SIGNATURE=sig;
+  const hash=localStorage.getItem('nx-signature-hash');if(hash)window.NX_SIGNATURE_HASH=hash;
+}catch(e){}})();
 /* stamp signature into contract PDFs */
 (function(){
   const _pc=pdfContract;
@@ -11775,7 +11958,7 @@ function nxSignSubmit(){
      ['6. Governing Law','Republic of South Africa.']].forEach(([h,t])=>{p.note(h+' - '+t);});
     p.sec('Signatures');
     if(window.NX_SIGNATURE){
-      try{p._pg(70);p.d.addImage(window.NX_SIGNATURE,'PNG',40,p.y,140,42);p.d.setFontSize(7.5);p.d.setTextColor(120,120,128);p.d.text('Digitally signed | '+new Date().toISOString().slice(0,16).replace('T',' ')+' | ECTA compliant',40,p.y+52);p.y+=64;}catch(e){}
+      try{p._pg(70);p.d.addImage(window.NX_SIGNATURE,'PNG',40,p.y,140,42);p.d.setFontSize(7.5);p.d.setTextColor(120,120,128);p.d.text('Digitally signed | '+new Date().toISOString().slice(0,16).replace('T',' ')+' | ECTA compliant'+(window.NX_SIGNATURE_HASH?' | SHA-256 '+window.NX_SIGNATURE_HASH.slice(0,16):''),40,p.y+52);p.y+=64;}catch(e){}
       p.note(c.name+': ______________________    Date: ____________');
     } else {
       p.note('For '+NX_TPL.legal+': ______________________    '+c.name+': ______________________    Date: ____________');
