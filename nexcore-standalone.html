@@ -1610,10 +1610,10 @@ body.dark .perm-check.on{background:var(--gn);}
 
       <!-- HR -->
       <div class="page" id="page-hr">
-        <div class="ph"><div class="ph-icon" style="background:var(--gn)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="ph-title">HR & Payroll</div><div class="ph-sub">674 employees · Jan 2025 payroll</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="onboardEmployeeDrawer()">Onboard Employee</button><button class="btn bs btn-sm" onclick="toast('Payroll run initiated','#16A34A')">Run Payroll</button></div></div>
+        <div class="ph"><div class="ph-icon" style="background:var(--gn)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="ph-title">HR & Payroll</div><div class="ph-sub" id="hrPageSub">674 employees · Jan 2025 payroll</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="onboardEmployeeDrawer()">Onboard Employee</button><button class="btn bs btn-sm" onclick="toast('Payroll run initiated','#16A34A')">Run Payroll</button></div></div>
         <div class="tabs"><button class="tab on" onclick="switchTab('hrTabs','employees',this)">Employees</button><button class="tab" onclick="switchTab('hrTabs','payroll',this)">Payroll</button><button class="tab" onclick="switchTab('hrTabs','leave',this)">Leave</button></div>
         <div class="content">
-          <div class="tp on" id="hrTabs-employees"><div class="card"><div class="ch2"><span class="ch2-title">Employee Directory</span></div><div id="empList"></div></div></div>
+          <div class="tp on" id="hrTabs-employees"><div class="card"><div class="ch2"><span class="ch2-title">Employee Directory</span><span class="ch2-sub" id="empListCount"></span></div><div id="empDeptChips" style="padding:10px 14px;border-bottom:1px solid var(--bd-l);display:flex;gap:6px;flex-wrap:wrap;"></div><div id="empList" style="max-height:640px;overflow-y:auto;"></div></div></div>
           <div class="tp" id="hrTabs-payroll"><div id="payrollContent"></div></div>
           <div class="tp" id="hrTabs-leave"><div class="card"><div class="ch2"><span class="ch2-title">Leave Requests</span></div><div class="cb" style="padding:0;"><div class="tw"><table><thead><tr><th>Employee</th><th>Type</th><th>Dates</th><th>Days</th><th>Status</th><th></th></tr></thead><tbody><tr><td class="tb">Sipho Nkosi</td><td>Annual</td><td>20–24 Jan</td><td>5</td><td><span class="badge am">Pending</span></td><td><button class="btn bg btn-xs" onclick="toast('Leave approved','#16A34A')">Approve</button></td></tr><tr><td class="tb">Thabo Mokoena</td><td>Annual</td><td>27–28 Jan</td><td>2</td><td><span class="badge am">Pending</span></td><td><button class="btn bg btn-xs" onclick="toast('Leave approved','#16A34A')">Approve</button></td></tr><tr><td class="tb">Nomsa Petersen</td><td>Family</td><td>15 Jan</td><td>1</td><td><span class="badge gn">Approved</span></td><td></td></tr></tbody></table></div></div></div></div>
         </div>
@@ -4190,6 +4190,43 @@ const EMPLOYEES = [
   {id:'EMP-005',name:'Kagiso Dlamini', initials:'KD',color:'#0891B2',title:'Senior Developer',    dept:'Engineering',basic:72000,travel:2500},
   {id:'EMP-006',name:'Bongani Sithole',initials:'BS',color:'#EF4444',title:'Sales Director',      dept:'Sales',      basic:96000,travel:2500},
 ];
+/* The directory only ever had the 6 named "hero" employees, yet every KPI
+   claims 674 — expand the roster so the Employee Directory actually reads
+   like a company, not a handful of demo rows. Deterministic (not random)
+   so the list is stable across reloads and in CI. */
+(function(){
+  const firstNames=['Naledi','Tebogo','Zanele','Mpho','Karabo','Boitumelo','Refilwe','Lindiwe','Palesa','Ayanda','Sibongile','Nomvula','Katlego','Ntando','Andile','Lwazi','Sanele','Tumelo','Onthatile','Nokuthula','Precious','Given','Ofentse','Rethabile','Nomsa','Themba','Vusi','Fikile','Sipho','Zodwa'];
+  const lastNames=['Mahlangu','Radebe','Nkosi','Zulu','Ngcobo','Mokoena','Sithole','Khumalo','Mabaso','Dlamini','Buthelezi','Mnguni','Tshabalala','Motaung','Mokgadi','Cele','Ndlovu','Mbeki','Kunene','Maseko','Molefe','Mahlaba','Sibiya','Gumede','Hadebe'];
+  const colors=['#3B82F6','#16A34A','#8B5CF6','#F97316','#0891B2','#EF4444','#DB2777','#D97706','#7C3AED','#059669'];
+  const deptTitles={
+    Engineering:['Software Engineer','Backend Developer','Frontend Developer','QA Engineer','DevOps Engineer','Systems Analyst'],
+    Operations:['Operations Coordinator','Logistics Analyst','Supply Chain Officer','Facilities Manager'],
+    HR:['HR Officer','Talent Acquisition Specialist','Payroll Administrator','Learning & Development Officer'],
+    Finance:['Financial Accountant','Accounts Payable Clerk','Credit Controller','Financial Analyst'],
+    Sales:['Account Executive','Sales Consultant','Business Development Manager','Key Account Manager'],
+    Marketing:['Marketing Specialist','Content Strategist','Digital Marketing Analyst'],
+    'IT Support':['IT Support Technician','Helpdesk Analyst','Network Administrator'],
+  };
+  const depts=Object.keys(deptTitles);
+  const basicByDept={Engineering:58000,Operations:38000,HR:36000,Finance:44000,Sales:42000,Marketing:37000,'IT Support':32000};
+  let idCounter=EMPLOYEES.length;
+  for(let i=0;i<54;i++){
+    const dept=depts[i%depts.length];
+    const first=firstNames[i%firstNames.length];
+    const last=lastNames[(i*7+3)%lastNames.length];
+    const titles=deptTitles[dept];
+    const title=titles[Math.floor(i/depts.length)%titles.length];
+    const basic=Math.round((basicByDept[dept]+(i%9)*1500)/100)*100;
+    idCounter++;
+    EMPLOYEES.push({
+      id:'EMP-'+String(idCounter).padStart(3,'0'),
+      name:first+' '+last,
+      initials:(first[0]+last[0]).toUpperCase(),
+      color:colors[i%colors.length],
+      title,dept,basic,travel:2500,
+    });
+  }
+})();
 
 const BUDGET_DATA = [
   {dept:'Salaries',     budget:2940000,actual:2760000,color:'#16A34A'},
@@ -4697,7 +4734,7 @@ function renderDashboard(){
     <div class="module-grid">
       <div class="mod-card" onclick="openPage('finance')"><div class="mod-card-icon" style="background:var(--or)">${svgIcon('dollar','16px','white')}</div><div><div class="mod-card-name">Finance</div><div class="mod-card-desc">GL · P&L · Cash flow</div><div class="mod-card-stat">R 84.7M revenue</div></div></div>
       <div class="mod-card" onclick="openPage('procurement')"><div class="mod-card-icon" style="background:var(--bl)">${svgIcon('box','16px','white')}</div><div><div class="mod-card-name">Procurement</div><div class="mod-card-desc">POs · Vendors</div><div class="mod-card-stat">3 POs awaiting</div></div></div>
-      <div class="mod-card" onclick="openPage('hr')"><div class="mod-card-icon" style="background:var(--gn)">${svgIcon('users','16px','white')}</div><div><div class="mod-card-name">HR & Payroll</div><div class="mod-card-desc">674 employees</div><div class="mod-card-stat">R 9.2M payroll due</div></div></div>
+      <div class="mod-card" onclick="openPage('hr')"><div class="mod-card-icon" style="background:var(--gn)">${svgIcon('users','16px','white')}</div><div><div class="mod-card-name">HR & Payroll</div><div class="mod-card-desc" id="hrModCardDesc">674 employees</div><div class="mod-card-stat">R 9.2M payroll due</div></div></div>
       <div class="mod-card" onclick="openPage('inventory')"><div class="mod-card-icon" style="background:var(--am)">${svgIcon('package','16px','white')}</div><div><div class="mod-card-name">Inventory</div><div class="mod-card-desc">Stock · Fixed assets</div><div class="mod-card-stat">2 low stock alerts</div></div></div>
       <div class="mod-card" onclick="openPage('crm')"><div class="mod-card-icon" style="background:var(--pu)">${svgIcon('heart','16px','white')}</div><div><div class="mod-card-name">CRM</div><div class="mod-card-desc">12 active deals</div><div class="mod-card-stat">R 24.8M pipeline</div></div></div>
       <div class="mod-card" onclick="openPage('budget')"><div class="mod-card-icon" style="background:var(--rd)">${svgIcon('trending','16px','white')}</div><div><div class="mod-card-name">Budget Alerts</div><div class="mod-card-desc">3 depts flagged</div><div class="mod-card-stat">Marketing 104%</div></div></div>
@@ -4771,10 +4808,25 @@ function calcPAYE(annual){
   return Math.max(0,tax-17235)/12;
 }
 
+let EMP_DEPT_FILTER='All';
+function empSetDeptFilter(d){EMP_DEPT_FILTER=d;renderEmployeeList();}
 function renderEmployeeList(){
   const el=document.getElementById('empList');if(!el)return;
-  let shown=[]; let expanded=false;
-  el.innerHTML=EMPLOYEES.map((emp,i)=>{
+  const depts=[...new Set(EMPLOYEES.map(e=>e.dept))];
+  const chips=document.getElementById('empDeptChips');
+  if(chips){
+    chips.innerHTML=['All',...depts].map(d=>`<button class="search-filter-btn ${EMP_DEPT_FILTER===d?'on':''}" onclick="empSetDeptFilter('${d}')">${d}</button>`).join('')
+      +`<button class="btn bs btn-xs" style="margin-left:auto;" onclick="empDeptDrawer(${EMP_DEPT_FILTER==='All'?"null":`'${EMP_DEPT_FILTER}'`})">${EMP_DEPT_FILTER==='All'?'View All Departments':'View '+EMP_DEPT_FILTER+' Breakdown'}</button>`;
+  }
+  const list=EMP_DEPT_FILTER==='All'?EMPLOYEES:EMPLOYEES.filter(e=>e.dept===EMP_DEPT_FILTER);
+  const countEl=document.getElementById('empListCount');
+  if(countEl)countEl.textContent=list.length+' of '+EMPLOYEES.length+' employees';
+  const subEl=document.getElementById('hrPageSub');
+  if(subEl)subEl.textContent=EMPLOYEES.length+' employees · Jan 2025 payroll';
+  const modEl=document.getElementById('hrModCardDesc');
+  if(modEl)modEl.textContent=EMPLOYEES.length+' employees';
+  el.innerHTML=list.map((emp)=>{
+    const i=EMPLOYEES.indexOf(emp);
     const c=calcEmp(emp);
     return`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--bd-l);cursor:pointer;transition:background .12s;" onmouseover="this.style.background='var(--sf)'" onmouseout="this.style.background=''" onclick="toggleEmpDetail(${i})">
       <div style="width:32px;height:32px;border-radius:50%;background:${emp.color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:white;flex-shrink:0;">${emp.initials}</div>
@@ -4790,6 +4842,32 @@ function renderEmployeeList(){
 }
 
 function toggleEmpDetail(i){const el=document.getElementById(`emp-detail-${i}`);if(el)el.style.display=el.style.display==='none'?'block':'none';}
+
+/* ── Department drill-through: headcount, payroll history, per-component breakdown ── */
+function empDeptDrawer(dept){
+  const depts=[...new Set(EMPLOYEES.map(e=>e.dept))];
+  const target=dept||depts[0];
+  const rows=EMPLOYEES.filter(e=>e.dept===target);
+  const calc=rows.map(e=>({e,c:calcEmp(e)}));
+  const totals=calc.reduce((a,{c})=>({gross:a.gross+c.gross,paye:a.paye+c.paye,pen:a.pen+c.pen,uif:a.uif+c.uif,net:a.net+c.net}),{gross:0,paye:0,pen:0,uif:0,net:0});
+  const history=[0.94,0.97,1,1.02,1.0,1.0].map((f,i)=>Math.round(totals.gross*f));
+  nxDrawerOpen({
+    title:target,sub:rows.length+' employees · '+fmt(totals.gross)+'/mo gross',icon:'building',color:'var(--gn)',
+    body:nxKV([['Headcount',String(rows.length)],['Total Gross',fmt(totals.gross)],['Total PAYE',fmt(totals.paye)],['Total Net Pay',fmt(totals.net)]])
+      +'<div class="nx-sec">6-Month Payroll History (Gross)</div>'
+      +'<div id="empDeptHistChart" style="min-height:110px;"></div>'
+      +'<div class="nx-sec">Per-Employee Breakdown</div>'
+      +'<div class="tw"><table><thead><tr><th>Employee</th><th>Gross</th><th>PAYE</th><th>Pension</th><th>UIF</th><th>Net</th></tr></thead><tbody>'
+      +calc.map(({e,c})=>`<tr><td class="tb">${e.name}</td><td class="mo">${fmt(c.gross)}</td><td class="mo" style="color:var(--rd);">-${fmt(c.paye)}</td><td class="mo">-${fmt(c.pen)}</td><td class="mo">-${fmt(c.uif)}</td><td class="mo" style="font-weight:800;">${fmt(c.net)}</td></tr>`).join('')
+      +'</tbody></table></div>',
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>'
+      +depts.map(d=>`<button class="btn ${d===target?'bp':'bs'} btn-sm" onclick="empDeptDrawer('${d}')">${d}</button>`).join(''),
+  });
+  setTimeout(()=>{
+    const host=document.getElementById('empDeptHistChart');
+    if(host)svgLineChart(host,[{label:'Gross payroll (ZAR)',values:history}],['Sep','Oct','Nov','Dec','Jan','Feb'],{h:110,zeroBase:true});
+  },60);
+}
 
 /* ═══ PAYROLL CONTENT ═══ */
 
