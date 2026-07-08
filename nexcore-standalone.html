@@ -11,7 +11,7 @@
   <title>MORR ERP — Bipra</title>
 
   <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&family=Roboto:wght@400;500;700;900&family=Lora:wght@400;600;700&display=swap" rel="stylesheet"/>
 
   <!-- jsPDF for real PDF downloads (vendored, CDN fallback) -->
   <script src="jspdf.umd.min.js"></script>
@@ -10399,7 +10399,8 @@ function intgDisconnect(i){
 }
 
 /* ══ WHITE LABEL / BRANDING ══════════════════════════════ */
-const BRAND_PRESETS=[['#F97316','NexCore Orange'],['#2563EB','Corporate Blue'],['#16A34A','Growth Green'],['#7C3AED','Royal Purple'],['#DC2626','Bold Red'],['#0891B2','Ocean Teal'],['#DB2777','Vivid Pink'],['#18181B','Mono Black']];
+const BRAND_PRESETS=[['#F97316','NexCore Orange'],['#2563EB','Corporate Blue'],['#16A34A','Growth Green'],['#7C3AED','Royal Purple'],['#DC2626','Bold Red'],['#0891B2','Ocean Teal'],['#DB2777','Vivid Pink'],['#18181B','Mono Black'],['#CA8A04','Amber Gold'],['#0D9488','Deep Teal'],['#4F46E5','Indigo'],['#EA580C','Burnt Orange'],['#059669','Emerald'],['#BE123C','Crimson'],['#475569','Slate Grey'],['#9333EA','Violet']];
+const BRAND_FONTS=[["'DM Sans',sans-serif",'DM Sans (Default)'],["'Inter',sans-serif",'Inter'],["'Poppins',sans-serif",'Poppins'],["'Roboto',sans-serif",'Roboto'],["'Lora',serif",'Lora (Serif)'],['Georgia,serif','Georgia (System Serif)'],['ui-monospace,monospace','Monospace']];
 function renderBrand(){
   const el=document.getElementById('brandContent'); if(!el)return;
   const saved=JSON.parse(localStorage.getItem('nexcore-brand')||'{}');
@@ -10408,12 +10409,22 @@ function renderBrand(){
     <div class="card"><div class="ch2"><span class="ch2-title">Brand Settings</span></div>
     <div class="cb">
       <div class="fg"><label class="fl">Company / Product Name</label><input class="fi" id="brName" value="${saved.name||'MORR ERP'}" placeholder="e.g. AcmeERP"/></div>
-      <div class="fg"><label class="fl">Logo Initials (2 max)</label><input class="fi" id="brInitials" maxlength="2" value="${saved.initials||'M'}"/></div>
+      <div class="fg"><label class="fl">Logo Initials (2 max, used if no image is uploaded)</label><input class="fi" id="brInitials" maxlength="2" value="${saved.initials||'M'}"/></div>
+      <div class="fg"><label class="fl">Logo Image</label>
+        <div id="brLogoDrop" style="border:1px dashed var(--bd);border-radius:var(--r6);padding:12px;text-align:center;cursor:pointer;background:var(--sf);" onclick="document.getElementById('brLogoFile').click()">
+          <div style="font-size:11px;color:var(--mid);">${saved.logoDataUrl?'✓ Custom logo uploaded — click to replace':'Click to upload logo (PNG, JPG or SVG · max 500KB)'}</div>
+        </div>
+        <input type="file" id="brLogoFile" accept="image/*" style="display:none" onchange="brandLogoUpload(this.files[0])"/>
+        ${saved.logoDataUrl?'<button class="btn bs btn-xs" style="margin-top:6px;" onclick="brandRemoveLogo()">Remove uploaded logo</button>':''}
+      </div>
       <div class="fg"><label class="fl">Accent Colour</label>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <input type="color" id="brColor" value="${saved.accent||'#F97316'}" style="width:44px;height:34px;border:1px solid var(--bd);border-radius:8px;background:var(--wh);cursor:pointer;padding:2px;"/>
           ${BRAND_PRESETS.map(([hex,name])=>`<button title="${name}" onclick="document.getElementById('brColor').value='${hex}';brandPreview()" style="width:26px;height:26px;border-radius:50%;background:${hex};border:2px solid var(--wh);box-shadow:0 0 0 1px var(--bd);cursor:pointer;"></button>`).join('')}
         </div>
+      </div>
+      <div class="fg"><label class="fl">Font</label>
+        <select class="fi" id="brFont" onchange="brandPreview()">${BRAND_FONTS.map(([css,label])=>`<option value="${css}" ${(saved.font||BRAND_FONTS[0][0])===css?'selected':''} style="font-family:${css}">${label}</option>`).join('')}</select>
       </div>
       <div class="fg"><label class="fl">Custom Domain</label><input class="fi" id="brDomain" value="${saved.domain||'morr.co.za'}" placeholder="erp.yourcompany.co.za"/>
       <div style="font-size:10px;color:var(--mu);margin-top:4px;">Point a CNAME at your MORR ERP tenant. SSL is provisioned automatically.</div></div>
@@ -10421,9 +10432,9 @@ function renderBrand(){
     </div></div>
     <div class="card"><div class="ch2"><span class="ch2-title">Live Preview</span></div>
     <div class="cb">
-      <div id="brPreview" style="border:1px solid var(--bd);border-radius:14px;overflow:hidden;">
+      <div id="brPreview" style="border:1px solid var(--bd);border-radius:14px;overflow:hidden;font-family:${saved.font||BRAND_FONTS[0][0]};">
         <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--bd);">
-          <div id="brPvLogo" style="width:32px;height:32px;border-radius:9px;background:${saved.accent||'#F97316'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;">${saved.initials||'M'}</div>
+          <div id="brPvLogo" style="width:32px;height:32px;border-radius:9px;background:${saved.logoDataUrl?'transparent':(saved.accent||'#F97316')};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;overflow:hidden;">${saved.logoDataUrl?`<img src="${saved.logoDataUrl}" style="width:100%;height:100%;object-fit:cover;"/>`:(saved.initials||'M')}</div>
           <div style="font-size:15px;font-weight:900;" id="brPvName">${saved.name||'MORR ERP'}</div>
         </div>
         <div style="padding:16px;">
@@ -10432,7 +10443,7 @@ function renderBrand(){
             <button class="btn bs btn-sm">Secondary</button>
           </div>
           <div class="prog" style="margin-bottom:10px;"><div class="prog-fill" id="brPvProg" style="width:64%;background:${saved.accent||'#F97316'};"></div></div>
-          <div style="font-size:11px;color:var(--mid);">Sidebar highlights, KPI accents, buttons and charts will use your colour across all ${(currentUser?.pages||[]).length||40}+ modules.</div>
+          <div style="font-size:11px;color:var(--mid);">Sidebar highlights, KPI accents, buttons, fonts and charts will use your branding across all ${(currentUser?.pages||[]).length||40}+ modules.</div>
         </div>
       </div>
     </div></div>
@@ -10444,24 +10455,65 @@ function renderBrand(){
   const i=document.getElementById('brInitials');
   if(i)i.addEventListener('input',brandPreview);
 }
+let _brandPendingLogo=null;
+function brandLogoUpload(file){
+  if(!file)return;
+  if(!file.type.startsWith('image/')){toast('Please choose an image file','#DC2626');return;}
+  if(file.size>500*1024){toast('Logo must be 500KB or smaller','#DC2626');return;}
+  const reader=new FileReader();
+  reader.onload=()=>{
+    _brandPendingLogo=reader.result;
+    const l=document.getElementById('brPvLogo');
+    if(l){l.style.background='transparent';l.innerHTML=`<img src="${_brandPendingLogo}" style="width:100%;height:100%;object-fit:cover;"/>`;}
+    const drop=document.getElementById('brLogoDrop');
+    if(drop)drop.querySelector('div').textContent='✓ Logo ready — click Apply Branding to save';
+    toast('Logo loaded — click Apply Branding to save it','#2563EB');
+  };
+  reader.onerror=()=>toast('Could not read that file','#DC2626');
+  reader.readAsDataURL(file);
+}
+function brandRemoveLogo(){
+  _brandPendingLogo='__remove__';
+  const saved=JSON.parse(localStorage.getItem('nexcore-brand')||'{}');
+  delete saved.logoDataUrl;
+  localStorage.setItem('nexcore-brand',JSON.stringify(saved));
+  brandApply(saved);
+  renderBrand();
+  toast('Custom logo removed — using initials','#71717A');
+}
 function brandPreview(){
   const accent=document.getElementById('brColor')?.value||'#F97316';
   const name=document.getElementById('brName')?.value||'NexCore';
   const initials=(document.getElementById('brInitials')?.value||'NC').toUpperCase();
-  const l=document.getElementById('brPvLogo');if(l){l.style.background=accent;l.textContent=initials;}
+  const font=document.getElementById('brFont')?.value||BRAND_FONTS[0][0];
+  const l=document.getElementById('brPvLogo');
+  if(l&&!_brandPendingLogo){l.style.background=accent;l.textContent=initials;}
   const nm=document.getElementById('brPvName');if(nm)nm.textContent=name;
   const b=document.getElementById('brPvBtn');if(b)b.style.background=accent;
   const pr=document.getElementById('brPvProg');if(pr)pr.style.background=accent;
+  const pv=document.getElementById('brPreview');if(pv)pv.style.fontFamily=font;
 }
 function brandApply(brand){
-  if(!brand||!brand.accent)return;
+  if(!brand)return;
   const r=document.documentElement.style;
-  r.setProperty('--or',brand.accent);
-  r.setProperty('--accent',brand.accent);
-  r.setProperty('--or-d',brandDarken(brand.accent,.82));
+  if(brand.accent){
+    r.setProperty('--or',brand.accent);
+    r.setProperty('--accent',brand.accent);
+    r.setProperty('--or-d',brandDarken(brand.accent,.82));
+  }
+  if(brand.font)r.setProperty('--fn',brand.font);
   const _nm=(brand.name||'MORR ERP').split(' ');
   document.querySelectorAll('.tb-wordmark').forEach(w=>{w.innerHTML=_nm[0]+(_nm.length>1?'<span> '+_nm.slice(1).join(' ')+'</span>':'');});
-  const logo=document.querySelector('.tb-logo');if(logo)logo.style.background=brand.accent;
+  const logo=document.querySelector('.tb-logo');
+  if(logo){
+    if(brand.logoDataUrl){
+      logo.style.background='transparent';
+      logo.innerHTML=`<img src="${brand.logoDataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;"/>`;
+    }else{
+      logo.style.background=brand.accent||'';
+      logo.innerHTML='<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:white;"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>';
+    }
+  }
   const org=document.getElementById('tbOrg');if(org&&brand.name)org.textContent=brand.name;
 }
 function brandDarken(hex,f){
@@ -10470,24 +10522,31 @@ function brandDarken(hex,f){
   return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
 function brandSave(){
+  const prevLogo=JSON.parse(localStorage.getItem('nexcore-brand')||'{}').logoDataUrl;
   const brand={
     name:document.getElementById('brName')?.value||'MORR ERP',
     initials:(document.getElementById('brInitials')?.value||'M').toUpperCase(),
     accent:document.getElementById('brColor')?.value||'#F97316',
+    font:document.getElementById('brFont')?.value||BRAND_FONTS[0][0],
     domain:document.getElementById('brDomain')?.value||'',
     hidePoweredBy:document.getElementById('brHidePb')?.classList.contains('on')||false,
+    logoDataUrl:_brandPendingLogo==='__remove__'?undefined:(_brandPendingLogo||prevLogo),
   };
+  _brandPendingLogo=null;
   localStorage.setItem('nexcore-brand',JSON.stringify(brand));
   brandApply(brand);
+  renderBrand();
   toast('Branding applied across the platform — saved for this tenant','#16A34A');
   writeAudit('Brand','WhiteLabel',brand.name,0,'medium');
 }
 function brandReset(){
   localStorage.removeItem('nexcore-brand');
+  _brandPendingLogo=null;
   const r=document.documentElement.style;
-  r.removeProperty('--or');r.removeProperty('--or-d');r.removeProperty('--accent');
+  r.removeProperty('--or');r.removeProperty('--or-d');r.removeProperty('--accent');r.removeProperty('--fn');
   document.querySelectorAll('.tb-wordmark').forEach(w=>{w.innerHTML='MORR<span> ERP</span>';});
-  const logo=document.querySelector('.tb-logo');if(logo)logo.style.background='';
+  const logo=document.querySelector('.tb-logo');
+  if(logo){logo.style.background='';logo.innerHTML='<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:white;"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>';}
   renderBrand();
   toast('Reset to MORR ERP default branding','#71717A');
 }
