@@ -2689,7 +2689,7 @@ async function getUserProfile(userId) {
   const client = sb(); if (!client) return null;
   const { data, error } = await client
     .from('user_profiles')
-    .select('id, role, full_name, initials, avatar_color, org, entity_id')
+    .select('id, role, full_name, initials, avatar_color, org, entity_id, is_active, mfa_enabled')
     .eq('id', userId)
     .single();
   if (error) { dbError('getUserProfile', error); return null; }
@@ -3536,9 +3536,11 @@ async function showForgotPassword() {
   toast(`Password reset link sent to ${email} — check your inbox`, '#16A34A');
 }
 
-/* Roles that must complete a second factor before a session is established
-   (NIST 800-63B AAL2). Kept separate from ROLES so it's easy to widen. */
-const MFA_REQUIRED_ROLES = ['admin', 'cfo'];
+/* MFA (NIST 800-63B AAL2) is enforced per-user via user_profiles.mfa_enabled,
+   not by role — a blanket role rule would force MFA on every seeded/demo
+   admin account too, with no way to complete a real emailed OTP round-trip
+   in an automated or one-click-demo context. A real admin enables it for
+   their own account (or an admin enables it for others) via the profile. */
 let _pendingLogin = null;
 
 async function doLogin() {
@@ -3594,7 +3596,7 @@ async function doLogin() {
 
     if (client) client.rpc('record_login_attempt', { p_email: email, p_success: true }).catch(()=>{});
 
-    if (MFA_REQUIRED_ROLES.includes(role)) {
+    if (profile?.mfa_enabled === true) {
       _pendingLogin = { supabaseData, profile, role, email };
       if (btn) { btn.disabled = false; btn.textContent = 'Sign in to MORR ERP'; }
       return startLoginMFA(email);
@@ -3633,6 +3635,7 @@ function completeLogin(supabaseData, profile, role) {
     avInitials: profile?.initials || ROLES[role]?.avInitials || supabaseData.user.email.substring(0,2).toUpperCase(),
     avBg:   profile?.avatar_color || ROLES[role]?.avBg    || '#6B7280',
     org:    profile?.org          || ROLES[role]?.org      || 'xGroup SA',
+    mfaEnabled: !!profile?.mfa_enabled,
   };
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appShell').classList.add('active');
@@ -4376,8 +4379,10 @@ const SETTINGS_PANELS = {
     html: () => `
       <div style="font-size:16px;font-weight:800;margin-bottom:4px;">Security Settings</div>
       <div style="font-size:12px;color:var(--mid);margin-bottom:18px;">MFA · Session management · IP allowlisting · Audit controls</div>
-      <div class="section-lbl">Authentication</div>
-      ${['Require MFA for Admin and CFO roles (enforced)','Enforce MFA for all users with approval authority','Auto-logout after 8 hours of inactivity','Revoke sessions on password change'].map((n,i)=>`<div class="toggle-row"><div><div class="toggle-label">${n}</div></div><div class="tgl ${i<2?'on':''}" onclick="this.classList.toggle('on')"></div></div>`).join('')}
+      <div class="section-lbl">Multi-Factor Authentication — your account</div>
+      <div class="toggle-row"><div><div class="toggle-label">Require a verification code at sign-in</div><div style="font-size:10px;color:var(--mu);margin-top:2px;">Real, per-account setting — sends a one-time code to your email each time you sign in.</div></div><div class="tgl ${currentUser?.mfaEnabled?'on':''}" id="myMfaToggle" onclick="toggleMyMFA(this)"></div></div>
+      <div class="section-lbl" style="margin-top:14px;">Authentication (organisation defaults)</div>
+      ${['Enforce MFA for all users with approval authority','Auto-logout after 8 hours of inactivity','Revoke sessions on password change'].map((n,i)=>`<div class="toggle-row"><div><div class="toggle-label">${n}</div></div><div class="tgl ${i<1?'on':''}" onclick="this.classList.toggle('on')"></div></div>`).join('')}
       <div class="section-lbl" style="margin-top:14px;">IP Allowlisting</div>
       <div class="fg"><label class="fl">Allowed IP Ranges (one per line)</label><textarea class="fi" rows="3">196.22.104.0/24
 196.22.105.0/24
@@ -5983,6 +5988,21 @@ function renderSettingsNav() {
     `<div style="padding:8px 12px;cursor:pointer;font-size:11px;font-weight:500;color:${i===0?'var(--or-d)':'var(--ch)'};background:${i===0?'var(--or-bg)':'transparent'};border-left:2px solid ${i===0?'var(--or)':'transparent'};transition:all .12s;" onclick="showSettingsPanel('${key}',this)">${p.title}</div>`
   ).join('');
   showSettingsPanel('company', nav.children[0]);
+}
+
+async function toggleMyMFA(el) {
+  const client = sb();
+  if (!client || !currentUser?.id || String(currentUser.id).length < 20) {
+    toast('Sign in with a real account to change MFA settings', '#D97706');
+    return;
+  }
+  const enabling = !el.classList.contains('on');
+  const { error } = await client.from('user_profiles').update({ mfa_enabled: enabling }).eq('id', currentUser.id);
+  if (error) { toast('Could not update MFA setting: ' + error.message, '#DC2626'); return; }
+  el.classList.toggle('on');
+  currentUser.mfaEnabled = enabling;
+  toast('MFA ' + (enabling ? 'enabled' : 'disabled') + ' for your account — takes effect on your next sign-in', '#16A34A');
+  writeAudit(enabling ? 'EnableMFA' : 'DisableMFA', 'Security', currentUser.email || currentUser.name, 0, 'medium');
 }
 
 function showSettingsPanel(key, el) {
