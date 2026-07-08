@@ -5,13 +5,22 @@ import { test, expect } from '@playwright/test';
 const APP = 'file://' + process.cwd() + '/nexcore-standalone.html';
 
 async function login(page) {
+  // TEMP DIAGNOSTIC: forward page console/errors/requests to CI stdout to
+  // find where login is actually stalling in the CI environment.
+  page.on('console', (msg) => console.log('[PAGE]', msg.type(), msg.text()));
+  page.on('pageerror', (e) => console.log('[PAGEERROR]', e.message));
+  page.on('requestfailed', (r) => console.log('[REQFAIL]', r.url(), r.failure()?.errorText));
+  page.on('response', (r) => { if (!r.ok()) console.log('[RESP]', r.status(), r.url()); });
+
   await page.goto(APP);
   await page.waitForTimeout(900);
+  console.log('[TEST] calling fillDemo+doLogin, sb present:', await page.evaluate(() => typeof sb === 'function' && !!sb()));
   await page.evaluate(() => {
     fillDemo('amohelang@xgroup.co.za', 'admin2025');
     doLogin();
   });
-  await page.waitForFunction(() => document.getElementById('appShell').classList.contains('active'));
+  console.log('[TEST] evaluate() returned, now polling appShell.active');
+  await page.waitForFunction(() => document.getElementById('appShell').classList.contains('active'), null, { timeout: 20000 });
   await page.waitForTimeout(900);
 }
 
