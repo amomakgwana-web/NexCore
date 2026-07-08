@@ -3543,8 +3543,18 @@ async function showForgotPassword() {
    their own account (or an admin enables it for others) via the profile. */
 let _pendingLogin = null;
 
+/* client.rpc(...) returns a PostgrestFilterBuilder — thenable (awaitable,
+   safe inside Promise.race) but it doesn't reliably expose its own .catch()
+   method. Calling .catch() directly on it threw a synchronous TypeError in
+   the real client (never triggered against sb()===null, which is why this
+   only ever showed up against a live Supabase connection), aborting doLogin
+   before it ever reached completeLogin(). Wrapping in Promise.resolve()
+   first guarantees a native Promise with a real .catch(). */
+function fireAndForgetRpc(client, fn, args) {
+  Promise.resolve(client.rpc(fn, args)).catch(() => {});
+}
+
 async function doLogin() {
-  console.log('[doLogin] start');
   hideLoginError();
   const email    = (document.getElementById('loginEmail')?.value  || '').trim();
   const password = (document.getElementById('loginPassword')?.value || '').trim();
@@ -3555,7 +3565,6 @@ async function doLogin() {
   const btn = document.getElementById('loginBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
   const client = sb();
-  console.log('[doLogin] client present:', !!client);
 
   /* Every individual network call below already races its own short
      timeout, but wrap the whole real-auth attempt in one hard overall
@@ -3567,31 +3576,23 @@ async function doLogin() {
   const attempt = (async () => {
     if (client) {
       try {
-        console.log('[doLogin] checking lockout…');
         const lockoutCheck = client.rpc('check_login_lockout', { p_email: email });
         const lockoutTimeout = new Promise(res => setTimeout(() => res({ data: false }), 2000));
         const { data: locked } = await Promise.race([lockoutCheck, lockoutTimeout]);
-        console.log('[doLogin] lockout check done, locked=', locked);
         if (locked) return { locked: true };
-      } catch (e) { console.log('[doLogin] lockout check threw:', e.message); }
+      } catch (e) { /* lockout check unavailable — don't block login on it */ }
     }
-    console.log('[doLogin] calling signInWithEmail…');
     const supabaseData = await signInWithEmail(email, password);
-    console.log('[doLogin] signInWithEmail returned, has user:', !!supabaseData?.user);
     if (!supabaseData?.user) return null;
-    console.log('[doLogin] fetching profile…');
     const profile = await Promise.race([
       getUserProfile(supabaseData.user.id),
       new Promise(res => setTimeout(() => res(null), 2500)),
     ]);
-    console.log('[doLogin] profile fetch done:', JSON.stringify(profile));
     return { supabaseData, profile };
   })();
-  attempt.catch((e) => console.log('[doLogin] attempt rejected:', e && e.message)); // if it settles after the deadline already won, don't let it surface as unhandled
+  attempt.catch(() => {}); // if it settles after the deadline already won, don't let it surface as unhandled
   const deadline = new Promise(res => setTimeout(() => res(null), REAL_AUTH_DEADLINE_MS));
-  console.log('[doLogin] racing attempt vs', REAL_AUTH_DEADLINE_MS, 'ms deadline');
   const result = await Promise.race([attempt, deadline]);
-  console.log('[doLogin] race settled, result:', JSON.stringify(result));
 
   if (result?.locked) {
     showLoginError('Too many failed attempts on this account. Please wait 15 minutes and try again.');
@@ -3605,7 +3606,7 @@ async function doLogin() {
     /* Enforce account de-provisioning (ISO/IEC 27001 A.9.2.6) */
     if (profile && profile.is_active === false) {
       client.auth.signOut().catch(() => {});
-      if (client) client.rpc('record_login_attempt', { p_email: email, p_success: false }).catch(()=>{});
+      if (client) fireAndForgetRpc(client, 'record_login_attempt', { p_email: email, p_success: false });
       showLoginError('This account has been deactivated. Contact your administrator.');
       if (btn) { btn.disabled = false; btn.textContent = 'Sign in to MORR ERP'; }
       return;
@@ -3615,7 +3616,7 @@ async function doLogin() {
     const dbRole = profile?.role || resolveRole(email, password) || 'staff';
     const role   = dbRole === 'hr_manager' ? 'hr' : dbRole;
 
-    if (client) client.rpc('record_login_attempt', { p_email: email, p_success: true }).catch(()=>{});
+    if (client) fireAndForgetRpc(client, 'record_login_attempt', { p_email: email, p_success: true });
 
     if (profile?.mfa_enabled === true) {
       _pendingLogin = { supabaseData, profile, role, email };
@@ -3631,7 +3632,7 @@ async function doLogin() {
   /* Real auth failed, returned nothing, or the overall deadline was hit —
      fall back to demo credentials (development / no DB / slow network) */
   const role = resolveRole(email, password);
-  if (client) client.rpc('record_login_attempt', { p_email: email, p_success: !!role }).catch(()=>{});
+  if (client) fireAndForgetRpc(client, 'record_login_attempt', { p_email: email, p_success: !!role });
   if (!role) {
     showLoginError('Incorrect email or password. Use the demo accounts below.');
     const panel = document.getElementById('lgInner');
