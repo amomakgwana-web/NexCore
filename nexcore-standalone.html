@@ -5160,11 +5160,66 @@ function renderAssetRegister(){
 
 /* ═══ VAULT ═══ */
 
+const VAULT_FOLDERS=[{name:'Contracts',count:384,c:'var(--bl-m)'},{name:'Invoices',count:1240,c:'var(--or)'},{name:'HR Files',count:674,c:'var(--gn)'},{name:'Board Resolutions',count:48,c:'var(--am)'},{name:'Compliance',count:120,c:'var(--pu)'},{name:'Procurement',count:381,c:'var(--cy)'}];
+const VAULT_FOLDER_FILES={
+  'Contracts':[{name:'CONTRACT-084 — Kagiso Dlamini.pdf',owner:'Kagiso D.',size:'214 KB',date:'15 Jan 2025'},{name:'CONTRACT-071 — Thabo Mokoena.pdf',owner:'Thabo M.',size:'198 KB',date:'2 Dec 2024'},{name:'NDA — Sipho Nkosi.pdf',owner:'Sipho N.',size:'88 KB',date:'8 Jan 2025'}],
+  'Invoices':[{name:'INV-6618 — DHA Northern.pdf',owner:'System',size:'62 KB',date:'2 Jan 2025'},{name:'INV-6624 — Tshwane.pdf',owner:'System',size:'58 KB',date:'6 Jan 2025'}],
+  'HR Files':[{name:'Lerato Khumalo — HR File.pdf',owner:'Lerato K.',size:'340 KB',date:'10 Jan 2025'},{name:'Nomsa Petersen — HR File.pdf',owner:'Nomsa P.',size:'312 KB',date:'22 Nov 2024'},{name:'Kagiso Dlamini — HR File.pdf',owner:'Kagiso D.',size:'298 KB',date:'5 Jan 2025'}],
+  'Board Resolutions':[{name:'BR-2025-01 — FY2025 Budget Approval.pdf',owner:'Sipho Dlamini',size:'44 KB',date:'3 Jan 2025'}],
+  'Compliance':[{name:'POPIA Annual Review 2024.pdf',owner:'Lerato K.',size:'620 KB',date:'20 Dec 2024'},{name:'BEE Certificate 2024.pdf',owner:'Amohelang M.',size:'150 KB',date:'1 Nov 2024'}],
+  'Procurement':[{name:'RFQ-0442 — Dell Tech SA.pdf',owner:'System',size:'76 KB',date:'12 Jan 2025'}],
+};
 function renderVaultContent(){
   const folders=document.getElementById('vaultFolders');
-  if(folders){const fs=[{name:'Contracts',count:384,c:'var(--bl-m)'},{name:'Invoices',count:1240,c:'var(--or)'},{name:'HR Files',count:674,c:'var(--gn)'},{name:'Board Resolutions',count:48,c:'var(--am)'},{name:'Compliance',count:120,c:'var(--pu)'},{name:'Procurement',count:381,c:'var(--cy)'}];folders.innerHTML=fs.map(f=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--bd-l);cursor:pointer;" onclick="toast('Opening ${f.name} folder','#2563EB')"><div style="width:28px;height:28px;border-radius:var(--r6);background:${f.c};display:flex;align-items:center;justify-content:center;">${svgIcon('file','13px','white')}</div><div style="flex:1;font-size:12px;font-weight:700;">${f.name}</div><span style="font-size:10px;color:var(--mid);">${f.count} files</span></div>`).join('');}
+  if(folders){folders.innerHTML=VAULT_FOLDERS.map(f=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--bd-l);cursor:pointer;" onclick="vaultOpenFolder('${f.name}')"><div style="width:28px;height:28px;border-radius:var(--r6);background:${f.c};display:flex;align-items:center;justify-content:center;">${svgIcon('file','13px','white')}</div><div style="flex:1;font-size:12px;font-weight:700;">${f.name}</div><span style="font-size:10px;color:var(--mid);">${f.count} files</span></div>`).join('');}
   const va=document.getElementById('vaultActivity');
-  if(va){const acts=[{av:'LK',c:'#16A34A',t:'Lerato K. uploaded CONTRACT-084',m:'2 hrs ago'},{av:'TM',c:'#3B82F6',t:'Thabo M. downloaded Payslip Jan 2025',m:'4 hrs ago'},{av:'SN',c:'#8B5CF6',t:'Sipho N. signed NDA — SIG-2025-003',m:'1 day ago'}];va.innerHTML=acts.map(a=>`<div class="act-item"><div class="act-av" style="background:${a.c};">${a.av}</div><div><div class="act-title">${a.t}</div><div class="act-meta">${a.m}</div></div></div>`).join('');}
+  if(va){const acts=[{av:'LK',c:'#16A34A',t:'Lerato K. uploaded CONTRACT-084',m:'2 hrs ago',user:'Lerato K.'},{av:'TM',c:'#3B82F6',t:'Thabo M. downloaded Payslip Jan 2025',m:'4 hrs ago',user:'Thabo M.'},{av:'SN',c:'#8B5CF6',t:'Sipho N. signed NDA — SIG-2025-003',m:'1 day ago',user:'Sipho N.'}];va.innerHTML=acts.map(a=>`<div class="act-item"><div class="act-av" style="background:${a.c};">${a.av}</div><div><div class="act-title"><span style="cursor:pointer;text-decoration:underline dotted;" onclick="employeeProfileDrawer('${a.user}')">${a.t.split(' ')[0]+' '+a.t.split(' ')[1]}</span>${a.t.slice(a.t.split(' ')[0].length+a.t.split(' ')[1].length+1)}</div><div class="act-meta">${a.m}</div></div></div>`).join('');}
+}
+/* ── Real folder popup: lists actual files (not a toast) ── */
+function vaultOpenFolder(name){
+  const files=VAULT_FOLDER_FILES[name]||[];
+  nxDrawerOpen({
+    title:name,sub:(VAULT_FOLDERS.find(f=>f.name===name)?.count||files.length)+' documents in this folder',icon:'file',color:'var(--bl)',
+    body:!files.length
+      ?'<div style="text-align:center;padding:24px;color:var(--mid);font-size:12px;">No sample documents indexed for this folder yet.</div>'
+      :files.map(f=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bd-l);">
+        <div style="width:26px;height:26px;border-radius:6px;background:var(--sf2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">${svgIcon('file','12px','var(--mid)')}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</div>
+          <div style="font-size:10px;color:var(--mid);">by <span style="cursor:pointer;text-decoration:underline dotted;" onclick="employeeProfileDrawer('${f.owner}')">${f.owner}</span> · ${f.size} · ${f.date}</div>
+        </div>
+        <button class="btn bs btn-xs" onclick="toast('Opening ${f.name.replace(/'/g,"\\'")} — preview would render here','#2563EB')">View</button>
+      </div>`).join(''),
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Close</button>
+      <button class="btn bp" onclick="nxDrawerClose();vaultUploadDrawer()">Upload to ${name}</button>`,
+  });
+}
+/* ── Reusable employee profile drawer: history, contract, assignments, email ──
+   Names appear in short form ("Kagiso D.") in most places but full form
+   ("Kagiso Dlamini") in PAYPRO_EMPS — use the same fuzzy matcher as user
+   reassignment so either form resolves to the same record. ── */
+function nxFindEmployeeByName(name){
+  if(!name)return null;
+  return PAYPRO_EMPS.find(e=>e.name===name)
+    ||PAYPRO_EMPS.find(e=>nxNameMatches(e.name,name))
+    ||PAYPRO_EMPS.find(e=>nxNameMatches(name,e.name));
+}
+function employeeProfileDrawer(name){
+  const emp=nxFindEmployeeByName(name);
+  const empIdx=emp?PAYPRO_EMPS.indexOf(emp):-1;
+  const history=AUDIT_DATA.filter(a=>a.user===name||nxNameMatches(a.user,name)||nxNameMatches(name,a.user)).slice(0,8);
+  const assignments=(window.BOARDS_DATA||[]).flatMap(g=>g.items.filter(it=>nxNameMatches(name,it.owner)||it.owner===name).map(it=>({...it,group:g.group})));
+  nxDrawerOpen({
+    title:emp?emp.name:name,sub:emp?(emp.role||'Employee')+' · '+(emp.dept||'—'):'No payroll record on file',icon:'person',color:'var(--bl)',
+    body:(emp?nxKV([['Department',emp.dept||'—'],['Role',emp.role||'—'],['Start Date',emp.startDate||'—'],['Basic Salary',fmt(emp.basic||0)],['Leave Balance',(emp.leaveBal||0)+' days']]):'')
+      +'<div class="nx-sec">Assignments</div>'
+      +(assignments.length?assignments.map(a=>`<div class="stat-row"><span class="stat-lbl">${a.name} · ${a.group}</span><span class="stat-val">${a.status}</span></div>`).join(''):'<div style="font-size:11px;color:var(--mid);padding:4px 0;">No open board items assigned</div>')
+      +'<div class="nx-sec">Recent History</div>'
+      +(history.length?history.map(h=>`<div class="stat-row"><span class="stat-lbl">${h.action} · ${h.module}</span><span class="stat-val" style="font-size:10px;color:var(--mu);">${h.ts}</span></div>`).join(''):'<div style="font-size:11px;color:var(--mid);padding:4px 0;">No recent audit history found for this name</div>'),
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Close</button>
+      ${empIdx>=0?`<button class="btn bs" onclick="nxDrawerClose();pdfContract(${empIdx})">View Contract</button>`:''}
+      <button class="btn bp" onclick="nxDrawerClose();emailCompose('${emp?.email||''}')">Email Employee</button>`,
+  });
 }
 
 /* ═══ USER LIST ═══ */
@@ -10721,9 +10776,13 @@ function emailUseTemplate(i){
   const b=document.getElementById('emBody');if(b)b.value=t.body;
   const sel=document.getElementById('emTemplate');if(sel)sel.value=String(i);
 }
-function emailCompose(){
+function emailCompose(presetTo){
   openPage('email');
-  setTimeout(()=>document.getElementById('emTo')?.focus(),150);
+  setTimeout(()=>{
+    const toEl=document.getElementById('emTo');
+    if(presetTo&&toEl){toEl.value=presetTo;document.getElementById('emSubject')?.focus();}
+    else toEl?.focus();
+  },150);
 }
 async function emailSend(scheduled){
   const to=document.getElementById('emTo')?.value.trim();
