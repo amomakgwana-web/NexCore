@@ -710,6 +710,7 @@ tr:hover td{background:var(--sf);}
 .lv-type-badge.family{background:var(--pu-l);color:var(--pu);}
 .lv-status-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.04em;text-transform:uppercase;display:inline-block;}
 .lv-status-badge.pending{background:var(--am-l);color:var(--am);}
+.lv-status-badge.manager_approved{background:var(--bl-bg);color:var(--bl-m);}
 .lv-status-badge.approved{background:var(--gn-l);color:var(--gn);}
 .lv-status-badge.rejected{background:var(--rd-l);color:var(--rd);}
 .lv-balances-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;}
@@ -5495,11 +5496,14 @@ function employeeProfileDrawer(name){
   const empIdx=emp?PAYPRO_EMPS.indexOf(emp):-1;
   const history=AUDIT_DATA.filter(a=>a.user===name||nxNameMatches(a.user,name)||nxNameMatches(name,a.user)).slice(0,8);
   const assignments=(window.BOARDS_DATA||[]).flatMap(g=>g.items.filter(it=>nxNameMatches(name,it.owner)||it.owner===name).map(it=>({...it,group:g.group})));
+  const sickLeave=(typeof TK_LEAVE!=='undefined'?TK_LEAVE:[]).filter(r=>r.type==='sick'&&r.name===name);
   nxDrawerOpen({
     title:emp?emp.name:name,sub:emp?(emp.role||'Employee')+' · '+(emp.dept||'—'):'No payroll record on file',icon:'person',color:'var(--bl)',
     body:(emp?nxKV([['Department',emp.dept||'—'],['Role',emp.role||'—'],['Start Date',emp.startDate||'—'],['Basic Salary',fmt(emp.basic||0)],['Leave Balance',(emp.leaveBal||0)+' days']]):'')
       +'<div class="nx-sec">Assignments</div>'
       +(assignments.length?assignments.map(a=>`<div class="stat-row"><span class="stat-lbl">${a.name} · ${a.group}</span><span class="stat-val">${a.status}</span></div>`).join(''):'<div style="font-size:11px;color:var(--mid);padding:4px 0;">No open board items assigned</div>')
+      +(sickLeave.length?'<div class="nx-sec">Sick Leave & Medical Reports</div>'
+        +sickLeave.map(r=>`<div class="stat-row"><span class="stat-lbl">${r.from} – ${r.to} (${r.days}d)</span><span class="stat-val">${r.medicalReportUrl?`<a href="${r.medicalReportUrl}" target="_blank" style="color:var(--gn);">✓ Report attached</a>`:r.medicalRequested?'<span style="color:var(--am);">Requested</span>':'<span style="color:var(--mu);">No report</span>'}</span></div>`).join(''):'')
       +'<div class="nx-sec">Recent History</div>'
       +(history.length?history.map(h=>`<div class="stat-row"><span class="stat-lbl">${h.action} · ${h.module}</span><span class="stat-val" style="font-size:10px;color:var(--mu);">${h.ts}</span></div>`).join(''):'<div style="font-size:11px;color:var(--mid);padding:4px 0;">No recent audit history found for this name</div>'),
     actions:`<button class="btn bs" onclick="nxDrawerClose()">Close</button>
@@ -8453,23 +8457,25 @@ function renderLeaveManagementPage(){
   let recs=JSON.parse(JSON.stringify(TK_LEAVE));
   let balances=JSON.parse(JSON.stringify(TK_BALANCES));
   let tab='requests';
+  const STATUS_LABEL={pending:'Pending',manager_approved:'Manager Approved',approved:'Approved',rejected:'Rejected'};
   function draw(){
     const typeBadge=t=>`<span class="lv-type-badge ${t}">${t.charAt(0).toUpperCase()+t.slice(1)}</span>`;
-    const stsBadge=s=>`<span class="lv-status-badge ${s}">${s.charAt(0).toUpperCase()+s.slice(1)}</span>`;
-    const pending=recs.filter(r=>r.status==='pending');
+    const stsBadge=s=>`<span class="lv-status-badge ${s}">${STATUS_LABEL[s]||s}</span>`;
+    const pending=recs.filter(r=>r.status==='pending'||r.status==='manager_approved');
     const approved=recs.filter(r=>r.status==='approved');
     const rejected=recs.filter(r=>r.status==='rejected');
     const tbl=(rows,actions)=>{
-      if(!rows.length)return`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--mid);font-size:12px;">No records.</td></tr>`;
+      if(!rows.length)return`<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--mid);font-size:12px;">No records.</td></tr>`;
       return rows.map(r=>`<tr>
-        <td style="padding:9px 14px;font-size:12px;font-weight:700;color:var(--ink)">${r.name}</td>
+        <td style="padding:9px 14px;font-size:12px;font-weight:700;color:var(--or-d);cursor:pointer;text-decoration:underline dotted;" onclick="employeeProfileDrawer('${r.name.replace(/'/g,"\\'")}')">${r.name}</td>
         <td style="padding:9px 14px">${typeBadge(r.type)}</td>
         <td style="padding:9px 14px;font-size:12px;font-family:var(--mo)">${r.from}</td>
         <td style="padding:9px 14px;font-size:12px;font-family:var(--mo)">${r.to}</td>
         <td style="padding:9px 14px;font-size:12px;font-weight:700">${r.days}d</td>
         <td style="padding:9px 14px;font-size:11px;color:var(--mid)">${r.reason}</td>
         <td style="padding:9px 14px">${stsBadge(r.status)}</td>
-        <td style="padding:9px 14px">${actions&&r.status==='pending'?`<button class="btn bp btn-xs lv-app" data-id="${r.id}" style="margin-right:4px;">Approve</button><button class="btn btn-xs lv-rej" data-id="${r.id}" style="background:var(--rd);color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;">Reject</button>`:'—'}</td>
+        <td style="padding:9px 14px;font-size:10px;">${r.type==='sick'?(r.medicalReportUrl?`<a href="${r.medicalReportUrl}" target="_blank" style="color:var(--gn);">✓ Report on file</a>`:r.medicalRequested?`<span style="color:var(--am);">Requested</span> <button class="btn bs btn-xs lv-med-attach" data-id="${r.id}">Attach</button><input type="file" class="lv-med-file" data-id="${r.id}" style="display:none"/>`:`<button class="btn bs btn-xs lv-med" data-id="${r.id}">Request Letter</button>`):'—'}</td>
+        <td style="padding:9px 14px;white-space:nowrap;">${actions&&(r.status==='pending'||r.status==='manager_approved')?`<button class="btn bp btn-xs lv-app" data-id="${r.id}" style="margin-right:4px;">${r.status==='pending'?'Approve (Manager)':'Final Approve (HR)'}</button><button class="btn btn-xs lv-rej" data-id="${r.id}" style="background:var(--rd);color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;">Reject</button>`:'—'}</td>
       </tr>`).join('');
     };
     const balHtml=balances.map(b=>`<div class="lv-balance-card">
@@ -8491,19 +8497,19 @@ function renderLeaveManagementPage(){
       </div>
       <div class="lv-panel ${tab==='requests'?'on':''}">
         <div class="card" style="padding:0;overflow:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
-          <thead><tr><th style="${thStyle}">Employee</th><th style="${thStyle}">Type</th><th style="${thStyle}">From</th><th style="${thStyle}">To</th><th style="${thStyle}">Days</th><th style="${thStyle}">Reason</th><th style="${thStyle}">Status</th><th style="${thStyle}">Action</th></tr></thead>
+          <thead><tr><th style="${thStyle}">Employee</th><th style="${thStyle}">Type</th><th style="${thStyle}">From</th><th style="${thStyle}">To</th><th style="${thStyle}">Days</th><th style="${thStyle}">Reason</th><th style="${thStyle}">Status</th><th style="${thStyle}">Medical</th><th style="${thStyle}">Action</th></tr></thead>
           <tbody id="lv-req-tbody">${tbl(pending.concat(approved).concat(rejected),true)}</tbody>
         </table></div>
       </div>
       <div class="lv-panel ${tab==='approved'?'on':''}">
         <div class="card" style="padding:0;overflow:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
-          <thead><tr><th style="${thStyle}">Employee</th><th style="${thStyle}">Type</th><th style="${thStyle}">From</th><th style="${thStyle}">To</th><th style="${thStyle}">Days</th><th style="${thStyle}">Reason</th><th style="${thStyle}">Status</th><th style="${thStyle}"></th></tr></thead>
+          <thead><tr><th style="${thStyle}">Employee</th><th style="${thStyle}">Type</th><th style="${thStyle}">From</th><th style="${thStyle}">To</th><th style="${thStyle}">Days</th><th style="${thStyle}">Reason</th><th style="${thStyle}">Status</th><th style="${thStyle}">Medical</th><th style="${thStyle}"></th></tr></thead>
           <tbody>${tbl(approved,false)}</tbody>
         </table></div>
       </div>
       <div class="lv-panel ${tab==='rejected'?'on':''}">
         <div class="card" style="padding:0;overflow:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
-          <thead><tr><th style="${thStyle}">Employee</th><th style="${thStyle}">Type</th><th style="${thStyle}">From</th><th style="${thStyle}">To</th><th style="${thStyle}">Days</th><th style="${thStyle}">Reason</th><th style="${thStyle}">Status</th><th style="${thStyle}"></th></tr></thead>
+          <thead><tr><th style="${thStyle}">Employee</th><th style="${thStyle}">Type</th><th style="${thStyle}">From</th><th style="${thStyle}">To</th><th style="${thStyle}">Days</th><th style="${thStyle}">Reason</th><th style="${thStyle}">Status</th><th style="${thStyle}">Medical</th><th style="${thStyle}"></th></tr></thead>
           <tbody>${tbl(rejected,false)}</tbody>
         </table></div>
       </div>
@@ -8514,27 +8520,79 @@ function renderLeaveManagementPage(){
     document.getElementById('lv-app')?.addEventListener('click',()=>{tab='approved';draw();});
     document.getElementById('lv-rej-tab')?.addEventListener('click',()=>{tab='rejected';draw();});
     document.getElementById('lv-bal')?.addEventListener('click',()=>{tab='balances';draw();});
+    /* Two-stage approval mirroring the Claims SOP: pending -> manager_approved
+       -> approved. Mutate the shared TK_LEAVE record too (not just the local
+       recs clone) so the stage survives navigating away and back. */
     page.querySelectorAll('.lv-app[data-id]').forEach(b=>b.addEventListener('click', async e=>{
       const r=recs.find(x=>String(x.id)===String(e.target.dataset.id));
       if(!r) return;
-      r.status='approved'; draw();
+      const prevStatus=r.status;
+      const nextStatus=prevStatus==='pending'?'manager_approved':'approved';
+      r.status=nextStatus; draw();
       const {error}=await callEdgeFunction('leave-service','approve_leave',{request_id:r.id});
       if(error && error!=='no_client' && error!=='not_authenticated'){
-        r.status='pending'; draw(); toast('Approval failed — try again','#DC2626'); return;
+        r.status=prevStatus; draw(); toast('Approval failed — try again','#DC2626'); return;
       }
-      toast(`Leave approved for ${r.name}`,'#16A34A');
-      nxSyncLeaveDecision(r,'Approved');
+      const src=TK_LEAVE.find(x=>x.id===r.id); if(src)src.status=nextStatus;
+      if(nextStatus==='manager_approved'){
+        toast(`${r.name}'s leave approved by manager — routed to HR for final sign-off`,'#2563EB');
+      }else{
+        toast(`Leave fully approved for ${r.name}`,'#16A34A');
+        nxSyncLeaveDecision(r,'Approved');
+      }
     }));
     page.querySelectorAll('.lv-rej[data-id]').forEach(b=>b.addEventListener('click', async e=>{
       const r=recs.find(x=>String(x.id)===String(e.target.dataset.id));
       if(!r) return;
+      const prevStatus=r.status;
       r.status='rejected'; draw();
       const {error}=await callEdgeFunction('leave-service','reject_leave',{request_id:r.id});
       if(error && error!=='no_client' && error!=='not_authenticated'){
-        r.status='pending'; draw(); toast('Rejection failed — try again','#DC2626'); return;
+        r.status=prevStatus; draw(); toast('Rejection failed — try again','#DC2626'); return;
       }
+      const src=TK_LEAVE.find(x=>x.id===r.id); if(src)src.status='rejected';
       toast(`Leave rejected for ${r.name}`,'#DC2626');
       nxSyncLeaveDecision(r,'Rejected');
+    }));
+    /* Sick leave: request a medical letter — sends a real email and flags the
+       request; "when the leave ends" is approximated by nudging as soon as
+       the leave's end date has passed and no letter has been requested yet. */
+    page.querySelectorAll('.lv-med[data-id]').forEach(b=>b.addEventListener('click', async e=>{
+      const r=recs.find(x=>String(x.id)===String(e.target.dataset.id));
+      if(!r) return;
+      r.medicalRequested=true; draw();
+      await callEdgeFunction('leave-service','request_medical',{request_id:r.id});
+      const src=TK_LEAVE.find(x=>x.id===r.id); if(src)src.medicalRequested=true;
+      const emp=(window.USERS_LIST||[]).find(u=>u.n===r.name)||nxFindEmployeeByName(r.name);
+      const toEmail=emp?.e||emp?.email;
+      if(toEmail){
+        callEdgeFunction('email-relay','send_email',{to:toEmail,
+          subject:tplMerge('Medical certificate required — sick leave '+r.from+' to '+r.to),
+          html:'<p>Hi '+r.name+',</p><p>Your sick leave ('+r.from+' to '+r.to+') requires a medical certificate. Please reply with the certificate attached, or upload it in your employee profile, so we can close out the record.</p>'});
+        toast('Medical letter requested — emailed to '+r.name,'#16A34A');
+      }else{
+        toast('Medical letter flagged for '+r.name+' (no email on file to notify)','#D97706');
+      }
+      writeAudit('RequestMedicalLetter','Leave',r.id,0,'medium');
+    }));
+    page.querySelectorAll('.lv-med-attach[data-id]').forEach(b=>b.addEventListener('click',e=>{
+      const id=e.target.dataset.id;
+      page.querySelector(`.lv-med-file[data-id="${id}"]`)?.click();
+    }));
+    page.querySelectorAll('.lv-med-file[data-id]').forEach(inp=>inp.addEventListener('change', async e=>{
+      const file=e.target.files[0]; if(!file)return;
+      const r=recs.find(x=>String(x.id)===String(e.target.dataset.id));
+      if(!r)return;
+      const reader=new FileReader();
+      reader.onload=async()=>{
+        const url=reader.result;
+        r.medicalReportUrl=url; draw();
+        await callEdgeFunction('leave-service','attach_medical_report',{request_id:r.id,url});
+        const src=TK_LEAVE.find(x=>x.id===r.id); if(src)src.medicalReportUrl=url;
+        toast('Medical report attached to '+r.name+"'s profile",'#16A34A');
+        writeAudit('AttachMedicalReport','Leave',r.id,0,'medium');
+      };
+      reader.readAsDataURL(file);
     }));
   }
   draw();
