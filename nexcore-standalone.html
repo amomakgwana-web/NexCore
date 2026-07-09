@@ -10308,6 +10308,7 @@ const COA=[
   {code:'6000',name:'Salaries & Wages',type:'Expense',balance:9200000},
   {code:'6100',name:'Depreciation',type:'Expense',balance:1240000},
   {code:'6200',name:'Office & Admin',type:'Expense',balance:3130000},
+  {code:'2050',name:'Credit Card Payable',type:'Liability',balance:-2752},
 ];
 let JOURNAL_ENTRIES=[
   {ref:'JNL-2025-0040',date:'2025-01-31',narration:'Depreciation charge — January 2025',lines:[{acct:'6100',debit:103333,credit:0},{acct:'1250',debit:0,credit:103333}],postedBy:'System',status:'Posted'},
@@ -10321,14 +10322,62 @@ let BANK_STATEMENT=[
   {id:5,date:'25 Jan',desc:'SARS VAT201 DEC',amount:-1080000,matched:true,ledgerRef:'JNL-2025-0039'},
   {id:6,date:'24 Jan',desc:'INTEREST RECEIVED',amount:42180,matched:false,ledgerRef:null},
 ];
-const AR_AGING=[{lbl:'Current',v:6200000},{lbl:'30 days',v:3100000},{lbl:'60 days',v:2020000},{lbl:'90 days',v:711000},{lbl:'120+',v:369000}];
-const AP_AGING=[{lbl:'Current',v:1840000},{lbl:'30 days',v:920000},{lbl:'60 days',v:284500},{lbl:'90 days',v:135500},{lbl:'120+',v:0}];
+/* corporate card spend — a real ledger with real categorize/post/dispute actions,
+   posting to the Credit Card Payable control account (2050) like Bank Recon does for 1000 */
+let CARD_TRANSACTIONS=[
+  {id:'CARD-8801',card:'Corporate Amex ••1042',holder:'Kagiso Dlamini', merchant:'Takealot.com',      category:'Office & Admin',   amount:2140,date:'2025-01-22',status:'Posted', glRef:'6200'},
+  {id:'CARD-8800',card:'Corporate Amex ••1042',holder:'Nomsa Petersen', merchant:'Woolworths',         category:'Office & Admin',   amount:612, date:'2025-01-17',status:'Posted', glRef:'6200'},
+  {id:'CARD-8799',card:'Corporate Amex ••2210',holder:'Thabo Mokoena',  merchant:'Google Workspace',   category:null,               amount:1850,date:'2025-01-20',status:'Pending',glRef:null},
+  {id:'CARD-8798',card:'Corporate Amex ••2210',holder:'Sipho Nkosi',    merchant:'Rain Networks',      category:null,               amount:899, date:'2025-01-18',status:'Disputed',glRef:null},
+  {id:'CARD-8797',card:'Corporate Amex ••1042',holder:'Lerato Khumalo', merchant:'Uber SA',            category:null,               amount:340, date:'2025-01-21',status:'Pending',glRef:null},
+];
+
+/* ── AR / AP aging — computed live from real invoices, not hardcoded numbers.
+   "As of" anchors to the latest due date in the demo dataset rather than the
+   wall clock, so aging buckets stay meaningful regardless of when this is run
+   (same rationale as the recurring-invoice catch-up window). ── */
+function _acctAsOfDate(){
+  const ar=(typeof _billingInvoices==='function'?_billingInvoices():[]).map(i=>i.due||i.due_date).filter(Boolean);
+  const ap=(typeof INVOICES!=='undefined'?INVOICES:[]).map(i=>i.due).filter(Boolean);
+  const all=[...ar,...ap].map(d=>new Date(d)).filter(d=>!isNaN(d));
+  return all.length?new Date(Math.max(...all)):new Date();
+}
+function _agingBuckets(items,{amountFn,dueFn,isOpenFn}){
+  const asOf=_acctAsOfDate();
+  const buckets={Current:{v:0,items:[]},'30 days':{v:0,items:[]},'60 days':{v:0,items:[]},'90 days':{v:0,items:[]},'120+':{v:0,items:[]}};
+  items.forEach(it=>{
+    if(!isOpenFn(it))return;
+    const due=new Date(dueFn(it)); if(isNaN(due))return;
+    const days=Math.floor((asOf-due)/86400000);
+    const key=days<=0?'Current':days<=30?'30 days':days<=60?'60 days':days<=90?'90 days':'120+';
+    buckets[key].v+=amountFn(it);
+    buckets[key].items.push(it);
+  });
+  return buckets;
+}
+function computeARAging(){
+  return _agingBuckets((typeof _billingInvoices==='function'?_billingInvoices():[]),{
+    amountFn:i=>Number(i.total||i.total_amount||0),
+    dueFn:i=>i.due||i.due_date,
+    isOpenFn:i=>i.status!=='Paid',
+  });
+}
+function computeAPAging(){
+  return _agingBuckets((typeof INVOICES!=='undefined'?INVOICES:[]),{
+    amountFn:i=>Number(i.amount||0),
+    dueFn:i=>i.due,
+    isOpenFn:i=>i.status!=='paid',
+  });
+}
+function _agingArr(buckets){return Object.entries(buckets).map(([lbl,o])=>({lbl,v:o.v}));}
 
 function renderAccounting(){
   const el=document.getElementById('accountingContent'); if(!el)return;
   const typeColor={Asset:'var(--bl)',Liability:'var(--am)',Equity:'var(--pu)',Income:'var(--gn)',Expense:'var(--rd)'};
   const unmatched=BANK_STATEMENT.filter(b=>!b.matched).length;
   const types=['Asset','Liability','Equity','Income','Expense'];
+  const arBuckets=computeARAging(), apBuckets=computeAPAging();
+  const arAgingArr=_agingArr(arBuckets), apAgingArr=_agingArr(apBuckets);
   el.innerHTML=`
   <div class="tp on" id="acctTabs-coa">
     <div class="kg kg-4" style="margin-bottom:14px;">
@@ -10342,7 +10391,7 @@ function renderAccounting(){
       <div class="ch2"><span class="ch2-title" style="color:${typeColor[t]}">${t} Accounts</span></div>
       <div class="cb" style="padding:0;"><div class="tw"><table>
         <thead><tr><th style="width:80px;">Code</th><th>Account</th><th style="text-align:right;">Balance</th></tr></thead>
-        <tbody>${COA.filter(a=>a.type===t).map(a=>`<tr><td class="mo">${a.code}</td><td class="tb">${a.name}</td><td class="mo" style="text-align:right;color:${a.balance<0?'var(--mid)':'var(--ink)'};">${fmt(Math.abs(a.balance))}${a.balance<0?' CR':' DR'}</td></tr>`).join('')}</tbody>
+        <tbody>${COA.filter(a=>a.type===t).map(a=>`<tr style="cursor:pointer;" onclick="acctHistoryDrawer('${a.code}')"><td class="mo">${a.code}</td><td class="tb">${a.name}</td><td class="mo" style="text-align:right;color:${a.balance<0?'var(--mid)':'var(--ink)'};">${fmt(Math.abs(a.balance))}${a.balance<0?' CR':' DR'}</td></tr>`).join('')}</tbody>
       </table></div></div>
     </div>`).join('')}
   </div>
@@ -10385,17 +10434,62 @@ function renderAccounting(){
 
   <div class="tp" id="acctTabs-aging">
     <div class="g2">
-      <div class="card"><div class="ch2"><span class="ch2-title">Accounts Receivable Aging</span><span class="ch2-sub">R ${(AR_AGING.reduce((s,a)=>s+a.v,0)/1e6).toFixed(1)}M outstanding</span></div><div class="cb" id="arAgingChart"></div></div>
-      <div class="card"><div class="ch2"><span class="ch2-title">Accounts Payable Aging</span><span class="ch2-sub">R ${(AP_AGING.reduce((s,a)=>s+a.v,0)/1e6).toFixed(1)}M owed</span></div><div class="cb" id="apAgingChart"></div></div>
+      <div class="card"><div class="ch2"><span class="ch2-title">Accounts Receivable Aging</span><span class="ch2-sub">R ${(arAgingArr.reduce((s,a)=>s+a.v,0)/1e6).toFixed(1)}M outstanding</span></div><div class="cb" id="arAgingChart"></div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;padding:0 14px 14px;">${arAgingArr.map(a=>`<button class="btn bs btn-xs" onclick="arAgingDrawer('${a.lbl}')">${a.lbl} (${arBuckets[a.lbl].items.length})</button>`).join('')}</div>
+      </div>
+      <div class="card"><div class="ch2"><span class="ch2-title">Accounts Payable Aging</span><span class="ch2-sub">R ${(apAgingArr.reduce((s,a)=>s+a.v,0)/1e6).toFixed(1)}M owed</span></div><div class="cb" id="apAgingChart"></div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;padding:0 14px 14px;">${apAgingArr.map(a=>`<button class="btn bs btn-xs" onclick="apAgingDrawer('${a.lbl}')">${a.lbl} (${apBuckets[a.lbl].items.length})</button>`).join('')}</div>
+      </div>
     </div>
-    <div class="alert rd"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:var(--rd);stroke-width:2;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div><div class="alert-title">R 369,000 in receivables over 120 days</div><div class="alert-body">2 invoices — recommend handing over to collections or writing off. <button class="btn bd2 btn-xs" onclick="toast('Collections process initiated for 2 invoices','#DC2626')" style="margin-left:6px;">Start Collections</button></div></div></div>
+    ${arBuckets['120+'].items.length?`<div class="alert rd"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:var(--rd);stroke-width:2;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div><div class="alert-title">${fmt(arBuckets['120+'].v)} in receivables over 120 days</div><div class="alert-body">${arBuckets['120+'].items.length} invoice${arBuckets['120+'].items.length>1?'s':''} — recommend handing over to collections or writing off. <button class="btn bd2 btn-xs" onclick="arAgingDrawer('120+')" style="margin-left:6px;">Review &amp; Start Collections</button></div></div></div>`:''}
   </div>`;
   setTimeout(()=>{
     const ar=document.getElementById('arAgingChart');
-    if(ar)svgBarChart(ar,AR_AGING.map(a=>({...a,fmt:'R'+(a.v/1e6).toFixed(1)+'M'})),{h:130,colors:['#3B82F6','#3B82F6','#3B82F6','#D97706','#DC2626']});
+    if(ar)svgBarChart(ar,arAgingArr.map(a=>({...a,fmt:'R'+(a.v/1e6).toFixed(1)+'M'})),{h:130,colors:['#3B82F6','#3B82F6','#3B82F6','#D97706','#DC2626']});
     const ap=document.getElementById('apAgingChart');
-    if(ap)svgBarChart(ap,AP_AGING.map(a=>({...a,fmt:a.v?'R'+(a.v/1e6>=1?(a.v/1e6).toFixed(1)+'M':(a.v/1e3).toFixed(0)+'k'):'0'})),{h:130,colors:['#F97316','#F97316','#F97316','#D97706','#DC2626']});
+    if(ap)svgBarChart(ap,apAgingArr.map(a=>({...a,fmt:a.v?'R'+(a.v/1e6>=1?(a.v/1e6).toFixed(1)+'M':(a.v/1e3).toFixed(0)+'k'):'0'})),{h:130,colors:['#F97316','#F97316','#F97316','#D97706','#DC2626']});
   },80);
+}
+
+function arAgingDrawer(bucketLbl){
+  const bk=computeARAging(); const b=bk[bucketLbl]; if(!b)return;
+  nxDrawerOpen({
+    title:'AR Aging — '+bucketLbl, sub:b.items.length+' invoice'+(b.items.length===1?'':'s')+' · '+fmt(b.v),icon:'file',color:bucketLbl==='120+'?'#DC2626':bucketLbl==='Current'?'#3B82F6':'#D97706',
+    body: b.items.length? nxKV(b.items.map(i=>[i.id||i.invoice_number, `${i.client||i.client_name} — ${fmt(Math.round(i.total||i.total_amount||0))} · due ${i.due||i.due_date}`])) + `<div class="tw" style="margin-top:12px;"><table><thead><tr><th>Invoice</th><th>Client</th><th style="text-align:right;">Total</th><th>Due</th><th></th></tr></thead><tbody>${b.items.map(i=>`<tr><td class="mo tb">${i.id||i.invoice_number}</td><td>${i.client||i.client_name}</td><td class="mo" style="text-align:right;">${fmt(Math.round(i.total||i.total_amount||0))}</td><td style="font-size:11px;">${i.due||i.due_date}</td><td><button class="btn bd2 btn-xs" onclick="remindInvoice('${i.id||i.invoice_number}','${i.client||i.client_name}')">Remind</button></td></tr>`).join('')}</tbody></table></div>`
+      : `<div style="font-size:12px;color:var(--mid);">No open invoices in this bucket.</div>`,
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>',
+  });
+}
+function apAgingDrawer(bucketLbl){
+  const bk=computeAPAging(); const b=bk[bucketLbl]; if(!b)return;
+  nxDrawerOpen({
+    title:'AP Aging — '+bucketLbl, sub:b.items.length+' invoice'+(b.items.length===1?'':'s')+' · '+fmt(b.v),icon:'box',color:bucketLbl==='120+'?'#DC2626':bucketLbl==='Current'?'#F97316':'#D97706',
+    body: b.items.length? `<div class="tw"><table><thead><tr><th>Invoice</th><th>Vendor</th><th style="text-align:right;">Amount</th><th>Due</th></tr></thead><tbody>${b.items.map(i=>`<tr><td class="mo tb">${i.id}</td><td>${i.vendor}</td><td class="mo" style="text-align:right;">${fmt(i.amount)}</td><td style="font-size:11px;">${i.due}</td></tr>`).join('')}</tbody></table></div>`
+      : `<div style="font-size:12px;color:var(--mid);">No open supplier invoices in this bucket.</div>`,
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>',
+  });
+}
+
+/* ── Account transaction history drill-through (Chart of Accounts row click) ── */
+function acctHistoryDrawer(code){
+  const a=COA.find(x=>x.code===code); if(!a)return;
+  const rows=[];
+  JOURNAL_ENTRIES.forEach(j=>{
+    j.lines.forEach(l=>{
+      if(l.acct===code) rows.push({date:j.date,desc:j.narration,ref:j.ref,debit:l.debit||0,credit:l.credit||0});
+    });
+  });
+  if(code==='1000'){
+    BANK_STATEMENT.forEach(b=>rows.push({date:b.date,desc:b.desc,ref:b.ledgerRef||'—',debit:b.amount>0?b.amount:0,credit:b.amount<0?-b.amount:0}));
+  }
+  CARD_TRANSACTIONS.forEach(c=>{ if(c.glRef===code) rows.push({date:c.date,desc:c.merchant+' ('+c.holder+')',ref:c.id,debit:c.amount,credit:0}); });
+  rows.sort((x,y)=>String(y.date).localeCompare(String(x.date)));
+  nxDrawerOpen({
+    title:a.code+' — '+a.name, sub:a.type+' · Balance '+fmt(Math.abs(a.balance))+(a.balance<0?' CR':' DR'), icon:'file', color:'var(--bl)',
+    body: rows.length? `<div class="tw"><table><thead><tr><th>Date</th><th>Description</th><th>Ref</th><th style="text-align:right;">Debit</th><th style="text-align:right;">Credit</th></tr></thead><tbody>${rows.map(r=>`<tr><td style="font-size:11px;">${r.date}</td><td>${r.desc}</td><td class="mo" style="font-size:10px;">${r.ref}</td><td class="mo" style="text-align:right;">${r.debit?fmt(r.debit):''}</td><td class="mo" style="text-align:right;">${r.credit?fmt(r.credit):''}</td></tr>`).join('')}</tbody></table></div>`
+      : `<div style="font-size:12px;color:var(--mid);">No posted transactions reference this account yet.</div>`,
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>',
+  });
 }
 
 /* Journal entry modal logic — balanced debit/credit validation */
@@ -10484,8 +10578,11 @@ function computeSmartInsights(){
   // Budget anomaly
   insights.push({sev:'high',icon:'alert',title:'Marketing is 104% of budget with 40% of Q1 remaining',detail:'Overspend pace suggests R 34K breach by March. Recommend a spend freeze on non-committed items.',action:"openPage('budget')",actionLabel:'Review Budget'});
   // AR risk from aging data
-  const overdue=AR_AGING.slice(3).reduce((s,a)=>s+a.v,0);
-  if(overdue>0)insights.push({sev:'high',icon:'credit',title:fmt(overdue)+' of receivables are 90+ days old',detail:'Collection probability drops below 50% after 90 days. 2 invoices qualify for escalation.',action:"openPage('accounting')",actionLabel:'View Aging'});
+  const arAging=computeARAging();
+  const overdueBuckets=[arAging['90 days'],arAging['120+']];
+  const overdue=overdueBuckets.reduce((s,b)=>s+b.v,0);
+  const overdueCount=overdueBuckets.reduce((s,b)=>s+b.items.length,0);
+  if(overdue>0)insights.push({sev:'high',icon:'credit',title:fmt(overdue)+' of receivables are 90+ days old',detail:'Collection probability drops below 50% after 90 days. '+overdueCount+' invoice'+(overdueCount>1?'s':'')+' qualify for escalation.',action:"openPage('accounting')",actionLabel:'View Aging'});
   // Contract expiry
   const ending=CONTRACTORS_DATA.filter(c=>c.status==='Ending Soon');
   if(ending.length)insights.push({sev:'medium',icon:'person',title:ending.length+' contractor contract(s) end within 60 days',detail:ending.map(c=>c.name).join(', ')+' — renewal takes ~2 weeks including e-signature.',action:"openPage('contractors')",actionLabel:'Renew Now'});
@@ -11945,11 +12042,12 @@ const NXDB={
       render:()=>typeof renderContractors==='function'&&renderContractors(),
     },
     accounting:{
-      get:()=>({coa:COA.map(a=>({code:a.code,balance:a.balance})),journals:JOURNAL_ENTRIES.slice(0,60),bank:BANK_STATEMENT}),
+      get:()=>({coa:COA.map(a=>({code:a.code,balance:a.balance})),journals:JOURNAL_ENTRIES.slice(0,60),bank:BANK_STATEMENT,cardTransactions:CARD_TRANSACTIONS}),
       set:(st)=>{
         if(st.coa)st.coa.forEach(x=>{const a=COA.find(c=>c.code===x.code);if(a)a.balance=x.balance;});
         if(st.journals)JOURNAL_ENTRIES=st.journals;
         if(st.bank)BANK_STATEMENT=st.bank;
+        if(st.cardTransactions)CARD_TRANSACTIONS=st.cardTransactions;
       },
       render:()=>typeof renderAccounting==='function'&&renderAccounting(),
     },
@@ -13873,9 +13971,15 @@ function payrollAutoToggle(id){
     wrap.className='tp';wrap.id='acctTabs-ledgers';
     const T=(title,sub,head,rows)=>'<div class="card"><div class="ch2"><span class="ch2-title">'+title+'</span><span class="ch2-sub">'+sub+'</span></div><div class="cb" style="padding:0;"><div class="tw"><table><thead><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map((c,i)=>'<td class="'+(i===0?'tb':'')+(String(c).startsWith('R ')||String(c).startsWith('−R')?' mo':'')+'">'+c+'</td>').join('')+'</tr>').join('')+'</tbody></table></div></div></div>';
     wrap.innerHTML=
-      '<div class="alert bl" style="margin-bottom:14px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:var(--bl-m);stroke-width:2;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;"><path d="M2 3h20v4H2z"/><path d="M4 7v14h16V7"/></svg><div><div class="alert-title">Six ledger types, one source of truth</div><div class="alert-body">Every transaction across the platform posts into its sub-ledger and rolls up to the General Ledger. CSV/PDF export available on every ledger below.</div></div></div>'
+      '<div class="alert bl" style="margin-bottom:14px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:var(--bl-m);stroke-width:2;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;"><path d="M2 3h20v4H2z"/><path d="M4 7v14h16V7"/></svg><div><div class="alert-title">Seven ledger types, one source of truth</div><div class="alert-body">Every transaction across the platform posts into its sub-ledger and rolls up to the General Ledger. CSV/PDF export available on every ledger below.</div></div></div>'
       +T('Cash Book (1000 — Bank)','From bank statement feed',['Date','Description','Amount','GL Ref','Status'],
         BANK_STATEMENT.map(b=>[b.date,b.desc,(b.amount<0?'−':'')+fmt(Math.abs(b.amount)),b.ledgerRef||'—','<span class="badge '+(b.matched?'gn':'am')+'">'+(b.matched?'Reconciled':'Open')+'</span>']))
+      +T('Corporate Card Ledger (2050 — Credit Card Payable)','Card spend across all cardholders',['Date','Cardholder','Merchant','Category','Amount','Status',''],
+        CARD_TRANSACTIONS.map(c=>[c.date,c.holder,c.merchant,c.category||'<span style="color:var(--mid);">Uncategorized</span>',fmt(c.amount),
+          '<span class="badge '+(c.status==='Posted'?'gn':c.status==='Disputed'?'rd':'am')+'">'+c.status+'</span>',
+          c.status==='Pending'?('<button class="btn bp btn-xs" onclick="cardTxnCategorize(\''+c.id+'\')">Categorize</button> <button class="btn bd2 btn-xs" onclick="cardTxnDispute(\''+c.id+'\')">Dispute</button>')
+            :c.status==='Disputed'?('<button class="btn bs btn-xs" onclick="cardTxnResolveDispute(\''+c.id+'\')">Resolve</button>')
+            :('<span style="font-size:10px;color:var(--mid);">GL '+c.glRef+'</span>')]))
       +T('Accounts Receivable Ledger (1100)','Customer invoices — xBilling',['Invoice','Customer','Total','Due','Status'],
         bill.slice(0,10).map(v=>[v.id||v.invoice_number,v.client||v.client_name,fmt(Math.round(v.total||v.total_amount||0)),v.due||v.due_date||'—','<span class="badge '+((v.status==='Paid')?'gn':(v.status==='Overdue'?'rd':'bl'))+'">'+v.status+'</span>']))
       +T('Accounts Payable Ledger (2000)','Supplier invoices',['Invoice','Supplier','Amount','Due','Status'],
@@ -13895,6 +13999,56 @@ function payrollAutoToggle(id){
     content.appendChild(wrap);
   };
 })();
+
+/* ── Corporate card transactions: real categorize → post-to-GL, and dispute workflow ── */
+function cardTxnCategorize(id){
+  const c=CARD_TRANSACTIONS.find(x=>x.id===id); if(!c)return;
+  const expenseAccts=COA.filter(a=>a.type==='Expense');
+  nxDrawerOpen({
+    title:'Categorize Card Transaction', sub:c.merchant+' · '+fmt(c.amount), icon:'credit', color:'#7C3AED',
+    body:`<div class="nx-kv" style="margin-bottom:12px;">
+        <div><div class="nx-kv-lbl">Cardholder</div><div class="nx-kv-val">${c.holder}</div></div>
+        <div><div class="nx-kv-lbl">Card</div><div class="nx-kv-val">${c.card}</div></div>
+        <div><div class="nx-kv-lbl">Date</div><div class="nx-kv-val">${c.date}</div></div>
+        <div><div class="nx-kv-lbl">Amount</div><div class="nx-kv-val">${fmt(c.amount)}</div></div>
+      </div>
+      <div class="fg"><label class="fl">GL Expense Account</label>
+        <select class="fi" id="cardTxnGL">${expenseAccts.map(a=>`<option value="${a.code}">${a.code} — ${a.name}</option>`).join('')}</select>
+      </div>
+      <div style="font-size:11px;color:var(--mid);margin-top:6px;">Posting will debit the selected expense account and credit 2050 Credit Card Payable for ${fmt(c.amount)}.</div>`,
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Cancel</button><button class="btn bp" onclick="cardTxnPost(\''+id+'\')">Categorize &amp; Post</button>',
+  });
+}
+function cardTxnPost(id){
+  const c=CARD_TRANSACTIONS.find(x=>x.id===id); if(!c)return;
+  const glCode=document.getElementById('cardTxnGL')?.value; if(!glCode)return;
+  const expAcct=COA.find(a=>a.code===glCode), ccAcct=COA.find(a=>a.code==='2050');
+  if(expAcct)expAcct.balance+=c.amount;
+  if(ccAcct)ccAcct.balance-=c.amount;
+  JOURNAL_ENTRIES.unshift({ref:'JNL-CARD-'+c.id,date:c.date,narration:'Card spend — '+c.merchant+' ('+c.holder+')',lines:[{acct:glCode,debit:c.amount,credit:0},{acct:'2050',debit:0,credit:c.amount}],postedBy:currentUser?.name||'System',status:'Posted'});
+  c.status='Posted'; c.glRef=glCode; c.category=expAcct?expAcct.name:glCode;
+  writeAudit('POST_CARD_TXN','Accounting',c.id,c.amount,'info');
+  NXDB.save('accounting');
+  nxDrawerClose();
+  renderAccounting();
+  toast(c.id+' posted to '+glCode+' — '+fmt(c.amount),'#16A34A');
+}
+function cardTxnDispute(id){
+  const c=CARD_TRANSACTIONS.find(x=>x.id===id); if(!c)return;
+  c.status='Disputed';
+  writeAudit('DISPUTE_CARD_TXN','Accounting',c.id,c.amount,'medium');
+  NXDB.save('accounting');
+  renderAccounting();
+  toast(c.id+' flagged as disputed — excluded from GL until resolved','#DC2626');
+}
+function cardTxnResolveDispute(id){
+  const c=CARD_TRANSACTIONS.find(x=>x.id===id); if(!c)return;
+  c.status='Pending'; c.category=null; c.glRef=null;
+  writeAudit('RESOLVE_CARD_TXN','Accounting',c.id,c.amount,'info');
+  NXDB.save('accounting');
+  renderAccounting();
+  toast(c.id+' dispute resolved — ready to categorize','#16A34A');
+}
 
 /* ══ EMPLOYEE ONBOARDING (HR & Managers) ═════════════════ */
 function onboardEmployeeDrawer(){
