@@ -1948,8 +1948,8 @@ body.dark .perm-check.on{background:var(--gn);}
 
       <!-- FLEET (fuel + servicing) -->
       <div class="page" id="page-fleet">
-        <div class="ph"><div class="ph-icon" style="background:var(--bl)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M5 17H3v-6l2-5h12l2 5v6h-2"/><circle cx="7.5" cy="17.5" r="2"/><circle cx="16.5" cy="17.5" r="2"/></svg></div><div><div class="ph-title">Fleet Management</div><div class="ph-sub">Fuel Tracker · Service Schedule · Cost per KM</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="fleetLogFuel()">+ Log Fuel</button></div></div>
-        <div class="tabs"><button class="tab on" onclick="switchTab('fleetTabs','vehicles',this)">Vehicles</button><button class="tab" onclick="switchTab('fleetTabs','fuel',this)">Fuel Log</button><button class="tab" onclick="switchTab('fleetTabs','service',this)">Servicing</button></div>
+        <div class="ph"><div class="ph-icon" style="background:var(--bl)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M5 17H3v-6l2-5h12l2 5v6h-2"/><circle cx="7.5" cy="17.5" r="2"/><circle cx="16.5" cy="17.5" r="2"/></svg></div><div><div class="ph-title">Fleet Management</div><div class="ph-sub">Fuel Tracker · Service Schedule · Cost per KM</div></div><div class="ph-right"><button class="btn bs btn-sm" onclick="fleetOnboardDrawer()">+ Onboard Vehicle</button><button class="btn bp btn-sm" onclick="fleetLogFuel()">+ Log Fuel</button></div></div>
+        <div class="tabs"><button class="tab on" onclick="switchTab('fleetTabs','vehicles',this)">Vehicles</button><button class="tab" onclick="switchTab('fleetTabs','fuel',this)">Fuel Log</button><button class="tab" onclick="switchTab('fleetTabs','service',this)">Servicing</button><button class="tab" onclick="switchTab('fleetTabs','analytics',this);renderFleetAnalytics()">Analytics</button></div>
         <div class="content" id="fleetContent"></div>
       </div>
 
@@ -10447,11 +10447,16 @@ function renderPayrollRuns(){
 }
 
 /* ══ FLEET — fuel & servicing ════════════════════════════ */
+const FLEET_DEVICE_MODELS=['None installed','Geotab GO9 (fuel + telematics)','Digital Matter Fuel Sense','Cartrack Fuel Sensor Pro','Ctrack Capacitive Fuel Probe'];
 let FLEET_VEHICLES=[
-  {id:'FL-01',reg:'JX 42 HG GP',model:'Toyota Hilux 2.4 GD-6',driver:'Thabo M.',odo:84200,serviceDueKm:90000,serviceDueDate:'2025-04-15',status:'OK'},
-  {id:'FL-02',reg:'KZ 18 PL GP',model:'VW Polo Vivo 1.4',driver:'Nomsa P.',odo:118400,serviceDueKm:120000,serviceDueDate:'2025-02-20',status:'Due Soon'},
-  {id:'FL-03',reg:'HT 77 WC CA',model:'Ford Ranger 2.0 BiT',driver:'Kagiso D.',odo:64100,serviceDueKm:60000,serviceDueDate:'2025-01-10',status:'Overdue'},
-  {id:'FL-04',reg:'LM 03 KN ZN',model:'Nissan NP200 1.6',driver:'Pool vehicle',odo:41900,serviceDueKm:45000,serviceDueDate:'2025-06-01',status:'OK'},
+  {id:'FL-01',reg:'JX 42 HG GP',model:'Toyota Hilux 2.4 GD-6',driver:'Thabo M.',odo:84200,serviceDueKm:90000,serviceDueDate:'2025-04-15',status:'OK',
+    fuelBudget:6000,device:{model:'Geotab GO9 (fuel + telematics)',status:'Online',tankCapacity:80,calibrated:true}},
+  {id:'FL-02',reg:'KZ 18 PL GP',model:'VW Polo Vivo 1.4',driver:'Nomsa P.',odo:118400,serviceDueKm:120000,serviceDueDate:'2025-02-20',status:'Due Soon',
+    fuelBudget:4000,device:{model:'Digital Matter Fuel Sense',status:'Online',tankCapacity:45,calibrated:true}},
+  {id:'FL-03',reg:'HT 77 WC CA',model:'Ford Ranger 2.0 BiT',driver:'Kagiso D.',odo:64100,serviceDueKm:60000,serviceDueDate:'2025-01-10',status:'Overdue',
+    fuelBudget:5500,device:{model:'None installed',status:'Not installed',tankCapacity:80,calibrated:false}},
+  {id:'FL-04',reg:'LM 03 KN ZN',model:'Nissan NP200 1.6',driver:'Pool vehicle',odo:41900,serviceDueKm:45000,serviceDueDate:'2025-06-01',status:'OK',
+    fuelBudget:3000,device:{model:'None installed',status:'Not installed',tankCapacity:60,calibrated:false}},
 ];
 let FUEL_LOG=[
   {id:1,vehicle:'FL-01',date:'28 Jan',odo:84200,litres:68,cost:1577,station:'Engen Rivonia'},
@@ -10476,22 +10481,25 @@ function renderFleet(){
   el.innerHTML=`
   <div class="tp on" id="fleetTabs-vehicles">
     <div class="kg kg-4" style="margin-bottom:14px;">
-      <div class="kpi bl"><div class="kpi-lbl">Fleet Size</div><div class="kpi-val">${FLEET_VEHICLES.length}</div><div class="kpi-sub">All operational</div></div>
+      <div class="kpi bl"><div class="kpi-lbl">Fleet Size</div><div class="kpi-val">${FLEET_VEHICLES.length}</div><div class="kpi-sub">${FLEET_VEHICLES.filter(v=>v.status==='OK').length} operational</div></div>
       <div class="kpi or"><div class="kpi-lbl">Fuel Spend (MTD)</div><div class="kpi-val">${fmt(mtdFuel)}</div><div class="kpi-sub">${FUEL_LOG.reduce((s,f)=>s+f.litres,0)} litres</div></div>
-      <div class="kpi am"><div class="kpi-lbl">Services Due</div><div class="kpi-val">${FLEET_VEHICLES.filter(v=>v.status!=='OK').length}</div><div class="kpi-sub">1 overdue</div></div>
+      <div class="kpi am"><div class="kpi-lbl">Services Due</div><div class="kpi-val">${FLEET_VEHICLES.filter(v=>v.status!=='OK').length}</div><div class="kpi-sub">${FLEET_VEHICLES.filter(v=>v.status==='Overdue').length} overdue</div></div>
       <div class="kpi gn"><div class="kpi-lbl">Avg Consumption</div><div class="kpi-val">${(FLEET_VEHICLES.map(v=>fleetConsumption(v.id)).filter(Boolean).reduce((s,v,_,a)=>s+v/a.length,0)||9.4).toFixed(1)} L/100km</div><div class="kpi-sub">Fleet-wide</div></div>
     </div>
-    <div class="card"><div class="ch2"><span class="ch2-title">Vehicle Register</span></div>
+    <div class="card"><div class="ch2"><span class="ch2-title">Vehicle Register</span><span class="ch2-sub">Click a vehicle for its full profile</span></div>
     <div class="cb" style="padding:0;"><div class="tw"><table>
-      <thead><tr><th>Reg</th><th>Vehicle</th><th>Driver</th><th>Odometer</th><th>Consumption</th><th>Service Status</th><th></th></tr></thead>
+      <thead><tr><th>Reg</th><th>Vehicle</th><th>Driver</th><th>Odometer</th><th>Consumption</th><th>Fuel Budget</th><th>Service Status</th><th></th></tr></thead>
       <tbody>${FLEET_VEHICLES.map(v=>{
         const cons=fleetConsumption(v.id);
-        return `<tr>
+        const spend=FUEL_LOG.filter(f=>f.vehicle===v.id).reduce((s,f)=>s+f.cost,0);
+        const over=v.fuelBudget&&spend>v.fuelBudget;
+        return `<tr style="cursor:pointer;" onclick="fleetVehicleDrawer('${v.id}')">
         <td class="mo tb">${v.reg}</td><td class="tb">${v.model}</td><td>${v.driver}</td>
         <td class="mo">${v.odo.toLocaleString()} km</td>
         <td class="mo">${cons?cons.toFixed(1)+' L/100km':'—'}</td>
+        <td class="mo" style="color:${over?'var(--rd)':'var(--mid)'};">${fmt(spend)} / ${fmt(v.fuelBudget||0)}</td>
         <td><span class="badge ${stBadge[v.status]}">${v.status}</span></td>
-        <td>${v.status!=='OK'?`<button class="btn bp btn-xs" onclick="fleetBookService('${v.id}')">Book Service</button>`:''}</td>
+        <td>${v.status!=='OK'?`<button class="btn bp btn-xs" onclick="event.stopPropagation();fleetBookService('${v.id}')">Book Service</button>`:''}</td>
       </tr>`;}).join('')}</tbody></table></div></div></div>
   </div>
   <div class="tp" id="fleetTabs-fuel">
@@ -10502,6 +10510,19 @@ function renderFleet(){
         const v=FLEET_VEHICLES.find(x=>x.id===f.vehicle);
         return `<tr><td>${f.date}</td><td class="tb">${v?v.reg:f.vehicle}</td><td class="mo">${f.odo.toLocaleString()}</td><td class="mo">${f.litres}L</td><td class="mo">${fmt(f.cost)}</td><td class="mo">${(f.cost/f.litres).toFixed(2)}</td><td style="font-size:11px;">${f.station}</td></tr>`;}).join('')}</tbody></table></div></div></div>
     <div class="card"><div class="ch2"><span class="ch2-title">Monthly Fuel Spend</span></div><div class="cb" id="fuelChart"></div></div>
+    <div class="card" style="margin-top:14px;"><div class="ch2"><span class="ch2-title">Fuel Budget Allocation</span><span class="ch2-sub">Per vehicle / driver</span></div>
+    <div class="cb" style="padding:0;">${FLEET_VEHICLES.map(v=>{
+      const spend=FUEL_LOG.filter(f=>f.vehicle===v.id).reduce((s,f)=>s+f.cost,0);
+      const pct=v.fuelBudget?Math.min(Math.round(spend/v.fuelBudget*100),999):0;
+      return `<div class="stock-card">
+        <div style="flex:1;">
+          <div class="stock-name">${v.reg} — ${v.driver}</div>
+          <div class="stock-sku">${fmt(spend)} spent of ${fmt(v.fuelBudget||0)} monthly budget (${pct}%)</div>
+          <div class="prog" style="margin-top:6px;"><div class="prog-fill" style="width:${Math.min(pct,100)}%;background:${pct>100?'var(--rd)':pct>80?'var(--am)':'var(--gn)'};"></div></div>
+        </div>
+        <button class="btn bs btn-xs" onclick="fleetBudgetDrawer('${v.id}')">Configure Budget</button>
+      </div>`;
+    }).join('')}</div></div>
   </div>
   <div class="tp" id="fleetTabs-service">
     <div class="card"><div class="ch2"><span class="ch2-title">Service Schedule</span></div>
@@ -10516,10 +10537,36 @@ function renderFleet(){
       <span class="badge ${stBadge[v.status]}">${v.status}</span>
       ${v.status!=='OK'?`<button class="btn bp btn-xs" onclick="fleetBookService('${v.id}')">Book</button>`:''}
     </div>`;}).join('')}</div></div>
+  </div>
+  <div class="tp" id="fleetTabs-analytics">
+    <div class="g2">
+      <div class="card"><div class="ch2"><span class="ch2-title">Fuel Spend by Vehicle</span></div><div class="cb" id="fleetSpendDonut"></div></div>
+      <div class="card"><div class="ch2"><span class="ch2-title">Cost per KM</span></div><div class="cb" id="fleetCostPerKmChart"></div></div>
+    </div>
   </div>`;
   setTimeout(()=>{
     const fc=document.getElementById('fuelChart');
     if(fc)svgBarChart(fc,[{lbl:'Sep',v:5100,fmt:'R5.1k'},{lbl:'Oct',v:5900,fmt:'R5.9k'},{lbl:'Nov',v:5400,fmt:'R5.4k'},{lbl:'Dec',v:4200,fmt:'R4.2k'},{lbl:'Jan',v:mtdFuel,fmt:'R'+(mtdFuel/1000).toFixed(1)+'k'}],{h:120,colors:['#3B82F6']});
+  },80);
+}
+function renderFleetAnalytics(){
+  setTimeout(()=>{
+    const donut=document.getElementById('fleetSpendDonut');
+    if(donut){
+      const byVeh={};
+      FUEL_LOG.forEach(f=>{const v=FLEET_VEHICLES.find(x=>x.id===f.vehicle);byVeh[v?v.reg:f.vehicle]=(byVeh[v?v.reg:f.vehicle]||0)+f.cost;});
+      const total=Object.values(byVeh).reduce((a,b)=>a+b,0);
+      svgDonutChart(donut,Object.entries(byVeh).map(([lbl,v])=>({lbl,v})),{size:120,stroke:24,centerVal:fmt(total)});
+    }
+    const cpk=document.getElementById('fleetCostPerKmChart');
+    if(cpk){
+      const data=FLEET_VEHICLES.map(v=>{
+        const spend=FUEL_LOG.filter(f=>f.vehicle===v.id).reduce((s,f)=>s+f.cost,0);
+        const dist=FUEL_LOG.filter(f=>f.vehicle===v.id).length>1?Math.max(...FUEL_LOG.filter(f=>f.vehicle===v.id).map(f=>f.odo))-Math.min(...FUEL_LOG.filter(f=>f.vehicle===v.id).map(f=>f.odo)):0;
+        return {lbl:v.reg,v:dist>0?Math.round(spend/dist*100)/100:0,fmt:dist>0?'R'+(spend/dist).toFixed(2):'—'};
+      });
+      svgBarChart(cpk,data,{h:120,colors:['#16A34A']});
+    }
   },80);
 }
 
@@ -10546,6 +10593,104 @@ function fleetBookService(id){
   renderFleet();
   toast('Service booked for '+v.reg+' — PO raised to approved workshop','#16A34A');
   writeAudit('Service','Fleet',v.reg,0,'low');
+}
+
+/* ── Vehicle profile: full fuel + service history, consumption trend, device status ── */
+function fleetVehicleDrawer(id){
+  const v=FLEET_VEHICLES.find(x=>x.id===id); if(!v)return;
+  v.device=v.device||{model:'None installed',status:'Not installed',tankCapacity:60,calibrated:false};
+  const history=FUEL_LOG.filter(f=>f.vehicle===id).sort((a,b)=>b.odo-a.odo);
+  const spend=history.reduce((s,f)=>s+f.cost,0);
+  const cons=fleetConsumption(id);
+  nxDrawerOpen({
+    title:v.reg+' — '+v.model,sub:v.driver+' · '+v.odo.toLocaleString()+' km',icon:'building',color:'var(--bl)',
+    body:nxKV([['Consumption',cons?cons.toFixed(1)+' L/100km':'Not enough data'],['Fuel Spend (all time)',fmt(spend)],['Fuel Budget (monthly)',fmt(v.fuelBudget||0)],['Next Service',v.serviceDueKm.toLocaleString()+' km · '+v.serviceDueDate]])
+      +'<div class="nx-sec">Fuel-Level Hardware Device</div>'
+      +nxKV([['Device',v.device.model],['Status',v.device.status],['Tank Capacity',v.device.tankCapacity+' L'],['Calibrated',v.device.calibrated?'Yes':'No']])
+      +'<button class="btn bs btn-xs" onclick="fleetDeviceDrawer(\''+id+'\')" style="margin-bottom:4px;">Configure Device</button>'
+      +'<div class="nx-sec">Fuel History — '+history.length+' fill-ups</div>'
+      +(history.length?'<div class="tw"><table><thead><tr><th>Date</th><th>Odometer</th><th>Litres</th><th>Cost</th><th>Station</th></tr></thead><tbody>'
+        +history.map(f=>`<tr><td>${f.date}</td><td class="mo">${f.odo.toLocaleString()}</td><td class="mo">${f.litres}L</td><td class="mo">${fmt(f.cost)}</td><td style="font-size:11px;">${f.station}</td></tr>`).join('')
+        +'</tbody></table></div>':'<div style="font-size:11px;color:var(--mu);padding:6px 0;">No fuel history recorded yet.</div>'),
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>'
+      +'<button class="btn bs" onclick="nxDrawerClose();fleetBudgetDrawer(\''+id+'\')">Configure Budget</button>'
+      +(v.status!=='OK'?`<button class="btn bp" onclick="nxDrawerClose();fleetBookService('${id}')">Book Service</button>`:''),
+  });
+}
+function fleetDeviceDrawer(id){
+  const v=FLEET_VEHICLES.find(x=>x.id===id); if(!v)return;
+  nxDrawerOpen({
+    title:'Fuel Sensor — '+v.reg,sub:'Hardware device configuration',icon:'building',color:'var(--pu)',
+    body:`<div class="fg"><label class="fl">Device Model</label><select class="fi" id="fdModel">${FLEET_DEVICE_MODELS.map(m=>`<option ${m===v.device.model?'selected':''}>${m}</option>`).join('')}</select></div>
+      <div class="fg" style="margin-top:10px;"><label class="fl">Tank Capacity (litres)</label><input class="fi" id="fdTank" type="number" value="${v.device.tankCapacity}"/></div>
+      <div class="fg" style="margin-top:10px;"><label class="fl">Device Status</label><select class="fi" id="fdStatus">${['Not installed','Installing','Online','Offline','Needs Recalibration'].map(s=>`<option ${s===v.device.status?'selected':''}>${s}</option>`).join('')}</select></div>
+      <div class="fg" style="margin-top:10px;"><label class="fl">Sensor Calibrated</label><button class="tgl ${v.device.calibrated?'on':''}" id="fdCalibrated" onclick="this.classList.toggle('on')"><span></span></button></div>`,
+    actions:`<button class="btn bs" onclick="fleetVehicleDrawer('${id}')">Cancel</button>
+      <button class="btn bp" onclick="fleetDeviceSave('${id}')">Save & Sync Device</button>`,
+  });
+}
+function fleetDeviceSave(id){
+  const v=FLEET_VEHICLES.find(x=>x.id===id); if(!v)return;
+  v.device.model=document.getElementById('fdModel').value;
+  v.device.tankCapacity=parseFloat(document.getElementById('fdTank').value)||v.device.tankCapacity;
+  v.device.status=document.getElementById('fdStatus').value;
+  v.device.calibrated=document.getElementById('fdCalibrated').classList.contains('on');
+  NXDB.save('fleet');
+  writeAudit('ConfigureDevice','Fleet',v.reg+' '+v.device.model,0,'medium');
+  toast(v.reg+' fuel sensor configuration saved','#16A34A');
+  fleetVehicleDrawer(id);
+}
+function fleetBudgetDrawer(id){
+  const v=FLEET_VEHICLES.find(x=>x.id===id); if(!v)return;
+  nxDrawerOpen({
+    title:'Fuel Budget — '+v.reg,sub:v.driver,icon:'building',color:'var(--or)',
+    body:`<div class="fg"><label class="fl">Monthly Fuel Budget (R)</label><input class="fi" id="fbAmount" type="number" value="${v.fuelBudget||0}"/></div>
+      <div style="font-size:11px;color:var(--mid);margin-top:10px;line-height:1.6;">When this driver's monthly fuel spend crosses the budget, the Vehicle Register flags it in red so fleet admins can follow up.</div>`,
+    actions:`<button class="btn bs" onclick="fleetVehicleDrawer('${id}')">Cancel</button>
+      <button class="btn bp" onclick="fleetBudgetSave('${id}')">Save Budget</button>`,
+  });
+}
+function fleetBudgetSave(id){
+  const v=FLEET_VEHICLES.find(x=>x.id===id); if(!v)return;
+  v.fuelBudget=parseFloat(document.getElementById('fbAmount').value)||0;
+  renderFleet();
+  NXDB.save('fleet');
+  writeAudit('SetFuelBudget','Fleet',v.reg,v.fuelBudget,'low');
+  toast(v.reg+' fuel budget set to '+fmt(v.fuelBudget),'#16A34A');
+  nxDrawerClose();
+}
+function fleetOnboardDrawer(){
+  nxDrawerOpen({
+    title:'Onboard New Vehicle',sub:'Add a vehicle to the fleet register',icon:'building',color:'var(--gn)',
+    body:`<div class="frow"><div class="fg"><label class="fl">Registration</label><input class="fi" id="fnReg" placeholder="e.g. JX 42 HG GP"/></div>
+      <div class="fg"><label class="fl">Model</label><input class="fi" id="fnModel" placeholder="e.g. Toyota Hilux 2.4 GD-6"/></div></div>
+      <div class="frow"><div class="fg"><label class="fl">Assigned Driver</label><input class="fi" id="fnDriver" placeholder="e.g. Pool vehicle"/></div>
+      <div class="fg"><label class="fl">Odometer (km)</label><input class="fi" id="fnOdo" type="number" value="0"/></div></div>
+      <div class="frow"><div class="fg"><label class="fl">Next Service Due (km)</label><input class="fi" id="fnServiceKm" type="number" value="15000"/></div>
+      <div class="fg"><label class="fl">Monthly Fuel Budget (R)</label><input class="fi" id="fnBudget" type="number" value="4000"/></div></div>`,
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Cancel</button>
+      <button class="btn bp" onclick="fleetOnboardSubmit()">Onboard Vehicle</button>`,
+  });
+}
+function fleetOnboardSubmit(){
+  const reg=document.getElementById('fnReg').value.trim();
+  const model=document.getElementById('fnModel').value.trim();
+  const driver=document.getElementById('fnDriver').value.trim()||'Pool vehicle';
+  const odo=parseInt(document.getElementById('fnOdo').value)||0;
+  const serviceDueKm=parseInt(document.getElementById('fnServiceKm').value)||odo+15000;
+  const fuelBudget=parseFloat(document.getElementById('fnBudget').value)||0;
+  if(!reg||!model){toast('Registration and model are required','#DC2626');return;}
+  const d=new Date();d.setMonth(d.getMonth()+6);
+  FLEET_VEHICLES.push({
+    id:'FL-'+String(FLEET_VEHICLES.length+1).padStart(2,'0'),
+    reg,model,driver,odo,serviceDueKm,serviceDueDate:d.toISOString().slice(0,10),status:'OK',
+    fuelBudget,device:{model:'None installed',status:'Not installed',tankCapacity:60,calibrated:false},
+  });
+  nxDrawerClose();
+  renderFleet();
+  NXDB.save('fleet');
+  toast(reg+' onboarded to the fleet','#16A34A');
+  writeAudit('OnboardVehicle','Fleet',reg,0,'medium');
 }
 
 /* ══ ACCESS CONTROL — card / fingerprint ═════════════════ */
