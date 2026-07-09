@@ -6917,9 +6917,9 @@ function renderQuotes() {
             <td><span class="badge ${statusBadge[q.status]||'gy'}">${q.status}</span></td>
             <td style="display:flex;gap:4px;">
               ${q.status==='Accepted'?`<button class="btn bg btn-xs" onclick="convertQuoteToInvoice('${q.id}')">→ Invoice</button>`:''}
-              ${q.status==='Draft'?`<button class="btn bp btn-xs" onclick="toast('Quote ${q.id} sent','#16A34A')">Send</button>`:''}
-              ${q.status==='Expired'?`<button class="btn bs btn-xs" onclick="toast('Quote renewed','#2563EB')">Renew</button>`:''}
-              <button class="btn bs btn-xs" onclick="toast('Opening ${q.id}','#2563EB')">View</button>
+              ${q.status==='Draft'?`<button class="btn bp btn-xs" onclick="quoteSend('${q.id}')">Send</button>`:''}
+              ${q.status==='Expired'?`<button class="btn bs btn-xs" onclick="quoteRenew('${q.id}')">Renew</button>`:''}
+              <button class="btn bs btn-xs" onclick="quoteOpen(QUOTES_DATA.indexOf(QUOTES_DATA.find(x=>x.id==='${q.id}')))">View</button>
             </td>
           </tr>`).join('')}
         </tbody>
@@ -11880,6 +11880,11 @@ const NXDB={
       set:(st)=>{if(st.register)ASSET_REGISTER=st.register;},
       render:()=>typeof renderAssetRegister==='function'&&renderAssetRegister(),
     },
+    quotes:{
+      get:()=>({list:QUOTES_DATA}),
+      set:(st)=>{if(st.list)st.list.forEach(x=>{const q=QUOTES_DATA.find(y=>y.id===x.id);if(q){q.status=x.status;q.expires=x.expires;}});},
+      render:()=>typeof renderQuotes==='function'&&renderQuotes(),
+    },
     supply:{
       get:()=>({orders:SUPPLY_ORDERS}),
       set:(st)=>{if(st.orders){SUPPLY_ORDERS.length=0;st.orders.forEach(o=>SUPPLY_ORDERS.push(o));}},
@@ -12237,6 +12242,29 @@ function quoteHTML(q){
   return nxDocChrome('Quotation',q.id,body);
 }
 function quoteOpen(i){const q=QUOTES_DATA[i];if(q){nxDocOpen(quoteHTML(q));writeAudit('QuotePDF','Quotes',q.id,q.value,'low');}}
+async function quoteSend(id){
+  const q=QUOTES_DATA.find(x=>x.id===id); if(!q)return;
+  if(!q.contact){toast('No contact email on file for '+q.client,'#DC2626');return;}
+  const {data,error}=await callEdgeFunction('email-relay','send_email',{to:q.contact,
+    subject:tplMerge('Quote '+q.id+' from {{company}} — '+fmt(q.value)),
+    html:quoteHTML(q)+'<p>Please find your quotation attached. It is valid until '+q.expires+'.</p>'});
+  if(error&&error!=='no_client'&&error!=='not_authenticated'){toast('Could not send quote — '+error,'#DC2626');return;}
+  q.status='Sent';
+  renderQuotes();
+  NXDB.save('quotes');
+  writeAudit('SendQuote','Quotes',q.id,q.value,'medium');
+  toast('Quote '+q.id+' emailed to '+q.contact+(data?.simulated?' (simulated)':''),'#16A34A');
+}
+function quoteRenew(id){
+  const q=QUOTES_DATA.find(x=>x.id===id); if(!q)return;
+  const newExpiry=new Date(); newExpiry.setDate(newExpiry.getDate()+30);
+  q.status='Draft';
+  q.expires=newExpiry.toISOString().slice(0,10);
+  renderQuotes();
+  NXDB.save('quotes');
+  writeAudit('RenewQuote','Quotes',q.id,q.value,'medium');
+  toast('Quote '+q.id+' renewed — new expiry '+q.expires,'#16A34A');
+}
 
 /* ── CONTRACT document (employee or contractor) ── */
 function contractHTML(party){
