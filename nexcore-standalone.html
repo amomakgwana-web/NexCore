@@ -5394,35 +5394,34 @@ function renderApprovalContent(){
         age:      _ageStr(a.created_at),
       }))
     : mockApprovals;
+  window._approvalCardData=approvals;
   el.innerHTML = approvals.length === 0
     ? '<div class="card" style="padding:24px;text-align:center;color:var(--mid);">No pending approvals</div>'
-    : approvals.map(a => {
-        const reviewFn = a._id
-          ? `openApprovalReview('${a._id}','${a.id}','${a.amount}')`
-          : `openModal('approvalModal')`;
+    : approvals.map((a,ai) => {
         return `<div class="card"><div style="display:flex;align-items:center;gap:12px;padding:12px 14px;">
     <div style="width:34px;height:34px;background:var(--or-bg);border-radius:var(--r8);display:flex;align-items:center;justify-content:center;">${svgIcon('file','16px','var(--or)')}</div>
     <div style="flex:1;"><div style="font-size:13px;font-weight:700;">${a.id} — ${a.type}</div><div style="font-size:11px;color:var(--mid);">${a.from} · ${a.desc}</div><div style="display:flex;gap:6px;margin-top:5px;"><span class="badge ${a.priority==='High'?'rd':a.priority==='Medium'?'am':'gy'}">${a.priority}</span><span class="badge gy">${a.mod}</span><span style="font-size:10px;color:var(--mu);">${a.age} ago</span></div></div>
-    <div style="text-align:right;"><div style="font-size:15px;font-weight:900;font-family:var(--mo);">${a.amount}</div><div style="display:flex;gap:6px;margin-top:6px;"><button class="btn bp btn-xs" onclick="${reviewFn}">Review</button><button class="btn bs btn-xs" onclick="openModal('delegateModal')">Delegate</button></div></div>
+    <div style="text-align:right;"><div style="font-size:15px;font-weight:900;font-family:var(--mo);">${a.amount}</div><div style="display:flex;gap:6px;margin-top:6px;"><button class="btn bp btn-xs" onclick="openApprovalReview(${ai})">Review</button><button class="btn bs btn-xs" onclick="openModal('delegateModal')">Delegate</button></div></div>
   </div></div>`;
     }).join('');
 }
 
-function openApprovalReview(dbId, label, amount) {
-  // Pre-fill the approval modal with live context, then submit via submitApproval()
-  const titleEl = document.querySelector('#approvalModal .alert-title');
-  const bodyEl  = document.querySelector('#approvalModal .alert-body');
-  if (titleEl) titleEl.textContent = label;
-  if (bodyEl)  bodyEl.textContent  = amount;
-  // Wire the modal approve/reject buttons to the real DB call
-  const mf = document.querySelector('#approvalModal .mf');
-  if (mf) {
-    mf.innerHTML = `
-      <button class="btn bd2" onclick="submitApproval('${dbId}','reject');closeModal('approvalModal')">Reject</button>
-      <button class="btn bs" onclick="closeModal('approvalModal');openModal('delegateModal')">Delegate</button>
-      <button class="btn bp" onclick="submitApproval('${dbId}','approve');closeModal('approvalModal')">Approve</button>`;
-  }
-  openModal('approvalModal');
+const APPROVAL_MODULE_PAGE={Procurement:'procurement',xBilling:'billing',SwiftPay:'swiftpay',HR:'leave',xVault:'vault',General:null};
+function openApprovalReview(idx) {
+  const a=(window._approvalCardData||[])[idx]; if(!a)return;
+  const targetPage=APPROVAL_MODULE_PAGE[a.mod];
+  nxDrawerOpen({
+    title:a.id+' — '+a.type,sub:a.mod+' · Submitted by '+a.from,icon:'file',color:a.priority==='High'?'var(--rd)':a.priority==='Medium'?'var(--am)':'var(--gn)',
+    body:nxKV([['Requester',a.from],['Type',a.type],['Description',a.desc],['Amount',a.amount],['Priority',a.priority],['Module',a.mod],['Age',a.age+' ago']])
+      +'<div class="nx-sec">Description</div>'
+      +'<div style="font-size:12px;color:var(--ch);line-height:1.6;">'+a.desc+'</div>',
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>'
+      +(targetPage?`<button class="btn bs" onclick="nxDrawerClose();openPage('${targetPage}')">View in ${a.mod}</button>`:'')
+      +(a._id?`<button class="btn bd2" onclick="submitApproval('${a._id}','reject');nxDrawerClose()">Reject</button>
+      <button class="btn bp" onclick="submitApproval('${a._id}','approve');nxDrawerClose()">Approve</button>`
+      :`<button class="btn bd2" onclick="toast('${a.id} rejected','#DC2626');nxDrawerClose()">Reject</button>
+      <button class="btn bp" onclick="toast('${a.id} approved','#16A34A');nxDrawerClose()">Approve</button>`),
+  });
 }
 
 /* ═══ ASSET REGISTER ═══ */
