@@ -5427,22 +5427,66 @@ function openApprovalReview(dbId, label, amount) {
 
 /* ═══ ASSET REGISTER ═══ */
 
+let ASSET_REGISTER=[
+  {tag:'IT-0001',name:'Dell XPS 15 Laptop',cat:'IT',color:'#3B82F6',cost:14225,status:'In Use',assigned:'Thabo M.',purchaseDate:'2023-03-14',depreciationRate:0.33,history:[{ts:'2023-03-14',event:'Purchased',by:'Procurement'},{ts:'2023-03-20',event:'Assigned to Thabo M.',by:'IT Support'}]},
+  {tag:'IT-0002',name:'MacBook Pro 14" M3',cat:'IT',color:'#3B82F6',cost:28400,status:'In Use',assigned:'Kagiso D.',purchaseDate:'2024-01-08',depreciationRate:0.33,history:[{ts:'2024-01-08',event:'Purchased',by:'Procurement'},{ts:'2024-01-12',event:'Assigned to Kagiso D.',by:'IT Support'}]},
+  {tag:'FAC-001',name:'Executive Desk Set',cat:'Furniture',color:'#D97706',cost:12400,status:'Active',assigned:'CEO Office',purchaseDate:'2021-06-01',depreciationRate:0.1,history:[{ts:'2021-06-01',event:'Purchased',by:'Procurement'}]},
+  {tag:'VEH-001',name:'Toyota Fortuner 2.4GD',cat:'Vehicle',color:'#16A34A',cost:620000,status:'In Use',assigned:'Bongani S.',purchaseDate:'2022-09-10',depreciationRate:0.2,history:[{ts:'2022-09-10',event:'Purchased',by:'Procurement'},{ts:'2022-09-15',event:'Assigned to Bongani S.',by:'Fleet'}]},
+  {tag:'VEH-003',name:'Toyota HiAce Panel Van',cat:'Vehicle',color:'#DC2626',cost:380000,status:'Aging',assigned:'Operations',purchaseDate:'2019-02-20',depreciationRate:0.2,history:[{ts:'2019-02-20',event:'Purchased',by:'Procurement'},{ts:'2023-11-01',event:'Flagged as Aging (service costs rising)',by:'Fleet'}]},
+  {tag:'IT-0142',name:'Dell Latitude 5420',cat:'IT',color:'#6B7280',cost:18000,status:'Disposal',assigned:'Unassigned',purchaseDate:'2020-05-05',depreciationRate:0.33,history:[{ts:'2020-05-05',event:'Purchased',by:'Procurement'},{ts:'2024-11-01',event:'Unassigned — end of life',by:'IT Support'},{ts:'2025-01-05',event:'Flagged for disposal',by:'IT Support'}]},
+];
+function assetBookValue(a){
+  const years=(Date.now()-new Date(a.purchaseDate).getTime())/(365.25*86400000);
+  return Math.max(Math.round(a.cost*Math.pow(1-a.depreciationRate,years)),0);
+}
 function renderAssetRegister(){
   const el=document.getElementById('assetRegister');if(!el)return;
-  const assets=[
-    {tag:'IT-0001',name:'Dell XPS 15 Laptop',cat:'IT',color:'#3B82F6',cost:14225,status:'In Use',assigned:'Thabo M.'},
-    {tag:'IT-0002',name:'MacBook Pro 14" M3',cat:'IT',color:'#3B82F6',cost:28400,status:'In Use',assigned:'Kagiso D.'},
-    {tag:'FAC-001',name:'Executive Desk Set',cat:'Furniture',color:'#D97706',cost:12400,status:'Active',assigned:'CEO Office'},
-    {tag:'VEH-001',name:'Toyota Fortuner 2.4GD',cat:'Vehicle',color:'#16A34A',cost:620000,status:'In Use',assigned:'Bongani S.'},
-    {tag:'VEH-003',name:'Toyota HiAce Panel Van',cat:'Vehicle',color:'#DC2626',cost:380000,status:'Aging',assigned:'Operations'},
-    {tag:'IT-0142',name:'Dell Latitude 5420',cat:'IT',color:'#6B7280',cost:18000,status:'Disposal',assigned:'Unassigned'},
-  ];
-  el.innerHTML=assets.map(a=>`<div class="asset-row">
+  el.innerHTML=ASSET_REGISTER.map(a=>`<div class="asset-row" style="cursor:pointer;" onclick="assetProfileDrawer('${a.tag}')">
     <div class="asset-ico" style="background:${a.color};">${svgIcon('package','15px','white')}</div>
     <div style="flex:1;"><div style="font-size:12px;font-weight:700;">${a.name}</div><div style="font-size:10px;color:var(--mid);">${a.tag} · ${a.cat} · ${a.assigned}</div></div>
-    <div style="text-align:right;"><div style="font-size:12px;font-weight:800;font-family:var(--mo);">${fmt(a.cost)}</div></div>
+    <div style="text-align:right;"><div style="font-size:12px;font-weight:800;font-family:var(--mo);">${fmt(a.cost)}</div><div style="font-size:9px;color:var(--mu);">Book: ${fmt(assetBookValue(a))}</div></div>
     <span class="badge ${a.status==='In Use'||a.status==='Active'?'gn':a.status==='Aging'?'am':'rd'}">${a.status}</span>
   </div>`).join('');
+}
+/* ── Fixed asset profile: purchase/assignment history + disposal invoice
+   generation. High-value disposals (>R50k book value) escalate to the CFO
+   via the standard approvals queue rather than disposing silently. ── */
+function assetProfileDrawer(tag){
+  const a=ASSET_REGISTER.find(x=>x.tag===tag); if(!a)return;
+  const bookValue=assetBookValue(a);
+  nxDrawerOpen({
+    title:a.name,sub:a.tag+' · '+a.cat,icon:'package',color:a.color,
+    body:nxKV([['Original Cost',fmt(a.cost)],['Book Value (today)',fmt(bookValue)],['Purchase Date',a.purchaseDate],['Depreciation Rate',(a.depreciationRate*100).toFixed(0)+'%/yr'],['Assigned To',a.assigned],['Status',a.status]])
+      +'<div class="nx-sec">History</div>'
+      +a.history.map(h=>`<div class="stat-row"><span class="stat-lbl">${h.event}<div style="font-size:9.5px;color:var(--mu);">${h.by}</div></span><span class="stat-val" style="font-size:10px;color:var(--mu);">${h.ts}</span></div>`).join(''),
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>'
+      +(a.status!=='Disposal'?`<button class="btn bd2" onclick="assetDispose('${tag}')">Dispose & Invoice</button>`:`<button class="btn bp" onclick="assetGenerateDisposalInvoice('${tag}')">Generate Disposal Invoice</button>`),
+  });
+}
+function assetDispose(tag){
+  const a=ASSET_REGISTER.find(x=>x.tag===tag); if(!a)return;
+  a.status='Disposal';
+  a.history.unshift({ts:new Date().toISOString().slice(0,10),event:'Flagged for disposal',by:currentUser?.name||'You'});
+  renderAssetRegister();
+  NXDB.save('assets');
+  writeAudit('DisposeAsset','Assets',tag,a.cost,'medium');
+  assetProfileDrawer(tag);
+  toast(a.name+' flagged for disposal','#D97706');
+}
+function assetGenerateDisposalInvoice(tag){
+  const a=ASSET_REGISTER.find(x=>x.tag===tag); if(!a)return;
+  const bookValue=assetBookValue(a);
+  const inv={id:'DISP-'+tag,client:NX_TPL.legal,total:bookValue,description:'Fixed asset disposal — '+a.name+' ('+a.tag+')',due:new Date().toISOString().slice(0,10)};
+  nxDocOpen(invoiceHTML(inv));
+  writeAudit('GenerateDisposalInvoice','Assets',tag,bookValue,'medium');
+  if(bookValue>50000){
+    window.APPROVALS_DATA=window.APPROVALS_DATA||[];
+    window.APPROVALS_DATA.unshift({id:'DISP-'+tag,label:'Asset disposal — '+a.name+' ('+fmt(bookValue)+' book value)',amount:bookValue,status:'Pending',requester:currentUser?.name||'You',age:Date.now()});
+    if(typeof renderApprovalContent==='function')renderApprovalContent();
+    toast('Disposal invoice generated — escalated to CFO for approval ('+fmt(bookValue)+' book value)','#D97706');
+  }else{
+    toast('Disposal invoice generated for '+a.name,'#16A34A');
+  }
 }
 
 /* ═══ VAULT ═══ */
@@ -9505,12 +9549,12 @@ function viewInvoiceModal(inv){
 
 /* ── Enhanced Stock Management ── */
 const STOCK_DATA=[
-  {sku:'SKU-OFF-001',name:'Paper A4 (ream)',cat:'Stationery',onHand:12,reorder:50,max:200,unit:'ream',cost:89,color:'#F97316'},
-  {sku:'SKU-OFF-002',name:'Printer Toner HP',cat:'Stationery',onHand:3,reorder:5,max:20,unit:'unit',cost:1200,color:'#EF4444'},
-  {sku:'SKU-IT-021',name:'Network Cable Cat6',cat:'IT',onHand:240,reorder:50,max:500,unit:'m',cost:12,color:'#16A34A'},
-  {sku:'SKU-IT-022',name:'USB-C Hub 7-port',cat:'IT',onHand:8,reorder:10,max:30,unit:'unit',cost:890,color:'#16A34A'},
-  {sku:'SKU-CLEAN-01',name:'Hand Sanitizer 1L',cat:'Facilities',onHand:18,reorder:20,max:50,unit:'bottle',cost:45,color:'#D97706'},
-  {sku:'SKU-IT-023',name:'Wireless Keyboard',cat:'IT',onHand:4,reorder:5,max:20,unit:'unit',cost:650,color:'#EF4444'},
+  {sku:'SKU-OFF-001',name:'Paper A4 (ream)',cat:'Stationery',onHand:12,reorder:50,max:200,unit:'ream',cost:89,color:'#F97316',movements:[{ts:'2 Jan',type:'Receipt',qty:150},{ts:'18 Jan',type:'Usage',qty:-88},{ts:'27 Jan',type:'Usage',qty:-50}]},
+  {sku:'SKU-OFF-002',name:'Printer Toner HP',cat:'Stationery',onHand:3,reorder:5,max:20,unit:'unit',cost:1200,color:'#EF4444',movements:[{ts:'5 Jan',type:'Receipt',qty:12},{ts:'22 Jan',type:'Usage',qty:-9}]},
+  {sku:'SKU-IT-021',name:'Network Cable Cat6',cat:'IT',onHand:240,reorder:50,max:500,unit:'m',cost:12,color:'#16A34A',movements:[{ts:'10 Jan',type:'Receipt',qty:300},{ts:'25 Jan',type:'Usage',qty:-60}]},
+  {sku:'SKU-IT-022',name:'USB-C Hub 7-port',cat:'IT',onHand:8,reorder:10,max:30,unit:'unit',cost:890,color:'#16A34A',movements:[{ts:'8 Jan',type:'Receipt',qty:15},{ts:'20 Jan',type:'Usage',qty:-7}]},
+  {sku:'SKU-CLEAN-01',name:'Hand Sanitizer 1L',cat:'Facilities',onHand:18,reorder:20,max:50,unit:'bottle',cost:45,color:'#D97706',movements:[{ts:'3 Jan',type:'Receipt',qty:40},{ts:'26 Jan',type:'Usage',qty:-22}]},
+  {sku:'SKU-IT-023',name:'Wireless Keyboard',cat:'IT',onHand:4,reorder:5,max:20,unit:'unit',cost:650,color:'#EF4444',movements:[{ts:'6 Jan',type:'Receipt',qty:10},{ts:'19 Jan',type:'Usage',qty:-6}]},
 ];
 
 function renderEnhancedStock(){
@@ -9525,7 +9569,7 @@ function renderEnhancedStock(){
   ${STOCK_DATA.map(s=>{
     const pct=Math.min(100,Math.round(s.onHand/s.max*100));
     const isLow=s.onHand<=s.reorder;
-    return `<div class="stock-card">
+    return `<div class="stock-card" style="cursor:pointer;" onclick="stockProfileDrawer('${s.sku}')">
       <div class="stock-icon" style="background:${isLow?'var(--rd-l)':'var(--gn-l)'};">${svgIcon('package','14px',isLow?'var(--rd)':'var(--gn)')}</div>
       <div class="stock-info" style="flex:1;">
         <div class="stock-name">${s.name}</div>
@@ -9539,10 +9583,23 @@ function renderEnhancedStock(){
         <div class="stock-meter">
           <div class="stock-meter-fill" style="width:${pct}%;background:${isLow?'var(--rd)':pct<60?'var(--am)':'var(--gn)'}"></div>
         </div>
-        ${s.poPending?'<span class="badge am" style="font-size:9px;">PO Pending</span>':isLow?`<button class="btn bp btn-xs" onclick="reorderStock('${s.sku}','${s.name}')">Reorder</button>`:'<span class="badge gn" style="font-size:9px;">OK</span>'}
+        ${s.poPending?'<span class="badge am" style="font-size:9px;">PO Pending</span>':isLow?`<button class="btn bp btn-xs" onclick="event.stopPropagation();reorderStock('${s.sku}','${s.name}')">Reorder</button>`:'<span class="badge gn" style="font-size:9px;">OK</span>'}
       </div>
     </div>`;
   }).join('')}`;
+}
+/* ── Stock product history: receipts/usage movements for this SKU ── */
+function stockProfileDrawer(sku){
+  const s=STOCK_DATA.find(x=>x.sku===sku); if(!s)return;
+  const movements=s.movements||[];
+  nxDrawerOpen({
+    title:s.name,sub:s.sku+' · '+s.cat,icon:'package',color:s.color,
+    body:nxKV([['On Hand',s.onHand+' '+s.unit],['Reorder Point',s.reorder+' '+s.unit],['Max Stock',s.max+' '+s.unit],['Unit Cost',fmt(s.cost)]])
+      +'<div class="nx-sec">Stock Movement History</div>'
+      +(movements.length?movements.slice().reverse().map(m=>`<div class="stat-row"><span class="stat-lbl">${m.type}</span><span class="stat-val" style="color:${m.qty>0?'var(--gn)':'var(--rd)'};">${m.qty>0?'+':''}${m.qty} ${s.unit} · ${m.ts}</span></div>`).join(''):'<div style="font-size:11px;color:var(--mid);padding:4px 0;">No movement history recorded yet.</div>'),
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>'
+      +(s.onHand<=s.reorder&&!s.poPending?`<button class="btn bp" onclick="nxDrawerClose();reorderStock('${sku}','${s.name}')">Reorder</button>`:''),
+  });
 }
 
 async function reorderStock(sku, name, silent){
@@ -11786,6 +11843,11 @@ const NXDB={
       get:()=>({register:RISK_REGISTER}),
       set:(st)=>{if(st.register)RISK_REGISTER=st.register;},
       render:()=>typeof renderRisk==='function'&&renderRisk(),
+    },
+    assets:{
+      get:()=>({register:ASSET_REGISTER}),
+      set:(st)=>{if(st.register)ASSET_REGISTER=st.register;},
+      render:()=>typeof renderAssetRegister==='function'&&renderAssetRegister(),
     },
     supply:{
       get:()=>({orders:SUPPLY_ORDERS}),
