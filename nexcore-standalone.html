@@ -1592,8 +1592,8 @@ body.dark .perm-check.on{background:var(--gn);}
             <div class="g2"><div class="card"><div class="ch2"><span class="ch2-title">Budget Utilisation</span></div><div class="cb" id="budgetUtil"></div></div><div class="card"><div class="ch2"><span class="ch2-title">Finance Budget</span></div><div class="cb" id="finBudgetUtil"></div></div></div>
           </div>
           <div class="tp" id="finTabs-pl"><div class="card"><div class="ch2"><span class="ch2-title">Profit & Loss — January 2025</span></div><div class="cb" style="padding:0;"><div class="tw"><table><thead><tr><th>Line Item</th><th>Budget</th><th>Actual</th><th>Variance</th></tr></thead><tbody><tr><td class="tb">Revenue</td><td class="mo">R 7,000,000</td><td class="mo">R 7,200,000</td><td class="mo" style="color:var(--gn);">+R 200,000</td></tr><tr><td class="tb">Cost of Sales</td><td class="mo">R 2,100,000</td><td class="mo">R 2,040,000</td><td class="mo" style="color:var(--gn);">+R 60,000</td></tr><tr><td class="tb">Gross Profit</td><td class="mo">R 4,900,000</td><td class="mo">R 5,160,000</td><td class="mo" style="color:var(--gn);">+R 260,000</td></tr><tr><td class="tb">Operating Expenses</td><td class="mo">R 3,600,000</td><td class="mo">R 3,130,000</td><td class="mo" style="color:var(--gn);">+R 470,000</td></tr><tr><td class="tb" style="font-size:13px;font-weight:900;">EBITDA</td><td class="mo" style="font-weight:900;">R 1,300,000</td><td class="mo" style="font-weight:900;color:var(--gn);">R 2,030,000</td><td class="mo" style="color:var(--gn);font-weight:900;">+R 730,000</td></tr></tbody></table></div></div></div></div>
-          <div class="tp" id="finTabs-cashflow"><div class="card"><div class="ch2"><span class="ch2-title">Cash Flow Statement</span></div><div class="cb"><div class="kg kg-3"><div class="kpi gn"><div class="kpi-lbl">Opening Balance</div><div class="kpi-val">R 16.2M</div></div><div class="kpi bl"><div class="kpi-lbl">Net Inflows</div><div class="kpi-val">+R 9.4M</div></div><div class="kpi or"><div class="kpi-lbl">Closing Balance</div><div class="kpi-val">R 18.4M</div></div></div></div></div></div>
-          <div class="tp" id="finTabs-sars"><div class="card"><div class="ch2"><span class="ch2-title">SARS Submissions</span></div><div class="cb" style="padding:0;"><div class="tw"><table><thead><tr><th>Type</th><th>Period</th><th>Amount</th><th>Due Date</th><th>Status</th></tr></thead><tbody><tr><td class="tb">PAYE EMP201</td><td>Jan 2025</td><td class="mo">R 120,642</td><td>7 Feb 2025</td><td><span class="badge am">Pending</span></td></tr><tr><td class="tb">VAT201</td><td>Dec 2024</td><td class="mo">R 1,080,000</td><td>25 Jan 2025</td><td><span class="badge gn">Submitted</span></td></tr><tr><td class="tb">UIF</td><td>Jan 2025</td><td class="mo">R 6,741</td><td>7 Feb 2025</td><td><span class="badge am">Pending</span></td></tr></tbody></table></div></div></div></div>
+          <div class="tp" id="finTabs-cashflow"><div id="financeCashflowBody">Loading…</div></div>
+          <div class="tp" id="finTabs-sars"><div id="financeSarsBody">Loading…</div></div>
         </div>
       </div>
 
@@ -11802,7 +11802,8 @@ CMD_ITEMS.push(
   const _o=openPage;
   window.openPage=function(name){
     _o(name);
-    const m={paypro:renderPaypro,fleet:renderFleet,access:renderAccess,iam:renderIAM,integrations:renderIntegrations,brand:renderBrand,email:renderEmail,analytics:renderAnalytics,finance:enhanceDashboard};
+    const m={paypro:renderPaypro,fleet:renderFleet,access:renderAccess,iam:renderIAM,integrations:renderIntegrations,brand:renderBrand,email:renderEmail,analytics:renderAnalytics,
+      finance:()=>{enhanceDashboard();renderFinanceCashflowTab();renderFinanceSarsTab();}};
     if(m[name])setTimeout(m[name],50);
   };
 })();
@@ -12100,6 +12101,11 @@ const NXDB={
       get:()=>({invoices:INVOICES_DATA,recurring:INVOICE_RECURRING_META}),
       set:(st)=>{if(st.invoices)INVOICES_DATA=st.invoices;if(st.recurring)INVOICE_RECURRING_META=st.recurring;},
       render:()=>typeof renderBillingFull==='function'&&renderBillingFull(),
+    },
+    sars:{
+      get:()=>({submissions:SARS_SUBMISSIONS}),
+      set:(st)=>{if(st.submissions)SARS_SUBMISSIONS=st.submissions;},
+      render:()=>typeof renderFinanceSarsTab==='function'&&renderFinanceSarsTab(),
     },
     supply:{
       get:()=>({orders:SUPPLY_ORDERS}),
@@ -13638,12 +13644,14 @@ function pdfInvoice(inv){
   const client=inv.client||inv.client_name||inv.vendor||'Client';
   const total=Number(inv.total||inv.total_amount||inv.amount||0);
   const excl=Number(inv.amtExcl||total/1.15), vat=total-excl;
+  const recurring=inv.recurring||(typeof INVOICE_RECURRING_META!=='undefined'?INVOICE_RECURRING_META[no]:null);
   const p=nxPDFStart('Tax Invoice',no);
   if(!p){nxDocOpen(invoiceHTML(inv));return;}
-  p.kv([['Billed To',client],['Contact',inv.contact||inv.contact_email||'-'],['Issue Date',inv.issued||inv.issue_date||new Date().toLocaleDateString('en-ZA')],['Due Date',inv.due||inv.due_date||'30 days']])
+  p.total('TOTAL DUE',fmt(Math.round(total)))
+   .kv([['Billed To',client],['Contact',inv.contact||inv.contact_email||'-'],['Issue Date',inv.issued||inv.issue_date||new Date().toLocaleDateString('en-ZA')],['Due Date',inv.due||inv.due_date||'30 days'],
+     ...(recurring?[['Recurring',recurring.frequency+' — next '+recurring.nextDate]]:[])])
    .sec('Line Items')
    .table(['Description','Amount'],[[inv.description||'Professional services rendered',fmt(Math.round(excl))],['VAT @ 15%',fmt(Math.round(vat))]])
-   .total('TOTAL DUE',fmt(Math.round(total)))
    .note('Payment terms: 30 days from date of invoice. Use the invoice number as your payment reference.')
    .save(no+'.pdf');
   writeAudit('PDF','Billing',no,total,'low');
@@ -13731,6 +13739,170 @@ function nxComputeBalanceSheet(){
     totalEquity:equity.reduce((s,a)=>s-a.balance,0),
   };
 }
+
+/* ══ FINANCE: Cash Flow Statement — history + live period ══
+   Prior periods are a closed historical log (like an audit trail); the most
+   recent period is computed live from the real bank feed so it moves with
+   actual reconciliation activity, and its closing balance is derived to tie
+   out exactly to the live GL Bank balance (COA 1000). ══ */
+let CASHFLOW_HISTORY=[
+  {period:'Oct 2024',opening:19800000,operating:3100000,investing:-820000,financing:-200000,closing:21880000},
+  {period:'Nov 2024',opening:21880000,operating:2450000,investing:-390000,financing:-200000,closing:23740000},
+  {period:'Dec 2024',opening:23740000,operating:1102320,investing:0,       financing:-200000,closing:24642320},
+];
+function _cfClassify(desc){
+  if(/DELL|EQUIPMENT|ASSET|VEHICLE|LAPTOP/i.test(desc))return 'investing';
+  if(/LOAN|CAPITAL|DIVIDEND|SHARE/i.test(desc))return 'financing';
+  return 'operating';
+}
+function computeCashFlowCurrent(){
+  const opening=CASHFLOW_HISTORY.length?CASHFLOW_HISTORY[CASHFLOW_HISTORY.length-1].closing:Number(COA.find(a=>a.code==='1000')?.balance||0);
+  const lines=BANK_STATEMENT.map(b=>({...b,cat:_cfClassify(b.desc)}));
+  const sum=cat=>lines.filter(l=>l.cat===cat).reduce((s,l)=>s+l.amount,0);
+  const operating=sum('operating'), investing=sum('investing'), financing=sum('financing');
+  return {period:'Jan 2025',opening,operating,investing,financing,closing:opening+operating+investing+financing,lines};
+}
+function cashFlowAllPeriods(){ return [...CASHFLOW_HISTORY, computeCashFlowCurrent()]; }
+function cfPeriodDrawer(period){
+  const all=cashFlowAllPeriods();
+  const p=all.find(x=>x.period===period); if(!p)return;
+  const net=p.operating+p.investing+p.financing;
+  nxDrawerOpen({
+    title:'Cash Flow — '+p.period, sub:'Net movement '+(net>=0?'+':'')+fmt(net), icon:'trending', color:net>=0?'#16A34A':'#DC2626',
+    body: nxKV([['Opening Balance',fmt(p.opening)],['Operating Activities',(p.operating>=0?'+':'')+fmt(p.operating)],['Investing Activities',(p.investing>=0?'+':'')+fmt(p.investing)],['Financing Activities',(p.financing>=0?'+':'')+fmt(p.financing)],['Closing Balance',fmt(p.closing)]])
+      +(p.lines?('<div class="nx-sec">Transactions</div><div class="tw"><table><thead><tr><th>Date</th><th>Description</th><th style="text-align:right;">Amount</th><th>Category</th></tr></thead><tbody>'
+        +p.lines.map(l=>`<tr><td style="font-size:11px;">${l.date}</td><td>${l.desc}</td><td class="mo" style="text-align:right;color:${l.amount<0?'var(--rd)':'var(--gn)'};">${l.amount<0?'−':''}${fmt(Math.abs(l.amount))}</td><td><span class="badge ${l.cat==='operating'?'bl':l.cat==='investing'?'am':'pu'}">${l.cat}</span></td></tr>`).join('')
+        +'</tbody></table></div>'):''),
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>',
+  });
+}
+
+/* ══ FINANCE: SARS submissions — history + live-computed pending items ══ */
+let SARS_SUBMISSIONS=[
+  {id:'EMP201-2024-11',type:'PAYE EMP201',period:'Nov 2024',amount:118420, due:'2024-12-07',status:'Submitted',submittedOn:'2024-12-05'},
+  {id:'VAT201-2024-11', type:'VAT201',    period:'Nov 2024',amount:1042000,due:'2024-12-25',status:'Submitted',submittedOn:'2024-12-22'},
+  {id:'EMP201-2024-12',type:'PAYE EMP201',period:'Dec 2024',amount:119850, due:'2025-01-07',status:'Submitted',submittedOn:'2025-01-06'},
+  {id:'VAT201-2024-12', type:'VAT201',    period:'Dec 2024',amount:1080000,due:'2025-01-25',status:'Submitted',submittedOn:'2025-01-25'},
+];
+function sarsCurrentDue(){
+  let g=0,paye=0,uif=0;
+  PAYPRO_EMPS.forEach(e=>{const c=payproCalc(e);g+=c.gross;paye+=c.paye;uif+=c.uif;});
+  const sdl=g*.01;
+  const invs=(typeof _billingInvoices==='function'?_billingInvoices():[]);
+  const outputVat=invs.reduce((s,i)=>s+Number(i.total||i.total_amount||0),0)*0.15/1.15;
+  const pos=(typeof INVOICES!=='undefined'?INVOICES:[]);
+  const inputVat=pos.reduce((s,p)=>s+Number(p.amount||0),0)*0.15/1.15;
+  const items=[
+    {id:'EMP201-2025-02',type:'PAYE EMP201',period:'Feb 2025',amount:Math.round(paye+uif*2+sdl),due:'2025-03-07',status:'Pending'},
+    {id:'VAT201-2025-01', type:'VAT201',    period:'Jan 2025',amount:Math.round(outputVat-inputVat),due:'2025-02-25',status:'Pending'},
+    {id:'UIF-2025-02',    type:'UIF',       period:'Feb 2025',amount:Math.round(uif*2),due:'2025-03-07',status:'Pending'},
+  ];
+  const submittedIds=new Set(SARS_SUBMISSIONS.map(s=>s.id));
+  return items.filter(it=>!submittedIds.has(it.id));
+}
+function sarsAllSubmissions(){ return [...sarsCurrentDue(),...SARS_SUBMISSIONS]; }
+function sarsSubmit(id){
+  const it=sarsCurrentDue().find(x=>x.id===id); if(!it)return;
+  SARS_SUBMISSIONS.unshift({...it,status:'Submitted',submittedOn:new Date().toISOString().slice(0,10)});
+  writeAudit('SARS_SUBMIT','Finance',id,it.amount,'high');
+  NXDB.save('sars');
+  renderFinanceSarsTab();
+  toast(it.type+' for '+it.period+' submitted to SARS eFiling','#16A34A');
+}
+function sarsDrawer(id){
+  const it=sarsAllSubmissions().find(x=>x.id===id); if(!it)return;
+  nxDrawerOpen({
+    title:it.type+' — '+it.period, sub:fmt(it.amount)+' · due '+it.due, icon:'file', color:it.status==='Submitted'?'#16A34A':'#D97706',
+    body:nxKV([['Type',it.type],['Period',it.period],['Amount',fmt(it.amount)],['Due Date',it.due],['Status',it.status],...(it.submittedOn?[['Submitted On',it.submittedOn]]:[])]),
+    actions:(it.status==='Pending'?`<button class="btn bp" onclick="sarsSubmit('${id}')">Submit to SARS eFiling</button>`:'')
+      +(it.type==='PAYE EMP201'?'<button class="btn bs" onclick="emp201PDF()">View EMP201</button>':'')
+      +(it.type==='VAT201'?'<button class="btn bs" onclick="pdfVAT201()">View VAT201</button>':'')
+      +'<button class="btn bs" onclick="nxDrawerClose()">Close</button>',
+  });
+}
+function pdfVAT201(){
+  const invs=(typeof _billingInvoices==='function'?_billingInvoices():[]);
+  const outputVat=invs.reduce((s,i)=>s+Number(i.total||i.total_amount||0),0)*0.15/1.15;
+  const pos=(typeof INVOICES!=='undefined'?INVOICES:[]);
+  const inputVat=pos.reduce((s,p)=>s+Number(p.amount||0),0)*0.15/1.15;
+  const net=outputVat-inputVat;
+  const p=nxPDFStart('VAT201 Return','2025/01');
+  if(!p){
+    const body='<table><thead><tr><th>Line</th><th class="r">Amount</th></tr></thead><tbody>'
+      +'<tr><td>Output VAT (on sales)</td><td class="r mono">'+fmt(Math.round(outputVat))+'</td></tr>'
+      +'<tr><td>Input VAT (on purchases)</td><td class="r mono">'+fmt(Math.round(inputVat))+'</td></tr>'
+      +'<tr style="font-weight:900;"><td>NET VAT PAYABLE</td><td class="r mono">'+fmt(Math.round(net))+'</td></tr></tbody></table>'
+      +'<div style="margin-top:14px;padding:12px;background:#FAFAFA;border-radius:8px;font-size:11px;color:#52525B;">VAT vendor number 4530778888 · Period 2025/01 · Due by 25 February 2025.</div>';
+    nxDocOpen(nxDocChrome('VAT201 Return','2025/01',body,{banking:false}));
+    writeAudit('VAT201','Finance','2025-01',Math.round(net),'high');
+    return;
+  }
+  p.total('NET VAT PAYABLE',fmt(Math.round(net)))
+   .kv([['VAT Vendor No','4530778888'],['Period','2025/01'],['Due Date','25 Feb 2025']])
+   .sec('Reconciliation')
+   .table(['Line','Amount'],[['Output VAT (on sales)',fmt(Math.round(outputVat))],['Input VAT (on purchases)',fmt(Math.round(inputVat))]])
+   .note('Late submission attracts a penalty plus interest at the prescribed rate. Submit via eFiling before the deadline.')
+   .save('VAT201-2025-01.pdf');
+  writeAudit('VAT201','Finance','2025-01',Math.round(net),'high');
+}
+
+function renderFinanceCashflowTab(){
+  const el=document.getElementById('financeCashflowBody'); if(!el)return;
+  const periods=cashFlowAllPeriods();
+  const cur=periods[periods.length-1];
+  el.innerHTML=`
+    <div class="kg kg-3" style="margin-bottom:14px;">
+      <div class="kpi gn"><div class="kpi-lbl">Opening Balance</div><div class="kpi-val">${fmt(cur.opening)}</div><div class="kpi-sub">${cur.period}</div></div>
+      <div class="kpi bl"><div class="kpi-lbl">Net Movement</div><div class="kpi-val">${(cur.operating+cur.investing+cur.financing)>=0?'+':''}${fmt(cur.operating+cur.investing+cur.financing)}</div><div class="kpi-sub">Operating + Investing + Financing</div></div>
+      <div class="kpi or"><div class="kpi-lbl">Closing Balance</div><div class="kpi-val">${fmt(cur.closing)}</div><div class="kpi-sub">Ties to GL Bank (1000)</div></div>
+    </div>
+    <div class="card">
+      <div class="ch2"><span class="ch2-title">Cash Flow History</span><span class="ch2-sub">Click a period for the full breakdown</span></div>
+      <div class="cb" style="padding:0;"><div class="tw"><table>
+        <thead><tr><th>Period</th><th style="text-align:right;">Opening</th><th style="text-align:right;">Operating</th><th style="text-align:right;">Investing</th><th style="text-align:right;">Financing</th><th style="text-align:right;">Closing</th></tr></thead>
+        <tbody>${periods.map(p=>`<tr style="cursor:pointer;" onclick="cfPeriodDrawer('${p.period}')">
+          <td class="tb">${p.period}</td>
+          <td class="mo" style="text-align:right;">${fmt(p.opening)}</td>
+          <td class="mo" style="text-align:right;color:${p.operating>=0?'var(--gn)':'var(--rd)'};">${p.operating>=0?'+':''}${fmt(p.operating)}</td>
+          <td class="mo" style="text-align:right;color:${p.investing>=0?'var(--gn)':'var(--rd)'};">${p.investing>=0?'+':''}${fmt(p.investing)}</td>
+          <td class="mo" style="text-align:right;color:${p.financing>=0?'var(--gn)':'var(--rd)'};">${p.financing>=0?'+':''}${fmt(p.financing)}</td>
+          <td class="mo" style="text-align:right;font-weight:800;">${fmt(p.closing)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div></div>
+    </div>
+    <div class="card" style="margin-top:12px;"><div class="ch2"><span class="ch2-title">Closing Balance Trend</span></div><div class="cb" id="cfTrendChart"></div></div>`;
+  setTimeout(()=>{
+    const chartEl=document.getElementById('cfTrendChart');
+    if(chartEl)svgLineChart(chartEl,[{label:'Closing Balance',values:periods.map(p=>p.closing)}],periods.map(p=>p.period),{h:130,zeroBase:false});
+  },60);
+}
+
+function renderFinanceSarsTab(){
+  const el=document.getElementById('financeSarsBody'); if(!el)return;
+  const all=sarsAllSubmissions();
+  const totalDue=sarsCurrentDue().reduce((s,i)=>s+i.amount,0);
+  const statusBadge={Pending:'am',Submitted:'gn'};
+  el.innerHTML=`
+    <div class="kg kg-3" style="margin-bottom:14px;">
+      <div class="kpi rd"><div class="kpi-lbl">Due Now</div><div class="kpi-val">${fmt(totalDue)}</div><div class="kpi-sub">${sarsCurrentDue().length} submission(s) pending</div></div>
+      <div class="kpi gn"><div class="kpi-lbl">Submitted YTD</div><div class="kpi-val">${fmt(SARS_SUBMISSIONS.reduce((s,i)=>s+i.amount,0))}</div><div class="kpi-sub">${SARS_SUBMISSIONS.length} filings</div></div>
+      <div class="kpi bl"><div class="kpi-lbl">Compliance Status</div><div class="kpi-val">${sarsCurrentDue().some(i=>new Date(i.due)<new Date())?'At Risk':'On Track'}</div><div class="kpi-sub">eFiling connected</div></div>
+    </div>
+    <div class="card">
+      <div class="ch2"><span class="ch2-title">SARS Submissions</span><span class="ch2-sub">Real PAYE/UIF from payroll · VAT from real invoices/POs</span></div>
+      <div class="cb" style="padding:0;"><div class="tw"><table>
+        <thead><tr><th>Type</th><th>Period</th><th style="text-align:right;">Amount</th><th>Due Date</th><th>Status</th><th></th></tr></thead>
+        <tbody>${all.map(it=>`<tr>
+          <td class="tb">${it.type}</td><td>${it.period}</td>
+          <td class="mo" style="text-align:right;">${fmt(it.amount)}</td>
+          <td style="font-size:11px;color:${it.status==='Pending'&&new Date(it.due)<new Date()?'var(--rd)':'inherit'};">${it.due}</td>
+          <td><span class="badge ${statusBadge[it.status]||'gy'}">${it.status}</span></td>
+          <td><button class="btn bs btn-xs" onclick="sarsDrawer('${it.id}')">${it.status==='Pending'?'Review':'View'}</button></td>
+        </tr>`).join('')}</tbody>
+      </table></div></div>
+    </div>`;
+}
+
 function pdfPnL(){
   const f=nxComputePnL(), b=nxComputeBalanceSheet();
   const p=nxPDFStart('Management Accounts','Live');
