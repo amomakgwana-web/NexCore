@@ -5551,7 +5551,8 @@ function employeeProfileDrawer(name){
   });
   nxDrawerOpen({
     title:emp?emp.name:name,sub:emp?(emp.role||'Employee')+' · '+(emp.dept||'—'):'No payroll record on file',icon:'person',color:'var(--bl)',
-    body:(emp?nxKV([['Department',emp.dept||'—'],['Role',emp.role||'—'],['Start Date',emp.startDate||'—'],['Basic Salary',fmt(emp.basic||0)],['Leave Balance',(emp.leaveBal||0)+' days']]):'')
+    body:(emp?nxKV([['Department',emp.dept||'—'],['Role',emp.role||'—'],['Start Date',emp.startDate||'—'],['Basic Salary',fmt(emp.basic||0)],['Leave Balance',(emp.leaveBal||0)+' days'],['Reporting Manager',emp.manager||'—']]):'')
+      +(emp&&currentRole==='admin'?'<div class="nx-sec">Reassign Manager</div><div style="display:flex;gap:6px;"><select class="fi" id="epManagerSelect">'+[...new Set(PAYPRO_EMPS.map(e=>e.name))].filter(n=>n!==emp.name).map(n=>'<option '+(n===emp.manager?'selected':'')+'>'+n+'</option>').join('')+'</select><button class="btn bs btn-xs" onclick="employeeChangeManager(\''+name.replace(/'/g,"\\'")+'\')">Save</button></div>':'')
       +'<div class="nx-sec">Assignments</div>'
       +(assignments.length?assignments.map(a=>`<div class="stat-row"><span class="stat-lbl">${a.name} · ${a.group}</span><span class="stat-val">${a.status}</span></div>`).join(''):'<div style="font-size:11px;color:var(--mid);padding:4px 0;">No open board items assigned</div>')
       +'<div class="nx-sec">Attendance History'+(attRows.length?' — last '+attRows.length+' days':'')+'</div>'
@@ -5564,6 +5565,19 @@ function employeeProfileDrawer(name){
       ${empIdx>=0?`<button class="btn bs" onclick="nxDrawerClose();pdfContract(${empIdx})">View Contract</button>`:''}
       <button class="btn bp" onclick="nxDrawerClose();emailCompose('${emp?.email||''}')">Email Employee</button>`,
   });
+}
+/* ── Admin-only: change an employee's reporting manager (gates who can
+   approve their expense claims and leave requests) ── */
+function employeeChangeManager(name){
+  const emp=nxFindEmployeeByName(name); if(!emp)return;
+  const newManager=document.getElementById('epManagerSelect')?.value; if(!newManager)return;
+  const oldManager=emp.manager;
+  emp.manager=newManager;
+  CLAIMS_DATA.filter(c=>c.emp===name&&c.manager===oldManager).forEach(c=>c.manager=newManager);
+  NXDB.save('paypro');
+  writeAudit('ChangeManager','HR',name+' '+(oldManager||'—')+' -> '+newManager,0,'medium');
+  toast(name+"'s manager changed to "+newManager,'#16A34A');
+  employeeProfileDrawer(name);
 }
 
 /* ═══ USER LIST ═══ */
@@ -6773,11 +6787,11 @@ const XPAYMENTS_DATA = [
 ];
 
 const CLAIMS_DATA = [
-  {id:'CLAIM-0041',emp:'Kagiso Dlamini',    empId:'EMP-005',dept:'Engineering',category:'Travel',   desc:'Uber to client site — Midrand',  amount:1840,  receipts:2,status:'Pending Manager', submitted:'2025-01-14',managerApproval:null,cfoApproval:null,paid:false},
-  {id:'CLAIM-0040',emp:'Lerato Khumalo',    empId:'EMP-002',dept:'Operations',  category:'Meals',    desc:'Team lunch — vendor meeting',    amount:2240,  receipts:3,status:'Pending CFO',     submitted:'2025-01-13',managerApproval:'2025-01-14',cfoApproval:null,paid:false},
-  {id:'CLAIM-0039',emp:'Sipho Nkosi',       empId:'EMP-003',dept:'HR',          category:'Stationery',desc:'Office supplies — HR drive',    amount:3250,  receipts:4,status:'Paid',           submitted:'2025-01-08',managerApproval:'2025-01-09',cfoApproval:'2025-01-10',paid:true},
-  {id:'CLAIM-0038',emp:'Thabo Mokoena',     empId:'EMP-001',dept:'Engineering', category:'Travel',   desc:'Flight to Cape Town — DHA mtg',  amount:8400,  receipts:2,status:'Pending Manager', submitted:'2025-01-15',managerApproval:null,cfoApproval:null,paid:false},
-  {id:'CLAIM-0037',emp:'Nomsa Petersen',    empId:'EMP-004',dept:'Finance',     category:'Training', desc:'SAICA CPD conference fee',        amount:4800,  receipts:1,status:'Paid',           submitted:'2025-01-05',managerApproval:'2025-01-06',cfoApproval:'2025-01-07',paid:true},
+  {id:'CLAIM-0041',emp:'Kagiso Dlamini',    empId:'EMP-005',dept:'Engineering',category:'Travel',   desc:'Uber to client site — Midrand',  amount:1840,  receipts:2,status:'Pending Manager', submitted:'2025-01-14',managerApproval:null,cfoApproval:null,paid:false,manager:'Thabo Mokoena'},
+  {id:'CLAIM-0040',emp:'Lerato Khumalo',    empId:'EMP-002',dept:'Operations',  category:'Meals',    desc:'Team lunch — vendor meeting',    amount:2240,  receipts:3,status:'Pending CFO',     submitted:'2025-01-13',managerApproval:'2025-01-14',cfoApproval:null,paid:false,manager:'Thabo Mokoena'},
+  {id:'CLAIM-0039',emp:'Sipho Nkosi',       empId:'EMP-003',dept:'HR',          category:'Stationery',desc:'Office supplies — HR drive',    amount:3250,  receipts:4,status:'Paid',           submitted:'2025-01-08',managerApproval:'2025-01-09',cfoApproval:'2025-01-10',paid:true,manager:'Thabo Mokoena'},
+  {id:'CLAIM-0038',emp:'Thabo Mokoena',     empId:'EMP-001',dept:'Engineering', category:'Travel',   desc:'Flight to Cape Town — DHA mtg',  amount:8400,  receipts:2,status:'Pending Manager', submitted:'2025-01-15',managerApproval:null,cfoApproval:null,paid:false,manager:'Sipho Dlamini'},
+  {id:'CLAIM-0037',emp:'Nomsa Petersen',    empId:'EMP-004',dept:'Finance',     category:'Training', desc:'SAICA CPD conference fee',        amount:4800,  receipts:1,status:'Paid',           submitted:'2025-01-05',managerApproval:'2025-01-06',cfoApproval:'2025-01-07',paid:true,manager:'Thabo Mokoena'},
 ];
 
 /* vendor credit scoring data */
@@ -7163,16 +7177,21 @@ function renderClaims() {
         </div>`).join('')}
       </div></div>`;
   } else if(role === 'manager') {
-    const pending = CLAIMS_DATA.filter(c=>c.status==='Pending Manager');
+    /* Only claims actually assigned to this manager route here — previously
+       any 'manager'-role user could approve every claim regardless of who
+       the employee's real reporting manager was. */
+    const myName=currentUser?.name||'';
+    const myClaims=CLAIMS_DATA.filter(c=>c.manager===myName);
+    const pending = myClaims.filter(c=>c.status==='Pending Manager');
     view = `
       <div class="kg kg-3" style="margin-bottom:14px;">
         <div class="kpi or"><div class="kpi-lbl">Awaiting Your Approval</div><div class="kpi-val">${pending.length}</div><div class="kpi-sub">${fmt(pending.reduce((s,c)=>s+c.amount,0))}</div></div>
-        <div class="kpi bl"><div class="kpi-lbl">All Pending</div><div class="kpi-val">${CLAIMS_DATA.filter(c=>!c.paid).length}</div></div>
-        <div class="kpi gn"><div class="kpi-lbl">Paid This Month</div><div class="kpi-val">${CLAIMS_DATA.filter(c=>c.paid).length}</div></div>
+        <div class="kpi bl"><div class="kpi-lbl">All Pending (your reports)</div><div class="kpi-val">${myClaims.filter(c=>!c.paid).length}</div></div>
+        <div class="kpi gn"><div class="kpi-lbl">Paid This Month</div><div class="kpi-val">${myClaims.filter(c=>c.paid).length}</div></div>
       </div>
-      <div class="card"><div class="ch2"><span class="ch2-title">Claims Awaiting Your Approval</span></div>
+      <div class="card"><div class="ch2"><span class="ch2-title">Claims Awaiting Your Approval</span><span class="ch2-sub">Only your direct reports' claims appear here</span></div>
       <div class="cb" style="padding:0;">
-        ${CLAIMS_DATA.map(c=>`<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--bd-l);">
+        ${myClaims.length?myClaims.map(c=>`<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--bd-l);">
           <div style="width:34px;height:34px;border-radius:50%;background:var(--bl-l);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--bl-d);">${c.emp.split(' ').map(n=>n[0]).join('').substring(0,2)}</div>
           <div style="flex:1;"><div style="font-size:12px;font-weight:700;">${c.emp} — ${c.desc}</div>
           <div style="font-size:10px;color:var(--mid);">${c.id} · ${c.category} · ${c.dept} · ${c.receipts} receipt(s)</div>
@@ -7182,7 +7201,7 @@ function renderClaims() {
             <button class="btn bg btn-xs" onclick="approveClaim('${c.id}','manager')">Approve</button>
             <button class="btn bd2 btn-xs" onclick="toast('Claim ${c.id} rejected','#DC2626')">Reject</button>
           </div>`:''}
-        </div>`).join('')}
+        </div>`).join(''):'<div style="text-align:center;padding:28px;color:var(--mid);font-size:12px;">No claims from your direct reports.</div>'}
       </div></div>`;
   } else {
     // CFO / Admin: full view + final approval + payment release
@@ -7236,6 +7255,18 @@ function renderClaimTracker(c) {
 function approveClaim(claimId, approver) {
   const c = CLAIMS_DATA.find(x=>x.id===claimId);
   if(!c) return;
+  /* Enforce the real approval chain: the manager stage requires being this
+     claim's assigned reporting manager (or admin, acting as superuser);
+     the CFO stage requires the cfo/admin role. Without this, any
+     'manager'-role account could sign off on anyone's claim. */
+  if(approver==='manager'&&currentRole!=='admin'&&currentUser?.name!==c.manager){
+    toast('Only '+c.manager+' (this employee\'s manager) can approve this claim','#DC2626');
+    return;
+  }
+  if(approver==='cfo'&&currentRole!=='admin'&&currentRole!=='cfo'){
+    toast('Only the CFO can give final approval','#DC2626');
+    return;
+  }
   const today = new Date().toISOString().split('T')[0];
   if(approver==='manager') {
     c.managerApproval = today;
@@ -10403,14 +10434,14 @@ function renderSmartInsights(){
 
 /* ══ PAYROLL ENGINE (employer/manager view) ══════════════ */
 let PAYPRO_EMPS=[
-  {id:'EMP-001',name:'Sipho Nkosi',dept:'Engineering',basic:52000,commission:0,bonus:0,medical:2800,retirement:3900,leaveBal:13},
-  {id:'EMP-002',name:'Thandi Mabaso',dept:'Sales',basic:38000,commission:14200,bonus:0,medical:2100,retirement:2850,leaveBal:9},
-  {id:'EMP-003',name:'Kagiso Dube',dept:'IT Support',basic:34000,commission:0,bonus:5000,medical:2100,retirement:2550,leaveBal:16},
-  {id:'EMP-004',name:'Nomsa Petersen',dept:'Marketing',basic:41000,commission:3800,bonus:0,medical:2800,retirement:3075,leaveBal:11},
-  {id:'EMP-005',name:'Lerato Khumalo',dept:'HR',basic:48000,commission:0,bonus:0,medical:2800,retirement:3600,leaveBal:18},
-  {id:'EMP-006',name:'Thabo Mokoena',dept:'Operations',basic:56000,commission:0,bonus:8000,medical:3400,retirement:4200,leaveBal:7},
-  {id:'EMP-007',name:'Zanele Sithole',dept:'Finance',basic:44000,commission:0,bonus:0,medical:2100,retirement:3300,leaveBal:14},
-  {id:'EMP-008',name:'Bongani Zulu',dept:'Sales',basic:36000,commission:19600,bonus:2500,medical:2100,retirement:2700,leaveBal:5},
+  {id:'EMP-001',name:'Sipho Nkosi',dept:'Engineering',basic:52000,commission:0,bonus:0,medical:2800,retirement:3900,leaveBal:13,manager:'Thabo Mokoena'},
+  {id:'EMP-002',name:'Thandi Mabaso',dept:'Sales',basic:38000,commission:14200,bonus:0,medical:2100,retirement:2850,leaveBal:9,manager:'Thabo Mokoena'},
+  {id:'EMP-003',name:'Kagiso Dube',dept:'IT Support',basic:34000,commission:0,bonus:5000,medical:2100,retirement:2550,leaveBal:16,manager:'Thabo Mokoena'},
+  {id:'EMP-004',name:'Nomsa Petersen',dept:'Marketing',basic:41000,commission:3800,bonus:0,medical:2800,retirement:3075,leaveBal:11,manager:'Thabo Mokoena'},
+  {id:'EMP-005',name:'Lerato Khumalo',dept:'HR',basic:48000,commission:0,bonus:0,medical:2800,retirement:3600,leaveBal:18,manager:'Thabo Mokoena'},
+  {id:'EMP-006',name:'Thabo Mokoena',dept:'Operations',basic:56000,commission:0,bonus:8000,medical:3400,retirement:4200,leaveBal:7,manager:'Sipho Dlamini'},
+  {id:'EMP-007',name:'Zanele Sithole',dept:'Finance',basic:44000,commission:0,bonus:0,medical:2100,retirement:3300,leaveBal:14,manager:'Thabo Mokoena'},
+  {id:'EMP-008',name:'Bongani Zulu',dept:'Sales',basic:36000,commission:19600,bonus:2500,medical:2100,retirement:2700,leaveBal:5,manager:'Thabo Mokoena'},
 ];
 let _payproPosted=false;
 let PAYROLL_RECON={period:'February 2025',managerApproved:false,cfoApproved:false};
@@ -13560,11 +13591,13 @@ function submitClaim(){
   const rcpts=parseInt(document.getElementById('clRcpts')?.value)||1;
   if(amt<=0){toast('Enter the claim amount','#DC2626');return;}
   if(!desc){toast('Describe the expense and business purpose','#DC2626');return;}
+  const submitterEmp=nxFindEmployeeByName(currentUser?.name);
   const claim={
     id:'CLAIM-'+String(42+CLAIMS_DATA.length).padStart(4,'0'),
-    emp:currentUser?.name||'You',empId:currentUser?.id||'EMP-000',dept:'—',
+    emp:currentUser?.name||'You',empId:currentUser?.id||'EMP-000',dept:submitterEmp?.dept||'—',
     category:cat,desc,amount:amt,receipts:rcpts,
     status:'Pending Manager',submitted:date,managerApproval:null,cfoApproval:null,paid:false,
+    manager:submitterEmp?.manager||'Thabo Mokoena',
   };
   CLAIMS_DATA.unshift(claim);
   closeModal('newClaimModal');
@@ -13719,6 +13752,8 @@ function onboardEmployeeDrawer(){
       +'<div class="fg"><label class="fl">Department</label><select class="fi" id="obDept"><option>Engineering</option><option>Sales</option><option>Finance</option><option>Marketing</option><option>Operations</option><option>HR</option><option>IT Support</option></select></div></div>'
       +'<div class="frow"><div class="fg"><label class="fl">Monthly Salary (R)</label><input class="fi" id="obSalary" type="number" placeholder="0"/></div>'
       +'<div class="fg"><label class="fl">Start Date</label><input class="fi" id="obStart" type="date"/></div></div>'
+      +'<div class="fg"><label class="fl">Reporting Manager</label><select class="fi" id="obManager">'+[...new Set(PAYPRO_EMPS.map(e=>e.name))].map(n=>'<option>'+n+'</option>').join('')+'</select>'
+      +'<div style="font-size:10px;color:var(--mu);margin-top:4px;">Expense claims and leave requests route to this manager first.</div></div>'
       +'<div class="nx-sec">Documents to send</div>'
       +[['Employment contract (auto-generated, e-sign)',1],['POPIA & IT acceptable-use policy',1],['Leave & remote-work policy',1],['Medical aid + retirement fund forms',0]]
         .map(([lbl,on],i)=>'<div class="stat-row"><span class="stat-lbl">'+lbl+'</span><button class="tgl '+(on?'on':'')+'" id="obDoc'+i+'" onclick="this.classList.toggle(\'on\')"><span></span></button></div>').join('')
@@ -13734,12 +13769,13 @@ async function onboardEmployeeSubmit(){
   const dept=document.getElementById('obDept')?.value||'Operations';
   const salary=parseFloat(document.getElementById('obSalary')?.value)||0;
   const start=document.getElementById('obStart')?.value||new Date().toISOString().slice(0,10);
+  const manager=document.getElementById('obManager')?.value||'';
   if(!name||!email||salary<=0){toast('Name, email and salary are required','#DC2626');return;}
   const dupe=PAYPRO_EMPS.find(p=>(p.email||'').toLowerCase()===email.toLowerCase())
     ||(window.USERS_LIST||[]).find(u=>(u.e||'').toLowerCase()===email.toLowerCase());
   if(dupe){toast('A user with this email already exists — use Reassign instead of re-onboarding','#DC2626');return;}
   const emp={id:'EMP-'+String(PAYPRO_EMPS.length+1).padStart(3,'0'),name,dept,basic:salary,commission:0,bonus:0,
-    medical:Math.round(salary*.055),retirement:Math.round(salary*.075),leaveBal:0,role,email,startDate:start};
+    medical:Math.round(salary*.055),retirement:Math.round(salary*.075),leaveBal:0,role,email,startDate:start,manager};
   PAYPRO_EMPS.push(emp);
   try{if(typeof EMPLOYEES!=='undefined'&&Array.isArray(EMPLOYEES))EMPLOYEES.push({name,dept,position:role,gross:salary,status:'Onboarding'});}catch(e){}
   nxDrawerClose();
