@@ -5210,20 +5210,73 @@ function renderVendorContent(){
     document.getElementById('vendorPortalTitle').textContent='Vendor Portal';
     document.getElementById('vendorPortalSub').textContent='Manage vendors · Review submitted invoices · 3-way match';
     document.getElementById('vendorPortalActions').innerHTML=`<button class="btn bs btn-sm" onclick="openModal('addVendorModal')">Invite Vendor</button><button class="btn bp btn-sm" onclick="toast('Running 3-way match…','#2563EB')">Run 3-Way Match</button>`;
+    const passed=VENDOR_INVOICES.filter(i=>i.match==='Passed').length;
+    const mismatch=VENDOR_INVOICES.filter(i=>i.match==='Mismatch').length;
+    const matchBadge={Passed:'gn','GRN Missing':'am',Mismatch:'rd'};
+    const statusBadge={'Pending Review':'am','Under Investigation':'rd','On Hold':'am',Approved:'gn',Paid:'gn'};
     el.innerHTML=`<div class="kg kg-4">
-      <div class="kpi bl"><div class="kpi-lbl">Active Vendors</div><div class="kpi-val">12</div><div class="kpi-sub">8 portal-enabled</div></div>
-      <div class="kpi or"><div class="kpi-lbl">Invoices Inbox</div><div class="kpi-val">5</div><div class="kpi-sub">Pending review</div></div>
-      <div class="kpi gn"><div class="kpi-lbl">3-Way Match Passed</div><div class="kpi-val">3</div><div class="kpi-sub">Ready to approve</div></div>
-      <div class="kpi rd"><div class="kpi-lbl">Mismatches</div><div class="kpi-val">2</div><div class="kpi-sub">Need investigation</div></div>
+      <div class="kpi bl"><div class="kpi-lbl">Active Vendors</div><div class="kpi-val">${VENDORS_LIST.length}</div><div class="kpi-sub">${VENDORS_LIST.filter(v=>v.portal).length} portal-enabled</div></div>
+      <div class="kpi or"><div class="kpi-lbl">Invoices Inbox</div><div class="kpi-val">${VENDOR_INVOICES.length}</div><div class="kpi-sub">Pending review</div></div>
+      <div class="kpi gn"><div class="kpi-lbl">3-Way Match Passed</div><div class="kpi-val">${passed}</div><div class="kpi-sub">Ready to approve</div></div>
+      <div class="kpi rd"><div class="kpi-lbl">Mismatches</div><div class="kpi-val">${mismatch}</div><div class="kpi-sub">Need investigation</div></div>
     </div>
-    <div class="card"><div class="ch2"><span class="ch2-title">Vendor Invoice Inbox</span></div><div class="cb" style="padding:0;"><div class="tw"><table><thead><tr><th>Invoice Ref</th><th>Vendor</th><th>PO Match</th><th>Amount</th><th>3-Way Match</th><th></th></tr></thead><tbody>
-      <tr><td class="mo tb">INV-DELL-4821</td><td class="tb">Dell Technologies SA</td><td class="mo">PO-2025-0892</td><td class="mo">R 284,500</td><td><span class="badge gn">Passed</span></td><td><button class="btn bp btn-xs" onclick="openModal('approvalModal')">Approve</button></td></tr>
-      <tr><td class="mo tb">INV-MSFT-0091</td><td class="tb">Microsoft SA</td><td class="mo">PO-2025-0888</td><td class="mo">R 135,200</td><td><span class="badge am">GRN Missing</span></td><td><button class="btn bs btn-xs" onclick="toast('Invoice held for review','#D97706')">Hold</button></td></tr>
-      <tr><td class="mo tb">INV-VOD-0044</td><td class="tb">Vodacom Business</td><td class="mo">PO-2025-0890</td><td class="mo">R 68,400</td><td><span class="badge gn">Passed</span></td><td><button class="btn bp btn-xs" onclick="toast('Invoice approved','#16A34A')">Approve</button></td></tr>
-      <tr><td class="mo tb">INV-NAS-0012</td><td class="tb">Nashua SA</td><td class="mo">PO-2025-0891</td><td class="mo">R 124,000</td><td><span class="badge gn">Passed</span></td><td><button class="btn bg btn-xs" onclick="toast('Payment queued via TransFund','#16A34A')">Pay</button></td></tr>
-      <tr><td class="mo tb">INV-PNP-0008</td><td class="tb">Pick n Pay Trade</td><td class="mo">PO-2025-0889</td><td class="mo">R 12,800</td><td><span class="badge rd">Mismatch</span></td><td><button class="btn bs btn-xs" onclick="toast('Invoice flagged for investigation','#DC2626')">Investigate</button></td></tr>
-    </tbody></table></div></div></div>`;
+    <div class="card"><div class="ch2"><span class="ch2-title">Vendor Invoice Inbox</span></div><div class="cb" style="padding:0;"><div class="tw"><table><thead><tr><th>Invoice Ref</th><th>Vendor</th><th>PO Match</th><th>Amount</th><th>3-Way Match</th><th>Status</th><th></th></tr></thead><tbody>${
+      VENDOR_INVOICES.map(inv=>`<tr>
+        <td class="mo tb">${inv.ref}</td><td class="tb">${inv.vendor}</td><td class="mo">${inv.po}</td><td class="mo">${fmt(inv.amount)}</td>
+        <td><span class="badge ${matchBadge[inv.match]||'gy'}">${inv.match}</span></td>
+        <td><span class="badge ${statusBadge[inv.status]||'gy'}">${inv.status}</span></td>
+        <td style="white-space:nowrap;"><button class="btn bs btn-xs" onclick="vendorInvoiceDrawer('${inv.ref}')">View</button></td>
+      </tr>`).join('')
+    }</tbody></table></div></div></div>`;
   }
+}
+let VENDOR_INVOICES=[
+  {ref:'INV-DELL-4821',vendor:'Dell Technologies SA',po:'PO-2025-0892',amount:284500,match:'Passed',status:'Pending Review'},
+  {ref:'INV-MSFT-0091',vendor:'Microsoft SA',po:'PO-2025-0888',amount:135200,match:'GRN Missing',status:'On Hold'},
+  {ref:'INV-VOD-0044',vendor:'Vodacom Business',po:'PO-2025-0890',amount:68400,match:'Passed',status:'Pending Review'},
+  {ref:'INV-NAS-0012',vendor:'Nashua SA',po:'PO-2025-0891',amount:124000,match:'Passed',status:'Pending Review'},
+  {ref:'INV-PNP-0008',vendor:'Pick n Pay Trade',po:'PO-2025-0889',amount:12800,match:'Mismatch',status:'Under Investigation'},
+];
+/* ── Vendor invoice detail drawer — real "view" with a Close/Back action,
+   plus the workflow buttons that used to be pure toasts now update the
+   invoice's real status. ── */
+function vendorInvoiceDrawer(ref){
+  const inv=VENDOR_INVOICES.find(i=>i.ref===ref); if(!inv)return;
+  const history=VENDOR_INVOICES.filter(i=>i.vendor===inv.vendor);
+  nxDrawerOpen({
+    title:inv.ref,sub:inv.vendor+' · '+fmt(inv.amount),icon:'file',color:'var(--cy)',
+    body:nxKV([['Vendor',inv.vendor],['PO Reference',inv.po],['Amount',fmt(inv.amount)],['3-Way Match',inv.match],['Status',inv.status]])
+      +'<div class="nx-sec">Other Invoices from '+inv.vendor+'</div>'
+      +(history.length>1?history.filter(h=>h.ref!==ref).map(h=>`<div class="stat-row"><span class="stat-lbl">${h.ref}</span><span class="stat-val">${fmt(h.amount)} · ${h.status}</span></div>`).join(''):'<div style="font-size:11px;color:var(--mu);padding:4px 0;">No other invoices from this vendor.</div>'),
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>'
+      +(inv.match==='Passed'&&inv.status!=='Approved'&&inv.status!=='Paid'?`<button class="btn bp" onclick="vendorInvoiceAction('${ref}','Approved')">Approve</button>`:'')
+      +(inv.status==='Approved'?`<button class="btn bg" onclick="vendorInvoiceAction('${ref}','Paid')">Pay</button>`:'')
+      +(inv.match!=='Passed'&&inv.status!=='Under Investigation'?`<button class="btn bd2" onclick="vendorInvoiceAction('${ref}','Under Investigation')">Investigate</button>`:'')
+      +(inv.status==='Pending Review'?`<button class="btn bs" onclick="vendorInvoiceAction('${ref}','On Hold')">Hold</button>`:''),
+  });
+}
+function vendorInvoiceAction(ref,newStatus){
+  const inv=VENDOR_INVOICES.find(i=>i.ref===ref); if(!inv)return;
+  inv.status=newStatus;
+  renderVendorContent();
+  writeAudit('VendorInvoice','Vendor',ref+' -> '+newStatus,inv.amount,'medium');
+  const labels={Approved:'approved',Paid:'payment queued via TransFund','Under Investigation':'flagged for investigation','On Hold':'held for review'};
+  toast(inv.ref+' '+(labels[newStatus]||newStatus.toLowerCase()),newStatus==='Under Investigation'?'#DC2626':'#16A34A');
+  vendorInvoiceDrawer(ref);
+}
+/* ── Vendor profile drawer (Directory tab) — contact, spend, portal
+   status, and invoice history cross-referenced by vendor name. ── */
+function vendorProfileDrawer(name){
+  const v=VENDORS_LIST.find(x=>x.name===name); if(!v)return;
+  const invs=VENDOR_INVOICES.filter(i=>i.vendor===name);
+  nxDrawerOpen({
+    title:v.name,sub:v.cat+' · '+v.status,icon:'building',color:v.col,
+    body:nxKV([['Contact',v.contact],['Payment Terms',v.terms],['Spend',v.spend],['Portal',v.portal?'Enabled':'Not enabled'],['Status',v.status]])
+      +'<div class="nx-sec">Invoice History — '+invs.length+'</div>'
+      +(invs.length?invs.map(i=>`<div class="stat-row" style="cursor:pointer;" onclick="vendorInvoiceDrawer('${i.ref}')"><span class="stat-lbl">${i.ref}</span><span class="stat-val">${fmt(i.amount)} · ${i.status}</span></div>`).join(''):'<div style="font-size:11px;color:var(--mu);padding:4px 0;">No invoices on file yet.</div>'),
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>'
+      +(!v.portal?'<button class="btn bp" onclick="nxDrawerClose();openModal(\'addVendorModal\')">Invite to Portal</button>':''),
+  });
 }
 
 /* ═══ ESS CONTENT ═══ */
@@ -5598,7 +5651,7 @@ function renderVendorDirectory() {
       ? '<button class="btn bb btn-xs" onclick="event.stopPropagation();openModal(\'addVendorModal\')">Invite</button>'
       : '';
     const statusClass = v.status==='Active' ? 'gn' : v.status==='Invite Pending' ? 'am' : 'gy';
-    return `<div style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--bd-l);cursor:pointer;transition:background .12s;" onmouseover="this.style.background='var(--sf)'" onmouseout="this.style.background=''" onclick="toast('${v.name} — ${v.contact}','#2563EB')">
+    return `<div style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--bd-l);cursor:pointer;transition:background .12s;" onmouseover="this.style.background='var(--sf)'" onmouseout="this.style.background=''" onclick="vendorProfileDrawer('${v.name.replace(/'/g,"\\'")}')">
       <div style="width:34px;height:34px;border-radius:var(--r8);background:${v.col};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:white;flex-shrink:0;">${v.ini}</div>
       <div style="flex:1;">
         <div style="font-size:12px;font-weight:700;">${v.name}</div>
@@ -7952,13 +8005,36 @@ function supplierExport(){
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('Name,Category,Spend,Orders,Rating,Risk,OnTime%\n'+rows.join('\n'));
   a.download='supplier-register.csv';a.click();toast('supplier-register.csv downloaded','#16A34A');
 }
-function supplierView(id)        {
-  const s = SUPPLIERS.find(x=>x.id===id);
-  if(typeof toast==='function') toast(`Opening profile: ${s?.name}…`,'#3B82F6');
+function supplierView(id) {
+  const s = SUPPLIERS.find(x=>x.id===id); if(!s)return;
+  const monthly=[0.7,0.8,0.9,1.05,0.95,1].map(f=>Math.round(s.ytd/6*f));
+  nxDrawerOpen({
+    title:s.name,sub:s.category+' · '+s.risk+' risk',icon:'building',color:s.risk==='high'?'var(--rd)':s.risk==='medium'?'var(--am)':'var(--gn)',
+    body:nxKV([['Contact',s.contact],['Payment Terms',s.terms],['Total Spend (lifetime)',fmt(s.spend)],['YTD Spend',fmt(s.ytd)],['Invoices',String(s.invoices)],['Last PO',s.lastPO],['Rating',s.rating+' / 5.0'],['On-Time Delivery',s.onTime+'%']])
+      +'<div class="nx-sec">Spend Trend (6 months)</div><div id="supTrendChart" style="min-height:110px;"></div>',
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>'
+      +'<button class="btn bp" onclick="supplierInvoices(\''+id+'\')">View Invoices</button>',
+  });
+  setTimeout(()=>{
+    const host=document.getElementById('supTrendChart');
+    if(host)svgLineChart(host,[{label:'Spend (ZAR)',values:monthly}],['Sep','Oct','Nov','Dec','Jan','Feb'],{h:110,zeroBase:true});
+  },60);
 }
 function supplierInvoices(id) {
-  const s = SUPPLIERS.find(x=>x.id===id);
-  if(typeof toast==='function') toast(`Filtering invoices for ${s?.name}…`,'#3B82F6');
+  const s = SUPPLIERS.find(x=>x.id===id); if(!s)return;
+  const avg=s.invoices?Math.round(s.spend/s.invoices):0;
+  const lines=Array.from({length:Math.min(s.invoices,10)},(_,i)=>{
+    const d=new Date(s.lastPO); d.setMonth(d.getMonth()-i);
+    return {ref:'INV-'+s.id.toUpperCase()+'-'+String(s.invoices-i).padStart(3,'0'),date:d.toISOString().slice(0,10),amount:Math.round(avg*(0.85+((i*13)%30)/100)),status:i===0?'Under Review':'Paid'};
+  });
+  nxDrawerOpen({
+    title:s.name+' — Invoice History',sub:s.invoices+' invoices on file',icon:'file',color:'var(--bl)',
+    body:'<div class="tw"><table><thead><tr><th>Reference</th><th>Date</th><th>Amount</th><th>Status</th></tr></thead><tbody>'
+      +lines.map(l=>`<tr><td class="mo tb">${l.ref}</td><td>${l.date}</td><td class="mo">${fmt(l.amount)}</td><td><span class="badge ${l.status==='Paid'?'gn':'am'}">${l.status}</span></td></tr>`).join('')
+      +'</tbody></table></div>',
+    actions:'<button class="btn bs" onclick="supplierView(\''+id+'\')">Back to Profile</button>'
+      +'<button class="btn bp" onclick="nxDrawerClose()">Close</button>',
+  });
 }
 
 /* ══ OTP GATE ════════════════════════════════════════════════ */
@@ -12514,8 +12590,14 @@ window.payrollView=function(dept){
   });
 };
 
-/* ── SUPPLIER drawer ── */
-window.supplierView=function(id){
+/* ── Supply Chain scorecard drawer (distinct from the Vendor Portal's
+   supplierView/SUPPLIERS above — this reads SUPPLY_SUPPLIERS for the
+   Supply Chain page). Named separately so it doesn't shadow
+   window.supplierView, which every real "Profile"/"Review" button in
+   the Vendor Portal's Supplier Monitor actually calls with a SUPPLIERS
+   id like 'sup001' — this override used to silently win and always
+   show SUPPLY_SUPPLIERS[0] because its substring match never matched. ── */
+window.supplyChainSupplierView=function(id){
   const sup=SUPPLY_SUPPLIERS.find(x=>x.name.toLowerCase().includes(String(id).toLowerCase()))||SUPPLY_SUPPLIERS[0];
   const invs=INVOICES.filter(i=>i.vendor.toLowerCase().includes(sup.name.split(' ')[0].toLowerCase()));
   nxDrawerOpen({
