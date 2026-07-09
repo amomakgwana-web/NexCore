@@ -2096,7 +2096,8 @@ body.dark .perm-check.on{background:var(--gn);}
     <div class="frow"><div class="fg"><label class="fl">Amount Excl. VAT (R)</label><input class="fi" type="number" placeholder="0" id="invAmtExcl" oninput="var v=+this.value;document.getElementById('invVAT').value=Math.round(v*0.15);document.getElementById('invTotal').value=Math.round(v*1.15);"/></div><div class="fg"><label class="fl">VAT 15% (auto)</label><input class="fi" type="number" id="invVAT" readonly style="background:var(--sf2);"/></div></div>
     <div class="frow"><div class="fg"><label class="fl">Total Incl. VAT (auto)</label><input class="fi" type="number" id="invTotal" readonly style="background:var(--sf2);font-weight:700;"/></div><div class="fg"><label class="fl">Due Date</label><input class="fi" type="date" id="invDue"/></div></div>
     <div class="fg"><label class="fl">Service Description</label><textarea class="fi" rows="2" id="invDesc" placeholder="Describe the service rendered…"></textarea></div>
-    <div class="fg"><label class="fl">Reference / PO Number</label><input class="fi" id="invRef" placeholder="Optional"/></div>
+    <div class="frow"><div class="fg"><label class="fl">Reference / PO Number</label><input class="fi" id="invRef" placeholder="Optional"/></div>
+    <div class="fg"><label class="fl">Recurring?</label><select class="fi" id="invRecurring"><option value="">No — one-off invoice</option><option value="Monthly">Yes — repeat Monthly</option><option value="Quarterly">Yes — repeat Quarterly</option><option value="Annually">Yes — repeat Annually</option></select></div></div>
   </div>
   <div class="mf"><button class="btn bs" onclick="closeModal('newInvoiceModal')">Cancel</button><button class="btn bs" onclick="saveInvoiceDraft()">Save Draft</button><button class="btn bp" onclick="sendInvoiceNow()">Create &amp; Send</button></div></div>
 </div>
@@ -2878,21 +2879,37 @@ async function loadMyPayslips() {
 }
 
 async function createInvoice(inv) {
-  const client = sb(); if (!client) return;
+  const client = sb();
   const invNo = 'INV-' + Date.now().toString().slice(-4);
   const vatAmt = inv.amountExcl * 0.15;
+  const totalAmt = inv.amountExcl + vatAmt;
+  const issueDate = new Date().toISOString().split('T')[0];
+  if (!client) {
+    // demo/no-network fallback: mutate the mock array directly, mirroring updateInvoiceStatus()
+    const mockInv = {
+      id: invNo, invoice_number: invNo, client: inv.client, contact: inv.email || '',
+      amtExcl: inv.amountExcl, vat: vatAmt, total: totalAmt,
+      status: inv.status || 'Draft', issued: issueDate, due: inv.dueDate, paid: null,
+    };
+    INVOICES_DATA.unshift(mockInv);
+    if (inv.recurring) INVOICE_RECURRING_META[invNo] = { frequency: inv.recurring, nextDate: _invAdvanceDate(issueDate, inv.recurring), auto: true };
+    writeAudit('CREATE_INVOICE', 'Billing', invNo, totalAmt, 'info');
+    NXDB.save('billing');
+    return mockInv;
+  }
   const { data, error } = await client.from('invoices').insert({
     invoice_number: invNo,
     client_name:    inv.client,
     amount_excl:    inv.amountExcl,
     vat_amount:     vatAmt,
-    total_amount:   inv.amountExcl + vatAmt,
-    status:         'Draft',
-    issue_date:     new Date().toISOString().split('T')[0],
+    total_amount:   totalAmt,
+    status:         inv.status || 'Draft',
+    issue_date:     issueDate,
     due_date:       inv.dueDate,
     contact_email:  inv.email,
   }).select().single();
   if (error) { dbError('createInvoice', error); return null; }
+  if (inv.recurring) INVOICE_RECURRING_META[invNo] = { frequency: inv.recurring, nextDate: _invAdvanceDate(issueDate, inv.recurring), auto: true };
   await writeAudit('CREATE_INVOICE', 'Billing', invNo, data.total_amount, 'Info');
   await loadInvoices();
   return data;
@@ -6752,13 +6769,19 @@ function sendChatMessage() {
    MOCK DATA
 ═══════════════════════════════════════════════ */
 
-const INVOICES_DATA = [
+let INVOICES_DATA = [
   {id:'INV-6624',client:'City of Tshwane',   contact:'finance@tshwane.gov.za', amtExcl:246957,vat:37043,total:284000,status:'Outstanding',issued:'2025-01-05',due:'2025-02-15',paid:null},
   {id:'INV-6618',client:'DHA Northern',       contact:'accounts@dha.gov.za',    amtExcl:73565,vat:11035,total:84600, status:'Overdue',    issued:'2024-12-20',due:'2025-02-02',paid:null},
   {id:'INV-6610',client:'City of Johannesburg',contact:'billing@joburg.org.za', amtExcl:358261,vat:53739,total:412000,status:'Paid',      issued:'2025-01-02',due:'2025-02-01',paid:'2025-01-28'},
   {id:'INV-6601',client:'Ekurhuleni Metro',   contact:'scm@ekurhuleni.gov.za',  amtExcl:173913,vat:26087,total:200000,status:'Paid',      issued:'2024-12-15',due:'2025-01-15',paid:'2025-01-14'},
   {id:'INV-6598',client:'Nelson Mandela Bay', contact:'finance@nmbm.gov.za',    amtExcl:104348,vat:15652,total:120000,status:'Draft',     issued:'2025-01-14',due:'2025-02-28',paid:null},
 ];
+
+/* per-invoice recurring-billing schedule config, keyed by invoice id (client-side meta —
+   the invoices table has no recurring columns, mirroring the CRM_DEAL_META pattern) */
+let INVOICE_RECURRING_META = {
+  'INV-6610': {frequency:'Monthly', nextDate:new Date(Date.now()-3*86400000).toISOString().slice(0,10), auto:true},
+};
 
 const QUOTES_DATA = [
   {id:'QT-2025-0041',client:'Buffalo City Metro',  contact:'scm@bufcity.gov.za',   value:4200000,status:'Sent',      issued:'2025-01-10',expires:'2025-02-10',prob:65,owner:'Bongani S.'},
@@ -6821,15 +6844,103 @@ function _billingInvoices() {
       issued:  r.issue_date             || '',
       due:     r.due_date               || '',
       paid:    r.paid_date              || null,
+      recurring: INVOICE_RECURRING_META[r.invoice_number] || null,
       _dbId:   r.id,
     }));
   }
-  return INVOICES_DATA;
+  return INVOICES_DATA.map(i => ({ ...i, recurring: INVOICE_RECURRING_META[i.id] || null }));
+}
+
+/* Advance a YYYY-MM-DD date by one billing cycle */
+function _invAdvanceDate(dateStr, frequency) {
+  const d = new Date(dateStr + 'T00:00:00');
+  if (frequency === 'Quarterly') d.setMonth(d.getMonth() + 3);
+  else if (frequency === 'Annually') d.setFullYear(d.getFullYear() + 1);
+  else d.setMonth(d.getMonth() + 1); // Monthly
+  return d.toISOString().slice(0, 10);
+}
+
+/* Catch up any recurring invoices whose next billing date has passed —
+   actually creates the follow-on invoice (mock array or real DB row), it doesn't just toast. */
+async function invCheckRecurringDue() {
+  const today = new Date().toISOString().slice(0, 10);
+  let generated = 0;
+  for (const [parentId, sched] of Object.entries(INVOICE_RECURRING_META)) {
+    if (!sched || !sched.auto) continue;
+    const dbParent = (window.INVOICE_DATA || []).find(r => r.invoice_number === parentId);
+    const mockParent = INVOICES_DATA.find(i => i.id === parentId);
+    const parent = dbParent || mockParent;
+    if (!parent) continue;
+    let guard = 0;
+    while (sched.nextDate <= today && guard < 24) { // cap so a stale schedule can't loop forever
+      guard++;
+      if (dbParent) {
+        const created = await createInvoice({
+          client: dbParent.client_name, email: dbParent.contact_email || '',
+          amountExcl: Number(dbParent.amount_excl) || 0, dueDate: _invAdvanceDate(sched.nextDate, sched.frequency),
+          description: 'Recurring billing — ' + sched.frequency.toLowerCase(),
+        });
+        if (created) generated++;
+      } else {
+        const newId = 'INV-' + (6625 + INVOICES_DATA.length + generated);
+        INVOICES_DATA.unshift({
+          id: newId, client: mockParent.client, contact: mockParent.contact,
+          amtExcl: mockParent.amtExcl, vat: mockParent.vat, total: mockParent.total,
+          status: 'Draft', issued: today,
+          due: _invAdvanceDate(today, 'Monthly'), paid: null,
+        });
+        generated++;
+        writeAudit('AUTO_RECUR_INVOICE', 'Billing', newId, mockParent.total, 'info');
+      }
+      sched.nextDate = _invAdvanceDate(sched.nextDate, sched.frequency);
+    }
+  }
+  if (generated > 0) {
+    NXDB.save('billing');
+    toast(`${generated} recurring invoice${generated>1?'s':''} auto-generated`, '#16A34A');
+  }
+}
+
+function invRecurringDrawer(id) {
+  const inv = _billingInvoices().find(i => i.id === id); if (!inv) return;
+  const sched = inv.recurring;
+  nxDrawerOpen({
+    title: 'Recurring Billing — ' + inv.id, sub: inv.client, icon: 'clock', color: '#7C3AED',
+    body: `
+      <div class="fg"><label class="fl">Repeat this invoice</label>
+        <select class="fi" id="invRecurFreq">
+          <option value="">Not recurring</option>
+          <option value="Monthly" ${sched?.frequency==='Monthly'?'selected':''}>Monthly</option>
+          <option value="Quarterly" ${sched?.frequency==='Quarterly'?'selected':''}>Quarterly</option>
+          <option value="Annually" ${sched?.frequency==='Annually'?'selected':''}>Annually</option>
+        </select>
+      </div>
+      ${sched ? `<div class="alert bl" style="margin-top:10px;"><div><div class="alert-title">Next auto-generated on ${sched.nextDate}</div><div style="font-size:11px;color:var(--mid);">A new Draft invoice for ${fmt(inv.total)} will be created automatically for ${inv.client} on this date, and every ${sched.frequency.toLowerCase().replace('ly','')} after.</div></div></div>` : `<div style="font-size:11px;color:var(--mid);margin-top:8px;">Turning this on will automatically create a new Draft invoice for ${inv.client} each billing cycle — no manual re-entry needed.</div>`}
+    `,
+    actions: `<button class="btn bs" onclick="nxDrawerClose()">Cancel</button><button class="btn bp" onclick="invSaveRecurring('${id}')">Save</button>`,
+  });
+}
+
+function invSaveRecurring(id) {
+  const freq = document.getElementById('invRecurFreq')?.value;
+  const inv = _billingInvoices().find(i => i.id === id); if (!inv) return;
+  if (!freq) {
+    delete INVOICE_RECURRING_META[id];
+    toast('Recurring billing turned off for ' + id, '#6B7280');
+  } else {
+    INVOICE_RECURRING_META[id] = { frequency: freq, nextDate: _invAdvanceDate(inv.issued || new Date().toISOString().slice(0,10), freq), auto: true };
+    toast(id + ' will now recur ' + freq.toLowerCase() + ' — next on ' + INVOICE_RECURRING_META[id].nextDate, '#16A34A');
+  }
+  writeAudit('SET_RECURRING_INVOICE', 'Billing', id, inv.total, 'info');
+  NXDB.save('billing');
+  nxDrawerClose();
+  renderBillingFull();
 }
 
 function renderBillingFull() {
   if (window._billingRenderedByBudgetMgmt) return;
   const el = document.getElementById('billingContent'); if(!el) return;
+  invCheckRecurringDue();
   const invoices = _billingInvoices();
   const statusBadge = {Outstanding:'or',Overdue:'rd',Paid:'gn',Draft:'gy'};
   const total   = invoices.reduce((s,i)=>s+(i.status!=='Paid'?i.total:0),0);
@@ -6852,7 +6963,7 @@ function renderBillingFull() {
         </div>
       </div>
       <div class="cb" style="padding:0;"><div class="tw"><table>
-        <thead><tr><th>Invoice #</th><th>Client</th><th>Excl. VAT</th><th>VAT</th><th>Total</th><th>Issued</th><th>Due</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Invoice #</th><th>Client</th><th>Excl. VAT</th><th>VAT</th><th>Total</th><th>Issued</th><th>Due</th><th>Status</th><th>Recurring</th><th></th></tr></thead>
         <tbody>
           ${invoices.map(i=>`<tr>
             <td class="mo tb">${i.id}</td>
@@ -6863,10 +6974,11 @@ function renderBillingFull() {
             <td style="font-size:11px;">${i.issued}</td>
             <td style="font-size:11px;color:${i.status==='Overdue'?'var(--rd)':'inherit'};">${i.due}</td>
             <td><span class="badge ${statusBadge[i.status]||'gy'}">${i.status}</span></td>
+            <td><button class="btn ${i.recurring?'bg':'bs'} btn-xs" onclick="invRecurringDrawer('${i.id}')" title="${i.recurring?('Next: '+i.recurring.nextDate):'Confirm if this invoice repeats'}">${i.recurring?('↻ '+i.recurring.frequency):'One-off'}</button></td>
             <td style="display:flex;gap:4px;">
               ${i.status==='Draft'?`<button class="btn bp btn-xs" onclick="updateInvoiceStatus('${i._dbId||i.id}','Outstanding','${i.client}')">Send</button>`:''}
               ${i.status==='Overdue'||i.status==='Outstanding'?`<button class="btn bd2 btn-xs" onclick="remindInvoice('${i.id}','${i.client}')">Remind</button>`:''}
-              <button class="btn bs btn-xs" onclick="printInvoice(${JSON.stringify(i)})">PDF</button>
+              <button class="btn bs btn-xs" onclick='printInvoice(${JSON.stringify(i).replace(/'/g,"&#39;")})'>PDF</button>
             </td>
           </tr>`).join('')}
         </tbody>
@@ -6936,6 +7048,7 @@ function _getInvoiceFormData(status) {
     dueDate:    document.getElementById('invDue')?.value || new Date(Date.now()+30*86400000).toISOString().split('T')[0],
     description:(document.getElementById('invDesc')?.value   || '').trim(),
     reference:  (document.getElementById('invRef')?.value    || '').trim(),
+    recurring:  document.getElementById('invRecurring')?.value || '',
     status,
   };
 }
@@ -11885,6 +11998,11 @@ const NXDB={
       set:(st)=>{if(st.list)st.list.forEach(x=>{const q=QUOTES_DATA.find(y=>y.id===x.id);if(q){q.status=x.status;q.expires=x.expires;}});},
       render:()=>typeof renderQuotes==='function'&&renderQuotes(),
     },
+    billing:{
+      get:()=>({invoices:INVOICES_DATA,recurring:INVOICE_RECURRING_META}),
+      set:(st)=>{if(st.invoices)INVOICES_DATA=st.invoices;if(st.recurring)INVOICE_RECURRING_META=st.recurring;},
+      render:()=>typeof renderBillingFull==='function'&&renderBillingFull(),
+    },
     supply:{
       get:()=>({orders:SUPPLY_ORDERS}),
       set:(st)=>{if(st.orders){SUPPLY_ORDERS.length=0;st.orders.forEach(o=>SUPPLY_ORDERS.push(o));}},
@@ -12194,20 +12312,28 @@ function invoiceHTML(inv){
   const total=Number(inv.total||inv.total_amount||0);
   const excl=Number(inv.amtExcl||total/1.15);
   const vat=Number(inv.vat||total-excl);
+  const recurring=inv.recurring||(typeof INVOICE_RECURRING_META!=='undefined'?INVOICE_RECURRING_META[no]:null);
   const body=`
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:20px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px;padding:14px 18px;background:#FAFAFA;border:1px solid #E4E4E7;border-radius:10px;">
+    <div><div style="font-size:10px;color:#71717A;text-transform:uppercase;letter-spacing:.04em;">Total Due</div>
+      <div style="font-weight:900;font-size:24px;">${fmt(Math.round(total))}</div>
+      ${recurring?`<div style="font-size:10px;color:#7C3AED;font-weight:700;margin-top:2px;">↻ Recurring ${recurring.frequency} — next ${recurring.nextDate}</div>`:''}</div>
+    <div style="text-align:right;">
+      <div style="font-size:10px;color:#71717A;text-transform:uppercase;">Due Date</div>
+      <div style="font-weight:800;color:#DC2626;">${inv.due||inv.due_date||'30 days'}</div></div>
+  </div>
+  <table><thead><tr><th>Description</th><th class="r">Amount</th></tr></thead><tbody>
+    <tr><td style="font-weight:900;font-size:15px;border-bottom:2px solid #E4E4E7;">TOTAL DUE</td><td class="r mono" style="font-weight:900;font-size:15px;border-bottom:2px solid #E4E4E7;">${fmt(Math.round(total))}</td></tr>
+    <tr><td>${inv.description||'Professional services rendered'}</td><td class="r mono">${fmt(Math.round(excl))}</td></tr>
+    <tr><td style="color:#71717A;">VAT @ 15%</td><td class="r mono" style="color:#71717A;">${fmt(Math.round(vat))}</td></tr>
+  </tbody></table>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:16px;">
     <div><div style="font-size:10px;color:#71717A;text-transform:uppercase;">Billed To</div>
       <div style="font-weight:800;font-size:14px;">${client}</div>
       <div style="font-size:11px;color:#71717A;">${inv.contact||inv.contact_email||''}</div></div>
     <div style="text-align:right;">
-      <div style="font-size:10px;color:#71717A;text-transform:uppercase;">Issue Date</div><div>${inv.issued||inv.issue_date||new Date().toLocaleDateString('en-ZA')}</div>
-      <div style="font-size:10px;color:#71717A;text-transform:uppercase;margin-top:6px;">Due Date</div><div style="font-weight:800;color:#DC2626;">${inv.due||inv.due_date||'30 days'}</div></div>
+      <div style="font-size:10px;color:#71717A;text-transform:uppercase;">Issue Date</div><div>${inv.issued||inv.issue_date||new Date().toLocaleDateString('en-ZA')}</div></div>
   </div>
-  <table><thead><tr><th>Description</th><th class="r">Amount</th></tr></thead><tbody>
-    <tr><td>${inv.description||'Professional services rendered'}</td><td class="r mono">${fmt(Math.round(excl))}</td></tr>
-    <tr><td style="color:#71717A;">VAT @ 15%</td><td class="r mono" style="color:#71717A;">${fmt(Math.round(vat))}</td></tr>
-    <tr><td style="font-weight:900;font-size:15px;border-bottom:none;">TOTAL DUE</td><td class="r mono" style="font-weight:900;font-size:15px;border-bottom:none;">${fmt(Math.round(total))}</td></tr>
-  </tbody></table>
   <div style="margin-top:14px;font-size:11px;color:#71717A;">Payment terms: 30 days from date of invoice. Please use the invoice number as your payment reference.</div>`;
   return nxDocChrome('Tax Invoice',no,body);
 }
