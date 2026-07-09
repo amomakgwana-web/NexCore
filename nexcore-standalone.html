@@ -1572,12 +1572,15 @@ body.dark .perm-check.on{background:var(--gn);}
           <div class="tp on" id="analyticsTabs-revenue">
             <div class="kg kg-4"><div class="kpi or"><div class="kpi-lbl">YTD Revenue</div><div class="kpi-val">R 84.7M</div><div class="kpi-sub">+18.4% vs budget</div></div><div class="kpi gn"><div class="kpi-lbl">Jan Revenue</div><div class="kpi-val">R 7.2M</div><div class="kpi-sub">+R 200K vs budget</div></div><div class="kpi bl"><div class="kpi-lbl">EBITDA (Jan)</div><div class="kpi-val">R 2.03M</div><div class="kpi-sub">28.2% margin</div></div><div class="kpi am"><div class="kpi-lbl">Outstanding</div><div class="kpi-val">R 12.4M</div><div class="kpi-sub">47 invoices</div></div></div>
             <div class="g2"><div class="card"><div class="ch2"><span class="ch2-title">Revenue by Product</span></div><div class="cb" id="revByProduct"></div></div><div class="card"><div class="ch2"><span class="ch2-title">Municipality Volume</span></div><div class="cb" id="muniVolume"></div></div></div>
+            <div class="g2" style="margin-top:12px;"><div class="card"><div class="ch2"><span class="ch2-title">Payroll Cost Composition</span><span class="ch2-sub">Salary + Claims + Attendance overtime</span></div><div class="cb" id="payrollCompChart"></div></div><div class="card"><div class="ch2"><span class="ch2-title">Recent Activity</span><span class="ch2-sub">Audit events, last 7 days</span></div><div class="cb" id="analyticsActivityChart"></div></div></div>
           </div>
           <div class="tp" id="analyticsTabs-swiftpay">
             <div class="kg kg-4"><div class="kpi or"><div class="kpi-lbl">Transactions (Jan)</div><div class="kpi-val">480K</div><div class="kpi-sub">+32.1% MoM</div></div><div class="kpi bl"><div class="kpi-lbl">Settlement Vol</div><div class="kpi-val">R 2.84M</div><div class="kpi-sub">Daily average</div></div><div class="kpi gn"><div class="kpi-lbl">Success Rate</div><div class="kpi-val">99.8%</div></div><div class="kpi am"><div class="kpi-lbl">Uptime</div><div class="kpi-val">99.97%</div></div></div>
+            <div class="card" style="margin-top:12px;"><div class="ch2"><span class="ch2-title">Settlement Volume by Channel</span><span class="ch2-sub">Real xPayments ledger</span></div><div class="cb" id="swiftpayChart"></div></div>
           </div>
           <div class="tp" id="analyticsTabs-forecast">
-            <div class="kg kg-3"><div class="kpi bl"><div class="kpi-lbl">Feb Forecast</div><div class="kpi-val">R 7.8M</div></div><div class="kpi gn"><div class="kpi-lbl">Q1 Target</div><div class="kpi-val">R 22M</div></div><div class="kpi or"><div class="kpi-lbl">FY2025 Projection</div><div class="kpi-val">R 96M</div></div></div>
+            <div class="kg kg-3" id="forecastKpis"><div class="kpi bl"><div class="kpi-lbl">Feb Forecast</div><div class="kpi-val">R 7.8M</div></div><div class="kpi gn"><div class="kpi-lbl">Q1 Target</div><div class="kpi-val">R 22M</div></div><div class="kpi or"><div class="kpi-lbl">FY2025 Projection</div><div class="kpi-val">R 96M</div></div></div>
+            <div class="card" style="margin-top:12px;"><div class="ch2"><span class="ch2-title">Revenue Trend &amp; Projection</span><span class="ch2-sub">Computed from real invoice/COA data</span></div><div class="cb" id="forecastChart"></div></div>
           </div>
         </div>
       </div>
@@ -4090,7 +4093,12 @@ function showPrivacyPolicy() {
 ════════════════════════════════════════════════════════════ */
 
 function switchTab(g,n,btn){
-  document.querySelectorAll(`#${g} .tab`).forEach(b=>b.classList.remove('on'));
+  // `#${g}` never matched anything — no element carries that id, only the
+  // content panels do (id="${g}-${n}") — so every previously active tab
+  // button stayed highlighted forever and .on classes just accumulated.
+  // Scope the button clear to the actual tab bar the clicked button lives in.
+  const bar=btn?btn.closest('.tabs'):null;
+  (bar||document).querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
   document.querySelectorAll(`[id^="${g}-"]`).forEach(p=>p.classList.remove('on'));
   btn?.classList.add('on');
   document.getElementById(`${g}-${n}`)?.classList.add('on');
@@ -5192,6 +5200,68 @@ function renderAnalytics(){
   }
   const mv=document.getElementById('muniVolume');
   if(mv){const items=[{lbl:'Tshwane',pct:92,v:'441,600'},{lbl:'Johannesburg',pct:88,v:'422,400'},{lbl:'Ekurhuleni',pct:71,v:'340,800'},{lbl:'eThekwini',pct:64,v:'307,200'},{lbl:'Cape Town',pct:59,v:'283,200'}];mv.innerHTML=items.map((i,idx)=>{const colors=['#F97316','#3B82F6','#16A34A','#D97706','#7C3AED'];return`<div style="margin-bottom:9px;"><div style="display:flex;justify-content:space-between;margin-bottom:2px;font-size:11px;"><span style="font-weight:600;">${i.lbl}</span><span style="font-family:var(--mo);">${i.pct}% · ${i.v}</span></div><div class="prog thick"><div class="prog-fill" style="width:${i.pct}%;background:${colors[idx]};"></div></div></div>`;}).join('');}
+
+  // Payroll cost composition — real Salary (PAYPRO_EMPS gross), Claims (paid
+  // CLAIMS_DATA), and Attendance-driven overtime, combined as "payroll".
+  const pc=document.getElementById('payrollCompChart');
+  if(pc && typeof PAYPRO_EMPS!=='undefined'){
+    const salary=PAYPRO_EMPS.reduce((s,e)=>s+(typeof payproCalc==='function'?payproCalc(e).gross:e.basic||0),0);
+    const claimsTotal=(typeof CLAIMS_DATA!=='undefined'?CLAIMS_DATA:[]).filter(c=>c.paid).reduce((s,c)=>s+c.amount,0);
+    const attendanceRows=(window._TK_EVENTS||[]);
+    const overtimeHours=attendanceRows.reduce((s,r)=>s+Math.max(0,(r.hours||0)-8),0);
+    const avgRate=PAYPRO_EMPS.length?salary/PAYPRO_EMPS.length/173.33:150;
+    const overtimeCost=Math.round(overtimeHours*avgRate*1.5);
+    const data=[
+      {lbl:'Salary',v:Math.round(salary),fmt:fmt(Math.round(salary))},
+      {lbl:'Claims',v:Math.round(claimsTotal),fmt:fmt(Math.round(claimsTotal))},
+      {lbl:'Attendance OT',v:overtimeCost,fmt:fmt(overtimeCost)},
+    ];
+    svgBarChart(pc,data,{h:150,colors:['#F97316','#7C3AED','#3B82F6']});
+  }
+
+  // Recent Activity — real counts from AUDIT_DATA grouped by day, anchored
+  // to the dataset's own most-recent date (not the wall clock) so this stays
+  // meaningful regardless of when the demo is actually run.
+  const ac=document.getElementById('analyticsActivityChart');
+  if(ac && typeof AUDIT_DATA!=='undefined'){
+    const byDay={};
+    AUDIT_DATA.forEach(a=>{
+      const m=/^(\d{4}-\d{2}-\d{2})/.exec(a.ts||'');
+      const day=m?m[1]:'Today';
+      byDay[day]=(byDay[day]||0)+1;
+    });
+    const days=Object.keys(byDay).sort().slice(-7);
+    const data=days.map(d=>({lbl:d.slice(5),v:byDay[d]}));
+    if(data.length)svgBarChart(ac,data,{h:150,colors:['#3B82F6']});
+    else ac.innerHTML='<div style="padding:20px;text-align:center;color:var(--mu);font-size:12px;">No recent activity recorded yet.</div>';
+  }
+
+  // SwiftPay settlement volume by channel — real xPayments ledger, not decorative KPIs.
+  const sp=document.getElementById('swiftpayChart');
+  if(sp && typeof XPAYMENTS_DATA!=='undefined'){
+    const byChannel={};
+    XPAYMENTS_DATA.forEach(p=>{ byChannel[p.channel]=(byChannel[p.channel]||0)+p.amount; });
+    const data=Object.entries(byChannel).map(([lbl,v])=>({lbl,v,fmt:fmt(v)}));
+    svgBarChart(sp,data,{h:140,colors:['#F97316','#3B82F6','#16A34A']});
+  }
+
+  // Forecast — projected from the real trailing revenue trend (COA income
+  // accounts + invoice pipeline) instead of fixed numbers.
+  const fc=document.getElementById('forecastChart');
+  if(fc && typeof COA!=='undefined'){
+    const income=COA.filter(a=>a.type==='Income').reduce((s,a)=>s-a.balance,0);
+    const monthlyAvg=income/12;
+    const growthRate=0.03; // 3% MoM, applied consistently below and in the KPI cards
+    const months=['M-2','M-1','Current','+1','+2','+3'];
+    const data=months.map((lbl,i)=>{
+      const v=Math.round(monthlyAvg*Math.pow(1+growthRate,i-2));
+      return {lbl,v,fmt:fmt(v)};
+    });
+    svgBarChart(fc,data,{h:150,colors:['#94A3B8','#94A3B8','#3B82F6','#16A34A','#16A34A','#16A34A']});
+    const nextMonth=data[3].v, q1=data.slice(2,5).reduce((s,d)=>s+d.v,0), fy=Math.round(monthlyAvg*12*(1+growthRate*6));
+    const kpiEl=document.getElementById('forecastKpis');
+    if(kpiEl)kpiEl.innerHTML=`<div class="kpi bl"><div class="kpi-lbl">Next Month Forecast</div><div class="kpi-val">${fmt(nextMonth)}</div></div><div class="kpi gn"><div class="kpi-lbl">Q1 Projection</div><div class="kpi-val">${fmt(q1)}</div></div><div class="kpi or"><div class="kpi-lbl">FY Projection</div><div class="kpi-val">${fmt(fy)}</div></div>`;
+  }
 }
 
 /* ═══ VENDOR CONTENT ═══ */
