@@ -4977,10 +4977,13 @@ function renderCRMKanban(){
       ${cards.map(d=>{
         const hot=crmHotness(d.probability);
         const won2=st.key==='won';
-        return `<div class="kb-card" data-deal-id="${d.id}" style="${won2?'border-color:var(--gn-l)':''}">
+        const meta=CRM_DEAL_META[d.id]||{};
+        const commentCount=(meta.comments||[]).length, fileCount=(meta.files||[]).length, tagCount=(meta.tags||[]).length;
+        return `<div class="kb-card" data-deal-id="${d.id}" style="${won2?'border-color:var(--gn-l)':''}" onclick="crmDealDrawer('${d.id}')">
           <div class="kb-card-title">${d.company||d.title||'Deal'}</div>
           <div class="kb-card-amt" style="${won2?'color:var(--gn)':''}">${crmFmtM(d.value)}</div>
           <div class="kb-card-meta"><span>${d.title||''}</span><span class="badge ${won2?'gn':hot.cls}">${won2?'Closed':hot.label}</span></div>
+          ${meta.assignee||commentCount||fileCount||tagCount?`<div class="kb-card-meta" style="margin-top:3px;">${meta.assignee?`<span>👤 ${meta.assignee}</span>`:'<span></span>'}<span style="display:flex;gap:8px;">${commentCount?'💬 '+commentCount:''}${fileCount?' 📎 '+fileCount:''}${tagCount?' 🏷 '+tagCount:''}</span></div>`:''}
         </div>`;
       }).join('')}
     </div>`;
@@ -4997,6 +5000,148 @@ async function crmUpdateDealStage(dealId, newStage){
   const client=sb();if(!client)return;
   const{error}=await client.from('crm_deals').update({stage:newStage}).eq('id',dealId);
   if(error)dbError('crm_deals',error);
+}
+
+/* ── JIRA-style deal drawer: edit, comment (with @mention email), attach
+   files, tag members (emailed), assign, remove. crm_deals has no columns
+   for comments/files/tags/assignee, so that richer metadata lives in
+   CRM_DEAL_META keyed by deal id (persisted via NXDB) while the real
+   editable fields (title/company/value/probability/stage) write straight
+   to the crm_deals row, same as crmUpdateDealStage above. ── */
+let CRM_DEAL_META={};
+function crmMeta(dealId){
+  return CRM_DEAL_META[dealId]=CRM_DEAL_META[dealId]||{comments:[],files:[],tags:[],assignee:''};
+}
+function crmFindDeal(dealId){
+  const deals=(window.CRM_DATA&&window.CRM_DATA.length)?window.CRM_DATA:CRM_FALLBACK_DATA;
+  return deals.find(d=>String(d.id)===String(dealId));
+}
+function crmDealDrawer(dealId){
+  const d=crmFindDeal(dealId); if(!d)return;
+  const m=crmMeta(dealId);
+  const esc=s=>String(s||'').replace(/"/g,'&quot;');
+  nxDrawerOpen({
+    title:d.company||d.title||'Deal',sub:(d.title||'')+' · '+crmFmtM(d.value),icon:'briefcase',color:'var(--pu)',
+    body:
+      '<div class="frow"><div class="fg"><label class="fl">Deal Title</label><input class="fi" id="cdTitle" value="'+esc(d.title)+'"/></div>'
+      +'<div class="fg"><label class="fl">Company</label><input class="fi" id="cdCompany" value="'+esc(d.company)+'"/></div></div>'
+      +'<div class="frow"><div class="fg"><label class="fl">Value (R)</label><input class="fi" id="cdValue" type="number" value="'+(d.value||0)+'"/></div>'
+      +'<div class="fg"><label class="fl">Probability %</label><input class="fi" id="cdProb" type="number" value="'+(d.probability||0)+'"/></div></div>'
+      +'<div class="frow"><div class="fg"><label class="fl">Stage</label><select class="fi" id="cdStage">'+CRM_STAGES.map(s=>'<option value="'+s.key+'" '+(s.key===d.stage?'selected':'')+'>'+s.label+'</option>').join('')+'</select></div>'
+      +'<div class="fg"><label class="fl">Assign To</label><select class="fi" id="cdAssignee"><option value="">Unassigned</option>'+(window.USERS_LIST||[]).map(u=>'<option '+(u.n===m.assignee?'selected':'')+'>'+u.n+'</option>').join('')+'</select></div></div>'
+      +'<button class="btn bp btn-sm" onclick="crmDealSave(\''+dealId+'\')" style="margin-bottom:14px;">Save Changes</button>'
+      +'<div class="nx-sec">Client Contact</div>'
+      +nxKV([['Contact',d.contact_name||'—'],['Email',d.contact_email||'—']])
+      +'<div class="nx-sec">Tagged Members'+(m.tags.length?' — '+m.tags.length:'')+'</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">'+m.tags.map((t,ti)=>'<span class="badge pu">'+t+' <span style="cursor:pointer;" onclick="crmUntag(\''+dealId+'\','+ti+')">×</span></span>').join('')+'</div>'
+      +'<div style="display:flex;gap:6px;"><select class="fi" id="cdTagUser"><option value="">Tag a team member…</option>'+(window.USERS_LIST||[]).map(u=>'<option>'+u.n+'</option>').join('')+'</select><button class="btn bs btn-xs" onclick="crmTagMember(\''+dealId+'\')">Tag</button></div>'
+      +'<div class="nx-sec">Files'+(m.files.length?' — '+m.files.length:'')+'</div>'
+      +'<div id="cdFiles">'+(m.files.length?m.files.map((f,fi)=>'<div class="stat-row"><span class="stat-lbl">📎 '+f.name+'</span><span class="stat-val" style="cursor:pointer;color:var(--rd);" onclick="crmRemoveFile(\''+dealId+'\','+fi+')">Remove</span></div>').join(''):'<div style="font-size:11px;color:var(--mu);">No files attached</div>')+'</div>'
+      +'<div style="margin-top:6px;"><input type="file" id="cdFileInput" style="display:none" onchange="crmAddFile(\''+dealId+'\',this.files[0])"/><button class="btn bs btn-xs" onclick="document.getElementById(\'cdFileInput\').click()">+ Attach File</button></div>'
+      +'<div class="nx-sec">Comments — '+m.comments.length+'</div>'
+      +'<div id="cdComments">'+(m.comments.length?m.comments.map(c=>'<div style="padding:10px 12px;background:var(--sf2);border-radius:10px;margin-bottom:8px;"><div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;"><b style="font-size:11px;">'+c.by+'</b><span style="font-size:9.5px;color:var(--mu);">'+c.ts+'</span></div><div style="font-size:12px;color:var(--ch);line-height:1.5;">'+c.text+'</div></div>').join(''):'<div style="font-size:11px;color:var(--mu);padding:6px 0;">No comments yet.</div>')+'</div>'
+      +'<div style="display:flex;gap:6px;margin-top:8px;"><input class="fi" id="cdCommentNew" placeholder="Add a comment… @Name to notify" style="flex:1;font-size:11px;" onkeydown="if(event.key===\'Enter\')crmAddComment(\''+dealId+'\')"/><button class="btn bp btn-xs" onclick="crmAddComment(\''+dealId+'\')">Post</button></div>',
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>'
+      +'<button class="btn bd2" onclick="crmRemoveDeal(\''+dealId+'\')">Remove Deal</button>',
+  });
+}
+async function crmDealSave(dealId){
+  const d=crmFindDeal(dealId); if(!d)return;
+  const m=crmMeta(dealId);
+  d.title=document.getElementById('cdTitle').value.trim()||d.title;
+  d.company=document.getElementById('cdCompany').value.trim()||d.company;
+  d.value=parseFloat(document.getElementById('cdValue').value)||d.value;
+  d.probability=parseFloat(document.getElementById('cdProb').value)||d.probability;
+  d.stage=document.getElementById('cdStage').value;
+  m.assignee=document.getElementById('cdAssignee').value;
+  renderCRMKanban();
+  NXDB.save('crm');
+  writeAudit('EditDeal','CRM',dealId,d.value,'medium');
+  if(!String(dealId).startsWith('fallback-')){
+    const client=sb();
+    if(client){
+      const{error}=await client.from('crm_deals').update({title:d.title,company:d.company,value:d.value,probability:d.probability,stage:d.stage}).eq('id',dealId);
+      if(error)dbError('crm_deals',error);
+    }
+  }
+  crmDealDrawer(dealId);
+  toast('Deal updated','#16A34A');
+}
+function crmTagMember(dealId){
+  const sel=document.getElementById('cdTagUser'); const name=sel?.value; if(!name)return;
+  const m=crmMeta(dealId);
+  if(m.tags.includes(name)){toast(name+' is already tagged','#D97706');return;}
+  m.tags.push(name);
+  NXDB.save('crm');
+  const d=crmFindDeal(dealId);
+  const user=(window.USERS_LIST||[]).find(u=>u.n===name);
+  if(user?.e){
+    callEdgeFunction('email-relay','send_email',{to:user.e,
+      subject:tplMerge('You were tagged on a deal — '+(d?.company||'CRM')),
+      html:'<p>'+(currentUser?.name||'A teammate')+' tagged you on the deal <b>'+(d?.company||d?.title||dealId)+'</b>.</p>'});
+    toast(name+' tagged and notified by email','#16A34A');
+  }else{
+    toast(name+' tagged (no email on file to notify)','#D97706');
+  }
+  crmDealDrawer(dealId);
+}
+function crmUntag(dealId,idx){
+  const m=crmMeta(dealId);
+  m.tags.splice(idx,1);
+  NXDB.save('crm');
+  crmDealDrawer(dealId);
+}
+function crmAddFile(dealId,file){
+  if(!file)return;
+  const m=crmMeta(dealId);
+  m.files.push({name:file.name,size:file.size});
+  NXDB.save('crm');
+  toast(file.name+' attached','#16A34A');
+  writeAudit('AttachFile','CRM',dealId+' '+file.name,0,'low');
+  crmDealDrawer(dealId);
+}
+function crmRemoveFile(dealId,idx){
+  const m=crmMeta(dealId);
+  m.files.splice(idx,1);
+  NXDB.save('crm');
+  crmDealDrawer(dealId);
+}
+function crmAddComment(dealId){
+  const inp=document.getElementById('cdCommentNew'); const t=inp?.value.trim(); if(!t)return;
+  const m=crmMeta(dealId);
+  m.comments.unshift({by:currentUser?.name||'You',ts:'Just now',text:t.replace(/</g,'&lt;')});
+  NXDB.save('crm');
+  writeAudit('Comment','CRM',dealId,0,'low');
+  const mention=t.match(/@(\w+)/);
+  if(mention){
+    const user=(window.USERS_LIST||[]).find(u=>u.n.toLowerCase().includes(mention[1].toLowerCase()));
+    if(user?.e){
+      callEdgeFunction('email-relay','send_email',{to:user.e,
+        subject:tplMerge('You were mentioned on a deal'),
+        html:'<p>'+(currentUser?.name||'A teammate')+' mentioned you: "'+t.replace(/</g,'&lt;')+'"</p>'});
+      toast('Notified '+user.n+' by email','#7C3AED');
+    }
+  }
+  crmDealDrawer(dealId);
+}
+async function crmRemoveDeal(dealId){
+  const d=crmFindDeal(dealId); if(!d)return;
+  const deals=(window.CRM_DATA&&window.CRM_DATA.length)?window.CRM_DATA:CRM_FALLBACK_DATA;
+  const idx=deals.indexOf(d);
+  if(idx>=0)deals.splice(idx,1);
+  delete CRM_DEAL_META[dealId];
+  nxDrawerClose();
+  renderCRMKanban();
+  NXDB.save('crm');
+  writeAudit('RemoveDeal','CRM',dealId,0,'high');
+  if(!String(dealId).startsWith('fallback-')){
+    const client=sb();
+    if(client){
+      const{error}=await client.from('crm_deals').delete().eq('id',dealId);
+      if(error)dbError('crm_deals',error);
+    }
+  }
+  toast('Deal removed','#DC2626');
 }
 
 /* ═══ ANALYTICS ═══ */
@@ -11248,6 +11393,11 @@ const NXDB={
       get:()=>({list:INTEGRATIONS.map(i=>({name:i.name,connected:i.connected,credential:i.credential||null}))}),
       set:(st)=>{if(st.list)st.list.forEach(x=>{const i=INTEGRATIONS.find(y=>y.name===x.name);if(i){i.connected=x.connected;i.credential=x.credential;}});},
       render:()=>typeof renderIntegrations==='function'&&renderIntegrations(),
+    },
+    crm:{
+      get:()=>({meta:CRM_DEAL_META}),
+      set:(st)=>{if(st.meta)CRM_DEAL_META=st.meta;},
+      render:()=>typeof renderCRMKanban==='function'&&renderCRMKanban(),
     },
     risk:{
       get:()=>({register:RISK_REGISTER}),
