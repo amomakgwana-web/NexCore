@@ -5497,11 +5497,21 @@ function employeeProfileDrawer(name){
   const history=AUDIT_DATA.filter(a=>a.user===name||nxNameMatches(a.user,name)||nxNameMatches(name,a.user)).slice(0,8);
   const assignments=(window.BOARDS_DATA||[]).flatMap(g=>g.items.filter(it=>nxNameMatches(name,it.owner)||it.owner===name).map(it=>({...it,group:g.group})));
   const sickLeave=(typeof TK_LEAVE!=='undefined'?TK_LEAVE:[]).filter(r=>r.type==='sick'&&r.name===name);
+  const attEvents=(window._TK_EVENTS||[]).filter(e=>e.name===name);
+  const attDates=[...new Set(attEvents.map(e=>e.date))].sort().reverse().slice(0,7);
+  const attRows=attDates.map(d=>{
+    const evs=attEvents.filter(e=>e.date===d);
+    const inEv=evs.find(e=>e.type==='in'), outEv=evs.find(e=>e.type==='out');
+    const hrs=inEv&&outEv?((new Date(`${d}T${outEv.time}`)-new Date(`${d}T${inEv.time}`))/3600000).toFixed(1)+'h':inEv?'In progress':'—';
+    return {date:d,in:inEv?.time||'—',out:outEv?.time||'—',hrs};
+  });
   nxDrawerOpen({
     title:emp?emp.name:name,sub:emp?(emp.role||'Employee')+' · '+(emp.dept||'—'):'No payroll record on file',icon:'person',color:'var(--bl)',
     body:(emp?nxKV([['Department',emp.dept||'—'],['Role',emp.role||'—'],['Start Date',emp.startDate||'—'],['Basic Salary',fmt(emp.basic||0)],['Leave Balance',(emp.leaveBal||0)+' days']]):'')
       +'<div class="nx-sec">Assignments</div>'
       +(assignments.length?assignments.map(a=>`<div class="stat-row"><span class="stat-lbl">${a.name} · ${a.group}</span><span class="stat-val">${a.status}</span></div>`).join(''):'<div style="font-size:11px;color:var(--mid);padding:4px 0;">No open board items assigned</div>')
+      +'<div class="nx-sec">Attendance History'+(attRows.length?' — last '+attRows.length+' days':'')+'</div>'
+      +(attRows.length?attRows.map(a=>`<div class="stat-row"><span class="stat-lbl">${a.date}</span><span class="stat-val">${a.in} → ${a.out} · ${a.hrs}</span></div>`).join(''):'<div style="font-size:11px;color:var(--mid);padding:4px 0;">No clock-in history found for this name</div>')
       +(sickLeave.length?'<div class="nx-sec">Sick Leave & Medical Reports</div>'
         +sickLeave.map(r=>`<div class="stat-row"><span class="stat-lbl">${r.from} – ${r.to} (${r.days}d)</span><span class="stat-val">${r.medicalReportUrl?`<a href="${r.medicalReportUrl}" target="_blank" style="color:var(--gn);">✓ Report attached</a>`:r.medicalRequested?'<span style="color:var(--am);">Requested</span>':'<span style="color:var(--mu);">No report</span>'}</span></div>`).join(''):'')
       +'<div class="nx-sec">Recent History</div>'
@@ -8393,7 +8403,7 @@ function renderAttendancePage(){
       const status=r.in?(r.out?(r.in>'08:15'?'late':'present'):'present'):'absent';
       const pillLbl={present:'Present',absent:'Absent',late:'Late'};
       return `<tr>
-        <td><strong>${r.name}</strong></td>
+        <td><strong style="cursor:pointer;text-decoration:underline dotted;color:var(--or-d);" onclick="employeeProfileDrawer('${r.name.replace(/'/g,"\\'")}')">${r.name}</strong></td>
         <td style="font-size:11px;color:var(--mid)">${r.role}</td>
         ${mode==='weekly'?`<td style="font-family:var(--mo);font-size:12px">${r.date}</td>`:''}
         <td style="font-family:var(--mo)">${r.in||'—'}</td>
