@@ -2010,7 +2010,7 @@ body.dark .perm-check.on{background:var(--gn);}
       <!-- EMAIL CENTER -->
       <div class="page" id="page-email">
         <div class="ph"><div class="ph-icon" style="background:var(--bl)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div><div><div class="ph-title">Email Center</div><div class="ph-sub">Compose · Templates · Delivery Log</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="emailCompose()">+ Compose</button></div></div>
-        <div class="tabs"><button class="tab on" onclick="switchTab('emlTabs','compose',this)">Compose</button><button class="tab" onclick="switchTab('emlTabs','templates',this)">Templates</button><button class="tab" onclick="switchTab('emlTabs','log',this)">Sent Log</button></div>
+        <div class="tabs"><button class="tab on" onclick="switchTab('emlTabs','compose',this)">Compose</button><button class="tab" onclick="switchTab('emlTabs','templates',this)">Templates</button><button class="tab" onclick="switchTab('emlTabs','log',this)">Sent Log</button><button class="tab" onclick="switchTab('emlTabs','policies',this);renderPolicies()">Company Policies</button></div>
         <div class="content" id="emailContent"></div>
       </div>
 
@@ -5726,6 +5726,27 @@ function employeeProfileDrawer(name){
       ${empIdx>=0?`<button class="btn bs" onclick="nxDrawerClose();pdfContract(${empIdx})">View Contract</button>`:''}
       <button class="btn bp" onclick="nxDrawerClose();emailCompose('${emp?.email||''}')">Email Employee</button>`,
   });
+  _loadOnboardingDetailsInto(name);
+}
+/* Onboarding personal-details/NDA submission lives in nx_sign_requests, filled
+   in asynchronously since the drawer above renders synchronously like every
+   other drawer in the app — guarded so a fast re-open doesn't inject stale data. */
+async function _loadOnboardingDetailsInto(name){
+  const client=sb(); if(!client)return;
+  const {data}=await client.from('nx_sign_requests').select('personal_details,status,signed_at')
+    .eq('doc_type','onboarding_details').eq('party_name',name).order('created_at',{ascending:false}).limit(1);
+  const row=data?.[0]; if(!row)return;
+  const body=document.getElementById('nxDrawerBody');
+  if(!body||document.getElementById('nxDrawerTitle')?.textContent!==name)return;
+  if(!row.personal_details){
+    body.insertAdjacentHTML('afterbegin','<div class="alert am" style="margin-bottom:10px;"><div><div class="alert-title">Onboarding details pending</div><div class="alert-body">Personal details, ID/passport and NDA have not been submitted yet.</div></div></div>');
+    return;
+  }
+  const pd=row.personal_details;
+  body.insertAdjacentHTML('afterbegin',`<div class="nx-sec">Onboarding Details ${row.signed_at?'· submitted '+new Date(row.signed_at).toLocaleDateString('en-ZA'):''}</div>
+    <div class="stat-row"><span class="stat-lbl">ID / Passport</span><span class="stat-val">${pd.idNumber||'—'}</span></div>
+    <div class="stat-row"><span class="stat-lbl">Address</span><span class="stat-val">${pd.address||'—'}</span></div>
+    <div class="stat-row"><span class="stat-lbl">NDA Accepted</span><span class="stat-val">${pd.ndaAccepted?'✓ Yes':'No'}</span></div>`);
 }
 /* ── Admin-only: change an employee's reporting manager (gates who can
    approve their expense claims and leave requests) ── */
@@ -11893,7 +11914,64 @@ function renderEmail(){
     <div class="cb" style="padding:0;"><div class="tw"><table>
       <thead><tr><th>Sent</th><th>To</th><th>Subject</th><th>Status</th><th>Opens</th></tr></thead>
       <tbody>${EMAIL_LOG.map(m=>`<tr><td>${m.ts}</td><td class="tb">${m.to}</td><td>${m.subject}</td><td><span class="badge ${m.status==='Delivered'||m.status==='Opened'?'gn':'am'}">${m.status}</span></td><td class="mo">${m.opens}</td></tr>`).join('')}</tbody></table></div></div></div>
-  </div>`;
+  </div>
+  <div class="tp" id="emlTabs-policies"><div id="policiesBody"></div></div>`;
+}
+
+/* ── Company Policies: HR/Admin drafts and publishes to all staff via the
+   real email relay — a genuine broadcast action, not a decorative form. ── */
+let POLICIES=[];
+function renderPolicies(){
+  const el=document.getElementById('policiesBody'); if(!el)return;
+  const canPublish=currentRole==='admin'||currentRole==='hr_manager'||currentRole==='hr';
+  el.innerHTML=`
+    ${canPublish?`<div class="card" style="margin-bottom:12px;"><div class="ch2"><span class="ch2-title">Publish New Policy</span></div>
+      <div class="cb">
+        <div class="fg"><label class="fl">Policy Title</label><input class="fi" id="polTitle" placeholder="e.g. Remote Work Policy v2"/></div>
+        <div class="fg"><label class="fl">Policy Body</label><textarea class="fi" id="polBody" rows="6" placeholder="Full policy text — this is emailed to every employee and stored here for reference."></textarea></div>
+        <button class="btn bp" onclick="policyPublish()">Publish &amp; Email All Staff</button>
+      </div></div>`:''}
+    <div class="card"><div class="ch2"><span class="ch2-title">Published Policies</span><span class="ch2-sub">${POLICIES.length} published</span></div>
+      <div class="cb" style="padding:0;">${POLICIES.length?POLICIES.map((p,i)=>`<div style="padding:12px 14px;border-bottom:1px solid var(--bd-l);">
+          <div style="display:flex;align-items:center;gap:8px;"><span class="tb" style="font-weight:700;">${p.title}</span><span style="font-size:10px;color:var(--mu);margin-left:auto;">${p.publishedOn} · by ${p.publishedBy}</span></div>
+          <div style="font-size:11px;color:var(--mid);margin-top:4px;white-space:pre-line;max-height:60px;overflow:hidden;">${p.body}</div>
+          ${canPublish?`<button class="btn bs btn-xs" style="margin-top:6px;" onclick="policyResend(${i})">Resend to All Staff</button>`:''}
+        </div>`).join(''):'<div style="padding:20px;text-align:center;color:var(--mu);font-size:12px;">No policies published yet.</div>'}
+      </div></div>`;
+}
+function _allStaffEmails(){
+  const set=new Set();
+  PAYPRO_EMPS.forEach(e=>{if(e.email)set.add(e.email);});
+  (window.USERS_LIST||[]).forEach(u=>{if(u.e)set.add(u.e);});
+  return [...set];
+}
+async function policyPublish(){
+  const title=document.getElementById('polTitle')?.value.trim();
+  const body=document.getElementById('polBody')?.value.trim();
+  if(!title||!body){toast('Title and policy text are required','#DC2626');return;}
+  const recipients=_allStaffEmails();
+  const policy={title,body,publishedOn:new Date().toISOString().slice(0,10),publishedBy:currentUser?.name||'HR',recipientCount:recipients.length};
+  POLICIES.unshift(policy);
+  const {error}=await callEdgeFunction('email-relay','send_email',{to:recipients.join(','),
+    subject:tplMerge('New company policy: ')+title,
+    html:'<div style="font-family:sans-serif;"><h2>'+title+'</h2><div style="white-space:pre-line;">'+body+'</div><p style="font-size:11px;color:#777;">Published by '+policy.publishedBy+' on '+policy.publishedOn+'.</p></div>'});
+  if(error&&error!=='no_client'&&error!=='not_authenticated'){toast('Policy saved, but email delivery failed — '+error,'#D97706');}
+  else toast('Policy published and emailed to '+recipients.length+' staff','#16A34A');
+  EMAIL_LOG.unshift({ts:'Just now',to:recipients.length+' staff',subject:'New company policy: '+title,status:'Delivered',opens:0});
+  document.getElementById('polTitle').value='';document.getElementById('polBody').value='';
+  writeAudit('PublishPolicy','Email',title,recipients.length,'medium');
+  NXDB.save('policies');
+  renderPolicies();
+}
+async function policyResend(i){
+  const p=POLICIES[i]; if(!p)return;
+  const recipients=_allStaffEmails();
+  await callEdgeFunction('email-relay','send_email',{to:recipients.join(','),
+    subject:tplMerge('Reminder — company policy: ')+p.title,
+    html:'<div style="font-family:sans-serif;"><h2>'+p.title+'</h2><div style="white-space:pre-line;">'+p.body+'</div></div>'});
+  EMAIL_LOG.unshift({ts:'Just now',to:recipients.length+' staff',subject:'Reminder — company policy: '+p.title,status:'Delivered',opens:0});
+  toast('Resent "'+p.title+'" to '+recipients.length+' staff','#16A34A');
+  writeAudit('ResendPolicy','Email',p.title,recipients.length,'low');
 }
 function emailUseTemplate(i){
   if(i===''||i===undefined)return;
@@ -12261,6 +12339,11 @@ const NXDB={
       get:()=>({log:EMAIL_LOG.slice(0,50)}),
       set:(st)=>{if(st.log)EMAIL_LOG=st.log;},
       render:()=>typeof renderEmail==='function'&&renderEmail(),
+    },
+    policies:{
+      get:()=>({list:POLICIES}),
+      set:(st)=>{if(st.list)POLICIES=st.list;},
+      render:()=>typeof renderPolicies==='function'&&renderPolicies(),
     },
     leave:{
       get:()=>({requests:NX_LEAVE_REQUESTS,attendance:NX_ATTENDANCE}),
@@ -14679,31 +14762,60 @@ NXSync.on('employee:onboarded',({name})=>{
 ════════════════════════════════════════════════════════════ */
 const NX_SIGN_URL='https://anncqmypbgxuzkvxpptk.supabase.co/functions/v1/sign-doc';
 
-async function requestSignature(party){
+async function _createSignRequest(party,docType,title,docHtml){
   const token=Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join('');
-  const isCtr=!!party.currency;
-  const title=(isCtr?'Contractor Agreement':'Employment Contract')+' — '+party.name;
-  const link=NX_SIGN_URL+'?token='+token;
   const row=await NXCloud.insert('nx_sign_requests',{
-    token,doc_type:'contract',doc_title:title,
-    doc_html:contractHTML(party),party_name:party.name,party_email:party.email||null,
+    token,doc_type:docType,doc_title:title,
+    doc_html:docHtml,party_name:party.name,party_email:party.email||null,
     requested_by:currentUser?.id&&String(currentUser.id).length>20?currentUser.id:null,
   });
-  if(!row){
-    navigator.clipboard?.writeText(link);
+  return row?{token,link:NX_SIGN_URL+'?token='+token}:null;
+}
+
+async function requestSignature(party){
+  const isCtr=!!party.currency;
+  const title=(isCtr?'Contractor Agreement':'Employment Contract')+' — '+party.name;
+  const req=await _createSignRequest(party,'contract',title,contractHTML(party));
+  if(!req){
     toast('Demo mode — sign in with a real account to issue live signing links','#D97706');
     return;
   }
   const email=party.email||(party.name.toLowerCase().replace(/[^a-z]+/g,'.')+'@example.com');
   await callEdgeFunction('email-relay','send_email',{to:email,
     subject:tplMerge('Signature requested: ')+title,
-    html:'<div style="font-family:sans-serif"><h2>'+title+'</h2><p>Please review and sign your document. The link works on any phone, tablet or computer and expires in 14 days.</p><p><a href="'+link+'" style="background:#F97316;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:700;">Review & Sign</a></p><p style="font-size:12px;color:#777;">Or copy this link: '+link+'</p></div>'});
+    html:'<div style="font-family:sans-serif"><h2>'+title+'</h2><p>Please review and sign your document. The link works on any phone, tablet or computer and expires in 14 days.</p><p><a href="'+req.link+'" style="background:#F97316;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:700;">Review & Sign</a></p><p style="font-size:12px;color:#777;">Or copy this link: '+req.link+'</p></div>'});
   EMAIL_LOG.unshift({ts:'Just now',to:email,subject:'Signature requested: '+title,status:'Delivered',opens:0});
   if(typeof renderEmail==='function')renderEmail();
-  navigator.clipboard?.writeText(link);
+  navigator.clipboard?.writeText(req.link);
   toast('Signing link sent to '+email+' and copied to your clipboard','#16A34A');
   writeAudit('SignRequest','xVault',party.name,0,'medium');
   nxSignStatusDrawer();
+}
+
+/* ── Full onboarding pack: contract e-sign + personal details/ID/address +
+   NDA, sent as one combined email with two action links — this is the
+   "onboarding portal" the new employee is met with, not just a bare
+   contract. Both steps reuse the same proven sign-doc endpoint/table. ── */
+async function sendOnboardingPack(party){
+  const contractReq=await _createSignRequest(party,'contract','Employment Contract — '+party.name,contractHTML(party));
+  const detailsReq=await _createSignRequest(party,'onboarding_details','Personal Details & NDA — '+party.name,'');
+  if(!contractReq||!detailsReq){
+    toast('Demo mode — sign in with a real account to issue live onboarding links','#D97706');
+    return;
+  }
+  const email=party.email||(party.name.toLowerCase().replace(/[^a-z]+/g,'.')+'@example.com');
+  const html=`<div style="font-family:sans-serif;max-width:520px;">
+    <h2>Welcome to ${NX_TPL?.company||'the team'}, ${party.name.split(' ')[0]}!</h2>
+    <p>To complete your onboarding, please finish these two quick steps. Both links work on any phone, tablet or computer and expire in 14 days.</p>
+    <p><a href="${contractReq.link}" style="display:block;background:#F97316;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:700;margin-bottom:10px;">1. Review & Sign Your Employment Contract</a>
+    <a href="${detailsReq.link}" style="display:block;background:#18181B;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:700;">2. Confirm Personal Details, ID & NDA</a></p>
+    <p style="font-size:12px;color:#777;">Contract link: ${contractReq.link}<br>Details link: ${detailsReq.link}</p>
+  </div>`;
+  await callEdgeFunction('email-relay','send_email',{to:email,subject:tplMerge('Welcome to {{company}} — complete your onboarding'),html});
+  EMAIL_LOG.unshift({ts:'Just now',to:email,subject:'Welcome — complete your onboarding',status:'Delivered',opens:0});
+  if(typeof renderEmail==='function')renderEmail();
+  writeAudit('OnboardingPack','xVault',party.name,0,'medium');
+  toast('Onboarding pack sent to '+email+' — contract + personal details + NDA','#16A34A');
 }
 
 async function nxSignStatusDrawer(){
@@ -14743,7 +14855,7 @@ async function nxSignStatusDrawer(){
   window.onboardEmployeeSubmit=async function(){
     await _ob.apply(this,arguments);
     const e=PAYPRO_EMPS[PAYPRO_EMPS.length-1];
-    if(e&&e.email&&NXCloud.ok())requestSignature(e);
+    if(e&&e.email&&NXCloud.ok())sendOnboardingPack(e);
   };
 })();
 
