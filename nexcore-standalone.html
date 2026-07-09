@@ -7641,7 +7641,7 @@ function budgetDeptCard(d) {
   <div style="display:flex;gap:8px">
     <button class="btn bs btn-xs" style="flex:1" onclick="budgetEditDept('${d.id}')">Edit</button>
     <button class="btn bs btn-xs" style="flex:1" onclick="budgetViewHistory('${d.id}')">History</button>
-    <button class="btn btn-sm ${d.restricted?'bp':''}" onclick="budgetToggleRestriction('${d.id}',${!d.restricted})">${d.restricted?'Lift':'Restrict'}</button>
+    <button class="btn btn-sm ${d.restricted?'bp':''}" style="flex:1;" onclick="budgetToggleRestriction('${d.id}',${!d.restricted})">${d.restricted?'Lift':'Restrict'}</button>
   </div>
 </div>`;
 }
@@ -8025,9 +8025,10 @@ function budgetToggleRestriction(deptId, restrict) {
   }
 }
 
-function budgetAddDept()       { if(typeof toast==='function') toast('Opening New Budget Line form…','#F97316'); }
-function budgetEditDept(id)    { if(typeof toast==='function') toast(`Editing budget for ${BUDGET_DEPTS.find(d=>d.id===id)?.name}…`,'#3B82F6'); }
-function budgetViewHistory(id) { if(typeof toast==='function') toast(`Loading spend history…`,'#3B82F6'); }
+/* budgetAddDept/budgetEditDept/budgetViewHistory: real implementations live
+   further down (window.budgetAddDept/budgetEditDept/budgetViewHistory) —
+   see the "BUDGET drawers" section. Placeholders removed from here so
+   there's a single source of truth instead of a shadowed duplicate. */
 function budgetEditCategory(id){
   const c=BUDGET_CATEGORIES.find(x=>x.id===id); if(!c)return;
   const val=parseFloat(prompt('New spend limit for '+c.name+' (R):',c.limit));
