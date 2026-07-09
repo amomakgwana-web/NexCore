@@ -1,0 +1,79 @@
+{
+  "gatewayPort": 8080,
+  "services": [
+    { "name": "auth-service", "replicas": 2, "portBase": 4001, "hero": true,
+      "resources": [
+        { "resource": "profiles", "table": "user_profiles" },
+        { "resource": "login-attempts", "table": "login_attempts" },
+        { "resource": "otp-codes", "table": "otp_codes" }
+      ] },
+    { "name": "payroll-service", "replicas": 2, "portBase": 4011, "hero": true,
+      "resources": [
+        { "resource": "employees", "table": "payroll_employees" },
+        { "resource": "deductions", "table": "payroll_deductions" },
+        { "resource": "runs", "table": "payroll_runs" }
+      ] },
+    { "name": "billing-service", "replicas": 2, "portBase": 4021, "hero": true,
+      "resources": [ { "resource": "invoices", "table": "invoices" } ] },
+    { "name": "accounting-service", "replicas": 2, "portBase": 4031, "hero": true,
+      "resources": [
+        { "resource": "journals", "table": "nx_journals" },
+        { "resource": "budget-lines", "table": "budget_lines" }
+      ] },
+    { "name": "finance-service", "replicas": 2, "portBase": 4041, "hero": true, "resources": [] },
+    { "name": "hr-service", "replicas": 2, "portBase": 4051,
+      "resources": [
+        { "resource": "employees", "table": "employees" },
+        { "resource": "leave-requests", "table": "leave_requests" },
+        { "resource": "leave-balances", "table": "leave_balances" },
+        { "resource": "clock-events", "table": "clock_events" }
+      ] },
+    { "name": "crm-service", "replicas": 2, "portBase": 4061,
+      "resources": [ { "resource": "deals", "table": "crm_deals" } ] },
+    { "name": "procurement-service", "replicas": 2, "portBase": 4071,
+      "resources": [
+        { "resource": "purchase-orders", "table": "purchase_orders" },
+        { "resource": "vendors", "table": "vendors" }
+      ] },
+    { "name": "approvals-service", "replicas": 2, "portBase": 4081,
+      "resources": [ { "resource": "approvals", "table": "approvals" } ] },
+    { "name": "claims-service", "replicas": 2, "portBase": 4091,
+      "resources": [
+        { "resource": "claims", "table": "claims" },
+        { "resource": "nx-claims", "table": "nx_claims" }
+      ] },
+    { "name": "assets-service", "replicas": 2, "portBase": 4101,
+      "resources": [ { "resource": "assets", "table": "assets" } ] },
+    { "name": "contracts-service", "replicas": 2, "portBase": 4111,
+      "resources": [ { "resource": "contracts", "table": "contracts" } ] },
+    { "name": "projects-service", "replicas": 2, "portBase": 4121,
+      "resources": [
+        { "resource": "projects", "table": "projects" },
+        { "resource": "tasks", "table": "project_tasks" }
+      ] },
+    { "name": "notifications-service", "replicas": 2, "portBase": 4131,
+      "resources": [
+        { "resource": "notifications", "table": "notifications" },
+        { "resource": "chat-messages", "table": "chat_messages" },
+        { "resource": "email-log", "table": "nx_email_log" }
+      ] },
+    { "name": "audit-service", "replicas": 2, "portBase": 4141,
+      "resources": [ { "resource": "audit-log", "table": "audit_log" } ] },
+    { "name": "vault-service", "replicas": 2, "portBase": 4151,
+      "resources": [ { "resource": "sign-requests", "table": "nx_sign_requests" } ] },
+    { "name": "entities-service", "replicas": 2, "portBase": 4161,
+      "resources": [
+        { "resource": "entities", "table": "entities" },
+        { "resource": "tenants", "table": "nx_tenants" }
+      ] },
+    { "name": "budget-service", "replicas": 2, "portBase": 4171,
+      "resources": [ { "resource": "lines", "table": "budget_lines" } ] },
+    { "name": "payments-service", "replicas": 2, "portBase": 4181,
+      "resources": [ { "resource": "payments", "table": "nx_payments" } ] },
+    { "name": "state-service", "replicas": 2, "portBase": 4191,
+      "resources": [
+        { "resource": "module-state", "table": "nx_module_state", "idColumn": "module" },
+        { "resource": "rate-limits", "table": "nx_rate_limits" }
+      ] }
+  ]
+}
