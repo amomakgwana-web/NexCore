@@ -629,6 +629,21 @@ tr:hover td{background:var(--sf);}
 /* ═══ NOTIF PANEL ═══ */
 .notif-panel{position:absolute;top:calc(var(--hh)+6px);right:12px;width:320px;background:var(--wh);border:1px solid var(--bd);border-radius:var(--r12);box-shadow:var(--sh3);z-index:600;display:none;}
 .notif-panel.on{display:block;}
+
+/* ═══ PROFILE MENU (topbar avatar dropdown — the primary sign-out-everywhere
+   entry point on phone/tablet where the sidebar footer is off-canvas) ═══ */
+.tb-av{cursor:pointer;}
+.profile-menu{position:absolute;top:calc(var(--hh)+6px);right:12px;width:250px;background:var(--wh);border:1px solid var(--bd);border-radius:var(--r12);box-shadow:var(--sh3);z-index:600;display:none;overflow:hidden;}
+.profile-menu.on{display:block;}
+body.dark .profile-menu{background:#09090B;border-color:#27272A;}
+.pm-hdr{padding:14px;border-bottom:1px solid var(--bd);}
+.pm-name{font-size:13px;font-weight:700;color:var(--ink);}
+.pm-role{font-size:11px;color:var(--mid);margin-top:2px;}
+.pm-item{display:flex;align-items:center;gap:9px;padding:10px 14px;font-size:12px;font-weight:600;color:var(--ink);cursor:pointer;transition:background .12s;}
+.pm-item:hover{background:var(--sf2);}
+.pm-item svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+.pm-item.danger{color:var(--rd);}
+.pm-sep{height:1px;background:var(--bd);margin:4px 0;}
 .notif-hdr{padding:10px 14px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;}
 .notif-title{font-size:13px;font-weight:700;}
 .notif-item{padding:9px 14px;border-bottom:1px solid var(--bd-l);cursor:pointer;display:flex;gap:9px;transition:background .12s;}
@@ -1516,7 +1531,7 @@ body.dark .perm-check.on{background:var(--gn);}
         <svg id="darkIcon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
       <div class="tb-notif" onclick="toggleNotif()"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:#71717A;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><div class="tb-notif-dot" id="notifDot"></div></div>
-      <div class="tb-av" id="tbAv" style="background:#F97316;">AM</div>
+      <div class="tb-av" id="tbAv" style="background:#F97316;" onclick="toggleProfileMenu()">AM</div>
     </div>
   </div>
 
@@ -1524,6 +1539,16 @@ body.dark .perm-check.on{background:var(--gn);}
   <div class="notif-panel" id="notifPanel">
     <div class="notif-hdr"><span class="notif-title">Notifications</span><span id="notifCount" style="font-size:11px;color:var(--mid);"></span><button class="btn bs btn-xs" style="margin-left:auto;" onclick="markAllRead()">Mark all read</button></div>
     <div id="notifList"></div>
+  </div>
+
+  <!-- PROFILE MENU — reachable from any device size, not just the sidebar footer -->
+  <div class="profile-menu" id="profileMenu">
+    <div class="pm-hdr"><div class="pm-name" id="pmName">Amohelang M.</div><div class="pm-role" id="pmRole">Administrator · Bipra</div></div>
+    <div class="pm-item" onclick="toggleProfileMenu();doLogout()"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign Out</div>
+    <div class="pm-item danger" onclick="toggleProfileMenu();logoutAllDevices()" title="Revokes every active session for your account"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Sign Out — All Devices</div>
+    <div class="pm-sep"></div>
+    <div class="pm-item" onclick="toggleProfileMenu();openHelpPanel()"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Help</div>
+    <div class="pm-item" onclick="toggleProfileMenu();openVersionPanel()"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Version &amp; Updates</div>
   </div>
 
   <!-- LAYOUT -->
@@ -3947,6 +3972,9 @@ function bootstrapApp(){
   document.getElementById('sbName').textContent = u.name;
   const rl = document.getElementById('sbRoleLabel');
   if(rl) rl.textContent = u.label;
+  const pmName = document.getElementById('pmName'), pmRole = document.getElementById('pmRole');
+  if(pmName) pmName.textContent = u.name;
+  if(pmRole) pmRole.textContent = u.label+' · '+u.org;
   // Role badge (small, beside name in footer)
   const rb = document.getElementById('sbRoleBadge');
   const roleColors = {admin:'or',cfo:'am',manager:'bl',hr:'gn',staff:'pu',vendor:'cy'};
@@ -4112,7 +4140,52 @@ function closeModal(id){document.getElementById(id).classList.remove('on');}
 document.addEventListener('click',e=>{
   if(e.target.classList.contains('moverlay')) e.target.classList.remove('on');
   if(!e.target.closest('.tb-notif')&&!e.target.closest('.notif-panel')) document.getElementById('notifPanel')?.classList.remove('on');
+  if(!e.target.closest('.tb-av')&&!e.target.closest('.profile-menu')) document.getElementById('profileMenu')?.classList.remove('on');
 });
+
+/* ══ PROFILE MENU — reachable from every device size, so "sign out on all
+   devices" isn't buried behind the sidebar hamburger on phone/tablet ══ */
+function toggleProfileMenu(){
+  document.getElementById('notifPanel')?.classList.remove('on');
+  document.getElementById('profileMenu').classList.toggle('on');
+}
+function openHelpPanel(){
+  nxDrawerOpen({
+    title:'Help & Support', sub:'MORR ERP · '+(NX_TPL?.legal||'Bipra (Pty) Ltd'), icon:'shield', color:'var(--bl)',
+    body:`
+      <div class="nx-sec">Getting Started</div>
+      <div style="font-size:12px;color:var(--mid);line-height:1.8;">Use the sidebar to move between modules. Most records (invoices, employees, deals, assets, vehicles) open a detail drawer when clicked — look for a pointer cursor on table rows and cards.</div>
+      <div class="nx-sec" style="margin-top:14px;">Common Questions</div>
+      <div class="stat-row"><span class="stat-lbl">How do I reset my password?</span></div>
+      <div style="font-size:11px;color:var(--mid);padding:0 0 8px;">Use "Forgot password?" on the sign-in screen — a reset link is emailed to your registered address.</div>
+      <div class="stat-row"><span class="stat-lbl">Why do some approvals need MFA?</span></div>
+      <div style="font-size:11px;color:var(--mid);padding:0 0 8px;">High-value actions (large payments, pay-run release) require a one-time code for security, per company IAM policy.</div>
+      <div class="stat-row"><span class="stat-lbl">Who do I contact for support?</span></div>
+      <div style="font-size:11px;color:var(--mid);padding:0 0 8px;">${NX_TPL?.emailFrom||'support@bipra.co.za'} · ${NX_TPL?.phone||''}</div>
+      <div class="nx-sec" style="margin-top:14px;">Search &amp; Terminology</div>
+      <div style="font-size:11px;color:var(--mid);">Press <b>Cmd/Ctrl+K</b> to search across every module. Not sure what a term means (PAYE, UIF, EMP201, VAT201...)? Ask the <b>AI Assistant</b> — it explains South African business/tax terminology as well as your live company data.</div>
+    `,
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>',
+  });
+}
+const APP_VERSION='6.1.0';
+const APP_CHANGELOG=[
+  {v:'6.1.0',date:'2026-07',notes:['Microservices architecture with load-balanced service tier','Real Analytics: payroll cost composition, recent activity, SwiftPay volume, revenue forecast','Fixed multi-tab pages leaving every previously-clicked tab highlighted','Global profile menu: sign out everywhere, Help, Version & Updates from any device']},
+  {v:'6.0.0',date:'2026-07',notes:['Full rebrand to Bipra','Real recurring billing, AR/AP aging, cash flow history, detailed SARS reports','JIRA-style CRM board, fleet hardware config, contractor pay-run history','Two-stage leave & expense claim approval workflows']},
+  {v:'5.x',date:'2026-06',notes:['ISO-aligned login: brute-force lockout, MFA/OTP, SAML SSO, idle-timeout']},
+];
+function openVersionPanel(){
+  nxDrawerOpen({
+    title:'Version & Updates', sub:'MORR ERP v'+APP_VERSION, icon:'file', color:'var(--pu)',
+    body: APP_CHANGELOG.map(c=>`
+      <div class="nx-sec" style="margin-top:10px;">v${c.v} — ${c.date}</div>
+      <ul style="margin:4px 0 0 18px;padding:0;font-size:12px;color:var(--mid);line-height:1.8;">
+        ${c.notes.map(n=>`<li>${n}</li>`).join('')}
+      </ul>
+    `).join(''),
+    actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>',
+  });
+}
 
 /* ══ NOTIFICATIONS ══ */
 
@@ -4350,6 +4423,8 @@ const SUGGESTED_QUESTIONS = [
   "List all invoices overdue more than 30 days",
   "When does the next payroll run and how much is due?",
   "Which vendor has the highest outstanding invoice?",
+  "What is EMP201 and when is it due?",
+  "What does UIF stand for and how is it calculated?",
 ];
 
 const SETTINGS_PANELS = {
