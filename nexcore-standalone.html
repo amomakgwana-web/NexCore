@@ -10356,6 +10356,8 @@ let PAYPRO_EMPS=[
   {id:'EMP-008',name:'Bongani Zulu',dept:'Sales',basic:36000,commission:19600,bonus:2500,medical:2100,retirement:2700,leaveBal:5},
 ];
 let _payproPosted=false;
+let PAYROLL_RECON={period:'February 2025',managerApproved:false,cfoApproved:false};
+let PAYROLL_SALARY_HISTORY=[];
 
 function payproPAYE(monthly){
   // 2024/25 SARS tables, monthly equivalent with primary rebate
@@ -10387,9 +10389,13 @@ function renderPaypro(){
     el.innerHTML=`<div class="tabs">
       <button class="tab on" onclick="switchTab('payTabs','employees',this)">Employees</button>
       <button class="tab" onclick="switchTab('payTabs','runs',this)">Pay Runs <span id="payRunsDueBadge"></span></button>
+      <button class="tab" onclick="switchTab('payTabs','recon',this);renderPayrollReconciliation()">Attendance Reconciliation</button>
+      <button class="tab" onclick="switchTab('payTabs','accounting',this);renderPayrollAccountingSync()">Accounting Sync</button>
     </div>
     <div class="tp on" id="payTabs-employees"></div>
-    <div class="tp" id="payTabs-runs"></div>`;
+    <div class="tp" id="payTabs-runs"></div>
+    <div class="tp" id="payTabs-recon"></div>
+    <div class="tp" id="payTabs-accounting"></div>`;
   }
   renderPayproEmployees();
   renderPayrollRuns();
@@ -10452,12 +10458,100 @@ function payproPostToGL(){
 }
 
 function payproRun(){
+  if(!PAYROLL_RECON.managerApproved||!PAYROLL_RECON.cfoApproved){
+    toast('Attendance reconciliation still needs '+(!PAYROLL_RECON.managerApproved&&!PAYROLL_RECON.cfoApproved?'Manager and CFO':!PAYROLL_RECON.managerApproved?'Manager':'CFO')+' sign-off — see Attendance Reconciliation tab','#D97706');
+    return;
+  }
   confirmWithOTP('Approve payroll & release payments',async ()=>{
     const tNet=PAYPRO_EMPS.reduce((s,e)=>s+payproCalc(e).net,0);
     toast('Pay run approved — '+fmt(Math.round(tNet))+' released via SwiftPay to '+PAYPRO_EMPS.length+' accounts','#16A34A');
     writeAudit('PayRun','Payroll','FEB-2025',Math.round(tNet),'high');
     if(!_payproPosted)payproPostToGL();
   });
+}
+
+/* ── Attendance reconciliation: fixed monthly basic vs hours×rate, shown
+   side by side per the CFO's decision — neither figure alone is treated
+   as authoritative; both need explicit Manager and CFO sign-off before
+   payproRun() will release payment. Falls back to standard monthly hours
+   (173.33, the BCEA norm) when there's no real clock-event data, so a
+   demo/no-network session shows "no variance" rather than a misleading
+   near-zero hours×rate figure. ── */
+function payproAttendanceHours(empName){
+  const events=(window._TK_EVENTS||[]).filter(e=>e.name===empName);
+  const dates=[...new Set(events.map(e=>e.date))];
+  if(!dates.length)return 173.33;
+  let hrs=0;
+  dates.forEach(d=>{
+    const inEv=events.find(e=>e.date===d&&e.type==='in'), outEv=events.find(e=>e.date===d&&e.type==='out');
+    if(inEv&&outEv)hrs+=(new Date(`${d}T${outEv.time}`)-new Date(`${d}T${inEv.time}`))/3600000;
+  });
+  return hrs||173.33;
+}
+function renderPayrollReconciliation(){
+  const el=document.getElementById('payTabs-recon'); if(!el)return;
+  const rows=PAYPRO_EMPS.map(e=>{
+    const hours=payproAttendanceHours(e.name);
+    const hourlyRate=e.basic/173.33;
+    const reconciled=Math.round(hourlyRate*hours);
+    const variance=reconciled-e.basic;
+    return {e,hours,reconciled,variance};
+  });
+  const canManager=currentRole==='manager'||currentRole==='admin';
+  const canCFO=currentRole==='cfo'||currentRole==='admin';
+  el.innerHTML=`
+  <div class="alert bl" style="margin-bottom:14px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:var(--bl-m);stroke-width:2;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><div><div class="alert-title">Fixed salary vs. attendance-reconciled pay — both shown, neither auto-applied</div><div class="alert-body">Basic salary stays fixed per contract; the hours×rate column is informational so Manager and CFO can catch under/over-attendance before releasing payment. Both must approve before "Approve & Pay Run" will proceed.</div></div></div>
+  <div class="card"><div class="ch2"><span class="ch2-title">${PAYROLL_RECON.period} Reconciliation</span></div>
+  <div class="cb" style="padding:0;"><div class="tw"><table>
+    <thead><tr><th>Employee</th><th>Fixed Basic (Monthly)</th><th>Hours Worked</th><th>Hours × Rate</th><th>Variance</th></tr></thead>
+    <tbody>${rows.map(({e,hours,reconciled,variance})=>`<tr>
+      <td class="tb">${e.name}</td>
+      <td class="mo">${fmt(e.basic)}</td>
+      <td class="mo">${hours.toFixed(1)}h</td>
+      <td class="mo">${fmt(reconciled)}</td>
+      <td class="mo" style="color:${Math.abs(variance)<50?'var(--mid)':variance<0?'var(--rd)':'var(--gn)'};">${variance>=0?'+':''}${fmt(variance)}</td>
+    </tr>`).join('')}</tbody></table></div></div></div>
+  <div class="card" style="margin-top:14px;"><div class="ch2"><span class="ch2-title">Sign-off</span></div>
+  <div class="cb">
+    <div class="stat-row"><span class="stat-lbl">Manager Approval</span><span class="stat-val">${PAYROLL_RECON.managerApproved?'<span style="color:var(--gn);font-weight:700;">✓ Approved</span>':canManager?`<button class="btn bp btn-xs" onclick="payrollReconApprove('manager')">Approve as Manager</button>`:'<span style="color:var(--mu);">Pending</span>'}</span></div>
+    <div class="stat-row"><span class="stat-lbl">CFO Approval</span><span class="stat-val">${PAYROLL_RECON.cfoApproved?'<span style="color:var(--gn);font-weight:700;">✓ Approved</span>':canCFO?`<button class="btn bp btn-xs" onclick="payrollReconApprove('cfo')">Approve as CFO</button>`:'<span style="color:var(--mu);">Pending</span>'}</span></div>
+  </div></div>`;
+}
+function payrollReconApprove(role){
+  if(role==='manager')PAYROLL_RECON.managerApproved=true;
+  if(role==='cfo')PAYROLL_RECON.cfoApproved=true;
+  renderPayrollReconciliation();
+  NXDB.save('paypro');
+  writeAudit('ReconApprove','Payroll',PAYROLL_RECON.period+' ('+role+')',0,'high');
+  toast((role==='manager'?'Manager':'CFO')+' approved the attendance reconciliation','#16A34A');
+  if(PAYROLL_RECON.managerApproved&&PAYROLL_RECON.cfoApproved){
+    toast('Reconciliation fully approved — payroll can now be released','#16A34A');
+  }
+}
+
+/* ── Accounting Sync: post the pay run to whichever accounting system is
+   actually connected in the Integrations Marketplace (Xero/QuickBooks/
+   Sage) — gated on real connection state, not a fake instant "synced". ── */
+function renderPayrollAccountingSync(){
+  const el=document.getElementById('payTabs-accounting'); if(!el)return;
+  const systems=['Xero','QuickBooks','Sage Intacct'];
+  el.innerHTML=`
+  <div class="card"><div class="ch2"><span class="ch2-title">Accounting Integrations</span><span class="ch2-sub">Connect in API &amp; Webhooks → Integrations to enable posting</span></div>
+  <div class="cb" style="padding:0;">${systems.map(name=>{
+    const intg=(window.INTEGRATIONS||[]).find(i=>i.name===name||i.name.startsWith(name.split(' ')[0]));
+    const connected=!!intg?.connected;
+    return `<div class="stock-card">
+      <div class="stock-icon" style="background:${connected?'var(--gn-l)':'var(--sf2)'};">${svgIcon('building','14px',connected?'var(--gn)':'var(--mid)')}</div>
+      <div style="flex:1;"><div class="stock-name">${name}</div><div class="stock-sku">${connected?'Connected':'Not connected'}</div></div>
+      ${connected?`<button class="btn bp btn-xs" onclick="payrollPostToAccounting('${name}')">Post ${PAYROLL_RECON.period}</button>`:`<button class="btn bs btn-xs" onclick="openPage('api');toast('Connect '+'${name}'+' from the Integrations tab','#2563EB')">Connect</button>`}
+    </div>`;
+  }).join('')}</div></div>`;
+}
+function payrollPostToAccounting(system){
+  if(!_payproPosted){toast('Post the pay run to the GL first (Pay Runs tab), then sync to '+system,'#D97706');return;}
+  const tGross=PAYPRO_EMPS.reduce((s,e)=>s+payproCalc(e).gross,0);
+  toast(PAYROLL_RECON.period+' payroll journal ('+fmt(Math.round(tGross))+') queued for sync to '+system,'#16A34A');
+  writeAudit('PostToAccounting','Payroll',PAYROLL_RECON.period+' -> '+system,Math.round(tGross),'high');
 }
 
 /* ══ Automated pay-run scheduling by frequency (Sage-style) ══
@@ -11659,8 +11753,8 @@ const NXDB={
       render:()=>typeof renderAccounting==='function'&&renderAccounting(),
     },
     paypro:{
-      get:()=>({emps:PAYPRO_EMPS,posted:_payproPosted}),
-      set:(st)=>{if(st.emps)PAYPRO_EMPS=st.emps;if(typeof st.posted==='boolean')_payproPosted=st.posted;},
+      get:()=>({emps:PAYPRO_EMPS,posted:_payproPosted,recon:PAYROLL_RECON,salaryHistory:PAYROLL_SALARY_HISTORY}),
+      set:(st)=>{if(st.emps)PAYPRO_EMPS=st.emps;if(typeof st.posted==='boolean')_payproPosted=st.posted;if(st.recon)PAYROLL_RECON=st.recon;if(st.salaryHistory)PAYROLL_SALARY_HISTORY=st.salaryHistory;},
       render:()=>typeof renderPaypro==='function'&&renderPaypro(),
     },
     fleet:{
@@ -12880,11 +12974,41 @@ function empPayrollDrawer(i){
       +[['Gross remuneration',gross],['UIF — employer 1%',uifER],['SDL — skills levy 1%',sdl]].map(([l,v])=>'<div class="stat-row"><span class="stat-lbl">'+l+'</span><span class="stat-val">'+fmt(Math.round(v))+'</span></div>').join('')
       +'<div class="stat-row" style="font-weight:900;"><span class="stat-lbl" style="font-weight:900;color:var(--ink);">Total CTC</span><span class="stat-val" style="color:var(--or);">'+fmt(Math.round(cts))+'</span></div>'
       +'<div class="nx-sec">Leave Accrual</div>'
-      +'<div style="font-size:12px;color:var(--mid);line-height:1.7;">Accrues 1.25 days/month (15 p.a. BCEA minimum). Current balance <b style="color:var(--ink);">'+e.leaveBal+' days</b> · value if encashed: <b style="color:var(--ink);">'+fmt(Math.round(e.basic/21.67*e.leaveBal))+'</b></div>',
+      +'<div style="font-size:12px;color:var(--mid);line-height:1.7;">Accrues 1.25 days/month (15 p.a. BCEA minimum). Current balance <b style="color:var(--ink);">'+e.leaveBal+' days</b> · value if encashed: <b style="color:var(--ink);">'+fmt(Math.round(e.basic/21.67*e.leaveBal))+'</b></div>'
+      +'<div class="nx-sec">Salary Adjustment History</div>'
+      +(PAYROLL_SALARY_HISTORY.filter(h=>h.empId===e.id).length
+        ?PAYROLL_SALARY_HISTORY.filter(h=>h.empId===e.id).map(h=>'<div class="stat-row"><span class="stat-lbl">'+fmt(h.oldBasic)+' → '+fmt(h.newBasic)+'<div style="font-size:9.5px;color:var(--mu);">'+h.reason+' · '+h.by+'</div></span><span class="stat-val" style="font-size:10px;color:var(--mu);">'+h.date+'</span></div>').join('')
+        :'<div style="font-size:11px;color:var(--mid);padding:4px 0;">No adjustments on record — basic has been '+fmt(e.basic)+' since onboarding.</div>'),
     actions:'<button class="btn bs" onclick="nxDrawerClose()">Close</button>'
       +'<button class="btn bs" onclick="nxDocOpen(payslipHTML(PAYPRO_EMPS['+i+']))">Payslip PDF</button>'
+      +'<button class="btn bs" onclick="payproAdjustSalaryDrawer('+i+')">Adjust Basic Salary</button>'
       +'<button class="btn bp" onclick="nxDrawerClose();callEdgeFunction(\'email-relay\',\'send_email\',{to:\''+e.name.toLowerCase().replace(/[^a-z]+/g,'.')+'@xgroup.co.za\',subject:\'Your payslip for February 2025\',html:payslipHTML(PAYPRO_EMPS['+i+'])}).then(()=>toast(\'Payslip emailed to '+e.name+'\',\'#16A34A\'))">Email Payslip</button>',
   });
+}
+function payproAdjustSalaryDrawer(i){
+  const e=PAYPRO_EMPS[i]; if(!e)return;
+  nxDrawerOpen({
+    title:'Adjust Basic Salary — '+e.name,sub:'Current: '+fmt(e.basic)+'/month',icon:'dollar',color:'var(--or)',
+    body:`<div class="fg"><label class="fl">New Basic Salary (R/month)</label><input class="fi" id="pasNewBasic" type="number" value="${e.basic}"/></div>
+      <div class="fg" style="margin-top:10px;"><label class="fl">Reason (required)</label><textarea class="fi" id="pasReason" rows="3" placeholder="e.g. Annual increase, promotion, market adjustment…"></textarea></div>`,
+    actions:`<button class="btn bs" onclick="empPayrollDrawer(${i})">Cancel</button>
+      <button class="btn bp" onclick="payproAdjustSalarySave(${i})">Save Adjustment</button>`,
+  });
+}
+function payproAdjustSalarySave(i){
+  const e=PAYPRO_EMPS[i]; if(!e)return;
+  const newBasic=parseFloat(document.getElementById('pasNewBasic').value);
+  const reason=document.getElementById('pasReason').value.trim();
+  if(!newBasic||newBasic<=0){toast('Enter a valid salary amount','#DC2626');return;}
+  if(!reason){toast('A reason is required to adjust salary','#DC2626');return;}
+  const oldBasic=e.basic;
+  e.basic=newBasic;
+  PAYROLL_SALARY_HISTORY.unshift({empId:e.id,oldBasic,newBasic,reason,by:currentUser?.name||'You',date:new Date().toISOString().slice(0,10)});
+  renderPaypro();
+  NXDB.save('paypro');
+  writeAudit('AdjustSalary','Payroll',e.id+' '+fmt(oldBasic)+' -> '+fmt(newBasic)+' ('+reason+')',newBasic-oldBasic,'high');
+  toast(e.name+"'s basic salary "+(newBasic>oldBasic?'increased':'decreased')+' to '+fmt(newBasic),'#16A34A');
+  empPayrollDrawer(i);
 }
 
 /* ══ SAGE-STYLE: EMP201 document ═════════════════════════ */
