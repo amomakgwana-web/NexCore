@@ -483,6 +483,9 @@ tr:hover td{background:var(--sf);}
 .tab svg{width:12px;height:12px;fill:currentColor;}
 .tab.on{color:var(--or-d);border-bottom-color:var(--or);}
 .tp{display:none;}.tp.on{display:block;}
+/* HR & Payroll: give the Employees/Payroll/Leave panels comfortable space */
+#page-hr .tp.on>.card{margin-bottom:18px;}
+#page-hr #hrTabs-leave .tw table td,#page-hr #hrTabs-leave .tw table th{padding:12px 16px;}
 
 /* ═══ FORMS ═══ */
 .fg{margin-bottom:12px;}
@@ -1642,7 +1645,7 @@ body.dark .perm-check.on{background:var(--gn);}
         <div class="ph"><div class="ph-icon" style="background:var(--gn)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="ph-title">HR & Payroll</div><div class="ph-sub" id="hrPageSub">674 employees · Apr 2026 payroll</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="onboardEmployeeDrawer()">Onboard Employee</button><button class="btn bs btn-sm" onclick="toast('Payroll run initiated','#16A34A')">Run Payroll</button></div></div>
         <div class="tabs"><button class="tab on" onclick="switchTab('hrTabs','employees',this)">Employees</button><button class="tab" onclick="switchTab('hrTabs','payroll',this)">Payroll</button><button class="tab" onclick="switchTab('hrTabs','leave',this)">Leave</button></div>
         <div class="content">
-          <div class="tp on" id="hrTabs-employees"><div class="card"><div class="ch2"><span class="ch2-title">Employee Directory</span><span class="ch2-sub" id="empListCount"></span></div><div id="empDeptChips" style="padding:10px 14px;border-bottom:1px solid var(--bd-l);display:flex;gap:6px;flex-wrap:wrap;"></div><div id="empList" style="max-height:640px;overflow-y:auto;"></div></div></div>
+          <div class="tp on" id="hrTabs-employees"><div class="card"><div class="ch2"><span class="ch2-title">Employee Directory</span><span class="ch2-sub" id="empListCount"></span></div><div id="empDeptChips" style="padding:10px 14px;border-bottom:1px solid var(--bd-l);display:flex;gap:6px;flex-wrap:wrap;"></div><div id="empList" style="max-height:calc(100vh - 330px);min-height:420px;overflow-y:auto;"></div></div></div>
           <div class="tp" id="hrTabs-payroll"><div id="payrollContent"></div></div>
           <div class="tp" id="hrTabs-leave"><div class="card"><div class="ch2"><span class="ch2-title">Leave Requests</span></div><div class="cb" style="padding:0;"><div class="tw"><table><thead><tr><th>Employee</th><th>Type</th><th>Dates</th><th>Days</th><th>Status</th><th></th></tr></thead><tbody><tr><td class="tb">Sipho Nkosi</td><td>Annual</td><td>20–24 Apr</td><td>5</td><td><span class="badge am">Pending</span></td><td><button class="btn bg btn-xs" onclick="toast('Leave approved','#16A34A')">Approve</button></td></tr><tr><td class="tb">Thabo Mokoena</td><td>Annual</td><td>27–28 Apr</td><td>2</td><td><span class="badge am">Pending</span></td><td><button class="btn bg btn-xs" onclick="toast('Leave approved','#16A34A')">Approve</button></td></tr><tr><td class="tb">Nomsa Petersen</td><td>Family</td><td>15 Apr</td><td>1</td><td><span class="badge gn">Approved</span></td><td></td></tr></tbody></table></div></div></div></div>
         </div>
@@ -1782,7 +1785,10 @@ body.dark .perm-check.on{background:var(--gn);}
       <!-- USERS -->
       <div class="page" id="page-users">
         <div class="ph"><div class="ph-icon" style="background:var(--or)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div><div class="ph-title">User Management</div><div class="ph-sub">674 users · 6 roles</div></div><div class="ph-right"><button class="btn bs btn-sm" onclick="usrFindDuplicates()">Find Duplicates</button><button class="btn bs btn-sm" onclick="teamCloudDrawer()">Team (Cloud)</button><button class="btn bs btn-sm" onclick="bulkInviteDrawer()">Bulk Invite</button><button class="btn bp btn-sm" onclick="userInviteDrawer()">Invite User</button></div></div>
-        <div class="content"><div class="card"><div class="ch2"><span class="ch2-title">Users</span></div><div id="userList"></div></div></div>
+        <div class="content"><div class="card"><div class="ch2"><span class="ch2-title">Users</span></div><div id="userList"></div></div>
+          <div class="card" style="margin-top:14px;"><div class="ch2"><span class="ch2-title">Role Modules</span><span class="ch2-sub">Toggle which modules each role can use — applies at next sign-in, immediately for the current session's role</span></div><div class="cb" id="roleModulesBody"></div></div>
+          <div class="card" style="margin-top:14px;"><div class="ch2"><span class="ch2-title">IoT &amp; Hardware</span><span class="ch2-sub" id="iotCount"></span><div style="margin-left:auto;"><button class="btn bp btn-sm" onclick="iotOnboardDrawer()">Onboard Device</button></div></div><div class="cb" style="padding:0;" id="iotRegistryBody"></div></div>
+        </div>
       </div>
 
       <!-- SETTINGS -->
@@ -2275,6 +2281,7 @@ body.dark .perm-check.on{background:var(--gn);}
             avBg:       profile?.avatar_color || ROLES[role]?.avBg || '#6B7280',
             org:        profile?.org          || ROLES[role]?.org  || 'Bipra',
           };
+          applyRoleModules(currentUser, role);
           document.getElementById('loginScreen').style.display = 'none';
           document.getElementById('appShell').classList.add('active');
           document.body.className = 'role-' + role;
@@ -2411,7 +2418,7 @@ const ROLES = {
   manager: {
     label:'Manager', color:'#3B82F6', avBg:'#3B82F6', avInitials:'TM',
     name:'Thabo Mokoena', org:'Bipra',
-    pages:['dashboard','procurement','approvals','hr','crm','projects','inventory','ess','claims','vault','chat','ai','search','attendance','paypro','fleet','boards','email','onboarding'],
+    pages:['dashboard','procurement','approvals','hr','crm','projects','inventory','ess','claims','vault','chat','ai','search','attendance','fleet','boards','email','onboarding'],
     nav:[
       {section:'Overview'},
       {id:'dashboard',label:'Dashboard',icon:'grid'},
@@ -2423,7 +2430,6 @@ const ROLES = {
       {section:'Team'},
       {id:'hr',label:'HR & Leave',icon:'users'},
       {id:'onboarding',label:'Onboard Employee',icon:'useradd'},
-      {id:'paypro',label:'Payroll Engine',icon:'dollar'},
       {id:'fleet',label:'Fleet & Fuel',icon:'box'},
       {id:'attendance',label:'Attendance Tracker',icon:'clock'},
       {id:'inventory',label:'Inventory',icon:'package'},
@@ -2444,7 +2450,7 @@ const ROLES = {
   hr: {
     label:'HR Manager', color:'#16A34A', avBg:'#16A34A', avInitials:'LK',
     name:'Lerato Khumalo', org:'Bipra',
-    pages:['dashboard','hr','onboarding','ess','vault','users','chat','search','leave','attendance','paypro','access','email','orgchart'],
+    pages:['dashboard','hr','onboarding','ess','vault','users','chat','search','leave','attendance','paypro','email','orgchart'],
     nav:[
       {section:'Overview'},
       {id:'dashboard',label:'Dashboard',icon:'grid'},
@@ -2454,7 +2460,6 @@ const ROLES = {
       {id:'attendance',label:'Attendance Tracker',icon:'clock'},
       {id:'leave',label:'Leave Management',icon:'cal',badge:'3',badgeClass:'nb-or'},
       {id:'onboarding',label:'Onboarding',icon:'useradd',badge:'2',badgeClass:'nb-gn'},
-      {id:'access',label:'Access Control',icon:'shield'},
       {id:'users',label:'User Management',icon:'manage'},
       {section:'Self-Service'},
       {id:'ess',label:'My Portal',icon:'person'},
@@ -2497,6 +2502,124 @@ const ROLES = {
     notifs:[
       {title:'PO-2026-0892 acknowledged',body:'R 284,500 · Delivery expected 22 Apr',color:'#16A34A',icon:'done',unread:true},
     ]
+  },
+  driver: {
+    label:'Driver', color:'#D97706', avBg:'#D97706', avInitials:'SM',
+    name:'Sello Mabaso', org:'Bipra',
+    pages:['ess','fleet','attendance','claims','chat','search'],
+    nav:[
+      {section:'My Day'},
+      {id:'attendance',label:'Clock In / Out',icon:'clock'},
+      {id:'fleet',label:'My Vehicle & Fuel',icon:'box'},
+      {id:'claims',label:'Fuel & Travel Claims',icon:'credit'},
+      {section:'My Account'},
+      {id:'ess',label:'My Portal',icon:'person'},
+      {section:'Connect'},
+      {id:'chat',label:'Team Chat',icon:'chat'},
+      {id:'search',label:'Global Search',icon:'search'},
+    ],
+    notifs:[
+      {title:'FL-03 service overdue',body:'Book at approved workshop before next trip',color:'#DC2626',icon:'alert',unread:true},
+    ]
+  },
+  office_admin: {
+    label:'Office Admin', color:'#0891B2', avBg:'#0891B2', avInitials:'ZN',
+    name:'Zanele Ndlovu', org:'Bipra',
+    pages:['dashboard','inventory','procurement','boards','email','ess','claims','chat','search'],
+    nav:[
+      {section:'Overview'},
+      {id:'dashboard',label:'Dashboard',icon:'grid'},
+      {section:'Office'},
+      {id:'inventory',label:'Inventory & Assets',icon:'package'},
+      {id:'procurement',label:'Procurement',icon:'box'},
+      {id:'boards',label:'Work Boards',icon:'grid'},
+      {id:'email',label:'Email Center',icon:'chat'},
+      {section:'My Account'},
+      {id:'ess',label:'My Portal',icon:'person'},
+      {id:'claims',label:'Expense Claims',icon:'credit'},
+      {section:'Connect'},
+      {id:'chat',label:'Team Chat',icon:'chat'},
+      {id:'search',label:'Global Search',icon:'search'},
+    ],
+    notifs:[
+      {title:'2 stock items below reorder level',body:'Printer Toner HP · Wireless Keyboard',color:'#D97706',icon:'package',unread:true},
+    ]
+  },
+  it_team: {
+    label:'IT Team', color:'#7C3AED', avBg:'#7C3AED', avInitials:'TN',
+    name:'Tumi Nkambule', org:'Bipra',
+    pages:['dashboard','integrations','api','sso','access','workflow','offline','ess','claims','chat','search'],
+    nav:[
+      {section:'Overview'},
+      {id:'dashboard',label:'Dashboard',icon:'grid'},
+      {section:'Platform'},
+      {id:'integrations',label:'Integrations',icon:'flow'},
+      {id:'api',label:'API & Webhooks',icon:'api'},
+      {id:'sso',label:'SSO / Identity',icon:'lock'},
+      {id:'access',label:'Access Control',icon:'shield'},
+      {id:'workflow',label:'Workflow Builder',icon:'flow'},
+      {id:'offline',label:'Offline Mode',icon:'wifi'},
+      {section:'My Account'},
+      {id:'ess',label:'My Portal',icon:'person'},
+      {id:'claims',label:'Expense Claims',icon:'credit'},
+      {section:'Connect'},
+      {id:'chat',label:'Team Chat',icon:'chat'},
+      {id:'search',label:'Global Search',icon:'search'},
+    ],
+    notifs:[
+      {title:'SSO certificate rotation due',body:'Azure AD SAML cert expires in 30 days',color:'#7C3AED',icon:'lock',unread:true},
+    ]
+  },
+  pmo: {
+    label:'PMO', color:'#2563EB', avBg:'#2563EB', avInitials:'RM',
+    name:'Refiloe Molefe', org:'Bipra',
+    pages:['dashboard','projects','boards','workflow','reports','risk','ess','claims','chat','search'],
+    nav:[
+      {section:'Overview'},
+      {id:'dashboard',label:'Dashboard',icon:'grid'},
+      {section:'Delivery'},
+      {id:'projects',label:'Projects',icon:'project'},
+      {id:'boards',label:'Work Boards',icon:'grid'},
+      {id:'workflow',label:'Workflow Builder',icon:'flow'},
+      {id:'reports',label:'Reports Center',icon:'bar'},
+      {id:'risk',label:'Risk Management',icon:'alert'},
+      {section:'My Account'},
+      {id:'ess',label:'My Portal',icon:'person'},
+      {id:'claims',label:'Expense Claims',icon:'credit'},
+      {section:'Connect'},
+      {id:'chat',label:'Team Chat',icon:'chat'},
+      {id:'search',label:'Global Search',icon:'search'},
+    ],
+    notifs:[
+      {title:'DHA Integration milestone due',body:'API design approval · 1 Jun',color:'#2563EB',icon:'project',unread:true},
+    ]
+  },
+  accountant: {
+    label:'Accountant', color:'#16A34A', avBg:'#16A34A', avInitials:'PvW',
+    name:'Pieter van Wyk', org:'Bipra',
+    pages:['dashboard','finance','accounting','billing','quotes','budget','xpayments','swiftpay','reports','claims','ess','chat','search'],
+    nav:[
+      {section:'Overview'},
+      {id:'dashboard',label:'Dashboard',icon:'grid'},
+      {section:'Finance'},
+      {id:'finance',label:'Finance',icon:'dollar'},
+      {id:'accounting',label:'Accounting · GL',icon:'file'},
+      {id:'billing',label:'xBilling · Invoices',icon:'credit'},
+      {id:'quotes',label:'Quotes',icon:'file'},
+      {id:'budget',label:'Budget vs Actual',icon:'trending'},
+      {id:'xpayments',label:'xPayments Tracker',icon:'trending'},
+      {id:'swiftpay',label:'SwiftPay',icon:'done'},
+      {id:'reports',label:'Reports Center',icon:'bar'},
+      {section:'My Account'},
+      {id:'ess',label:'My Portal',icon:'person'},
+      {id:'claims',label:'Expense Claims',icon:'credit'},
+      {section:'Connect'},
+      {id:'chat',label:'Team Chat',icon:'chat'},
+      {id:'search',label:'Global Search',icon:'search'},
+    ],
+    notifs:[
+      {title:'VAT201 due 25 May 2026',body:'Net VAT payable ready for review',color:'#16A34A',icon:'file',unread:true},
+    ]
   }
 };
 
@@ -2512,6 +2635,11 @@ const USER_CREDENTIALS = {
   'nomsa@xgroup.co.za':     [{ password: 'finance2025', role: 'cfo'     }],
   'sipho@xgroup.co.za':     [{ password: 'staff2025',   role: 'staff'   }],
   'bongani@xgroup.co.za':   [{ password: 'manager2025', role: 'manager' }],
+  'sello@xgroup.co.za':     [{ password: 'driver2026',  role: 'driver'      }],
+  'zanele@xgroup.co.za':    [{ password: 'office2026',  role: 'office_admin'}],
+  'tumi@xgroup.co.za':      [{ password: 'itteam2026',  role: 'it_team'     }],
+  'refiloe@xgroup.co.za':   [{ password: 'pmo2026',     role: 'pmo'         }],
+  'pieter@xgroup.co.za':    [{ password: 'books2026',   role: 'accountant'  }],
 };
 
 const PAGE_LABELS = {
@@ -2527,9 +2655,57 @@ const PAGE_LABELS = {
   contractors:'Contractors & Global Pay',accounting:'Accounting · GL',paypro:'Payroll Engine',
   fleet:'Fleet Management',access:'Access Control',iam:'IAM Configuration',
   integrations:'Integrations',brand:'White Label',email:'Email Center',
-  attendance:'Attendance Tracker',leave:'Leave Management',payroll:'Payroll & Tax',
   attendance:'Attendance Tracker',leave:'Leave Management',payroll:'Payroll & Tax'
 };
+
+/* ── Role → Module assignment engine ─────────────────────────────
+   ROLE_MODULE_OVERRIDES persists per-role module grants/revocations
+   ({role:{pageId:1|0}}); effective pages/nav are computed from the role's
+   base definition plus overrides, applied at login and live when an admin
+   toggles a module for the signed-in user's own role. */
+let ROLE_MODULE_OVERRIDES = {};
+
+function moduleCatalog(){
+  const cat=[]; let section='General';
+  (ROLES.admin.nav||[]).forEach(item=>{
+    if(item.section){section=item.section;return;}
+    cat.push({id:item.id,label:item.label,icon:item.icon||'grid',section});
+  });
+  return cat;
+}
+function effectivePages(roleKey){
+  const base=(ROLES[roleKey]?.pages||[]).slice();
+  const ov=ROLE_MODULE_OVERRIDES[roleKey]||{};
+  Object.entries(ov).forEach(([pid,on])=>{
+    const i=base.indexOf(pid);
+    if(on&&i===-1)base.push(pid);
+    if(!on&&i>-1)base.splice(i,1);
+  });
+  return base;
+}
+function effectiveNav(roleKey){
+  const pages=effectivePages(roleKey);
+  const baseNav=(ROLES[roleKey]?.nav||[]).filter(item=>item.section||pages.includes(item.id));
+  const inNav=new Set(baseNav.filter(i=>i.id).map(i=>i.id));
+  const extras=moduleCatalog().filter(m=>pages.includes(m.id)&&!inNav.has(m.id));
+  const nav=baseNav.slice();
+  if(extras.length){
+    nav.push({section:'Added Modules'});
+    extras.forEach(m=>nav.push({id:m.id,label:m.label,icon:m.icon}));
+  }
+  // prune section headers that ended up with no items under them
+  return nav.filter((item,ix)=>{
+    if(!item.section)return true;
+    const next=nav[ix+1];
+    return !!next&&!next.section;
+  });
+}
+function applyRoleModules(user,roleKey){
+  user.roleKey=roleKey;
+  user.pages=effectivePages(roleKey);
+  user.nav=effectiveNav(roleKey);
+  return user;
+}
 
 const ICONS = {
   grid:`<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>`,
@@ -3822,7 +3998,7 @@ async function doLogin() {
     return;
   }
   currentRole = role;
-  currentUser = ROLES[role];
+  currentUser = applyRoleModules({...ROLES[role]}, role);
   if (btn) { btn.disabled = false; btn.textContent = 'Sign in to MORR ERP'; }
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appShell').classList.add('active');
@@ -3842,6 +4018,7 @@ function completeLogin(supabaseData, profile, role) {
     org:    profile?.org          || ROLES[role]?.org      || 'Bipra',
     mfaEnabled: !!profile?.mfa_enabled,
   };
+  applyRoleModules(currentUser, role);
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appShell').classList.add('active');
   document.body.className = 'role-' + currentRole;
@@ -4004,7 +4181,7 @@ function doSSOLogin(provider) {
   if (!role) { showLoginError(`No account found for ${email}. Contact admin@xgroup.co.za.`); return; }
   if (btn) { btn.textContent = 'Signing in\u2026'; btn.disabled = true; }
   setTimeout(() => {
-    currentRole = role; currentUser = ROLES[role];
+    currentRole = role; currentUser = applyRoleModules({...ROLES[role]}, role);
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('appShell').classList.add('active');
     document.body.className = 'role-' + role;
@@ -4147,6 +4324,7 @@ function bootstrapApp(){
             avBg:       profile?.avatar_color || ROLES[role]?.avBg    || '#6B7280',
             org:        profile?.org          || ROLES[role]?.org      || 'Bipra',
           };
+          applyRoleModules(currentUser, role);
           document.getElementById('loginScreen').style.display = 'none';
           document.getElementById('appShell').classList.add('active');
           document.body.className = 'role-' + role;
@@ -4631,7 +4809,7 @@ const SETTINGS_PANELS = {
   permissions: {
     title: 'Module Permissions',
     html: () => {
-      const roles=['admin','cfo','manager','hr','staff','vendor'];
+      const roles=['admin','cfo','manager','hr','staff','vendor','driver','office_admin','it_team','pmo','accountant'];
       return `
       <div style="font-size:16px;font-weight:800;margin-bottom:4px;">Module Permissions</div>
       <div style="font-size:12px;color:var(--mid);margin-bottom:18px;">Live view of the IAM module/submodule matrix — a role shows ✓ for a module when it holds at least one permission there. Edit granular submodule permissions from IAM Configuration.</div>
@@ -5902,6 +6080,135 @@ function renderUserList(){
     <span style="font-size:10px;color:var(--mu);width:70px;text-align:right;">${u.last}</span>
     <button class="btn bs btn-xs" onclick="userDrawer(${users.indexOf(u)})">Edit</button>
   </div>`).join('');
+  if(typeof renderRoleModules==='function')renderRoleModules();
+  if(typeof renderIotRegistry==='function')renderIotRegistry();
+}
+
+/* ═══ ROLE MODULES — admin toggles which modules each role can use ═══ */
+let _rmSelectedRole='driver';
+function renderRoleModules(){
+  const el=document.getElementById('roleModulesBody');if(!el)return;
+  const roleKeys=Object.keys(ROLES).filter(r=>r!=='admin'); // admin always has everything
+  if(!roleKeys.includes(_rmSelectedRole))_rmSelectedRole=roleKeys[0];
+  const pages=effectivePages(_rmSelectedRole);
+  const basePages=ROLES[_rmSelectedRole].pages;
+  const ov=ROLE_MODULE_OVERRIDES[_rmSelectedRole]||{};
+  const bySection={};
+  moduleCatalog().forEach(m=>{(bySection[m.section]=bySection[m.section]||[]).push(m);});
+  el.innerHTML=`
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+      ${roleKeys.map(r=>`<button class="btn ${r===_rmSelectedRole?'bp':'bs'} btn-sm" onclick="_rmSelectedRole='${r}';renderRoleModules()">${ROLES[r].label}</button>`).join('')}
+    </div>
+    <div style="font-size:11px;color:var(--mid);margin-bottom:12px;">${ROLES[_rmSelectedRole].label} · ${pages.length} modules enabled${Object.keys(ov).length?` · ${Object.keys(ov).length} customised (dot)`:''}</div>
+    ${Object.entries(bySection).map(([sec,mods])=>`
+      <div class="nx-sec" style="margin-top:10px;">${sec}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px 14px;">
+        ${mods.map(m=>{
+          const on=pages.includes(m.id);
+          const customised=ov[m.id]!==undefined;
+          return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--bd-l);border-radius:8px;${customised?'background:var(--or-bg);':''}">
+            ${svgIcon(m.icon,'13px',on?'var(--or)':'var(--mu)')}
+            <span style="flex:1;font-size:11.5px;font-weight:600;${on?'':'color:var(--mu);'}">${m.label}${customised?' <span style="color:var(--or);">•</span>':''}</span>
+            <button class="tgl ${on?'on':''}" onclick="roleModuleToggle('${_rmSelectedRole}','${m.id}')"><span></span></button>
+          </div>`;
+        }).join('')}
+      </div>`).join('')}
+    <div style="font-size:10px;color:var(--mu);margin-top:12px;">Administrator role always has every module. Orange dot = changed from the role's default (${basePages.length} modules).</div>`;
+}
+function roleModuleToggle(roleKey,pageId){
+  const base=ROLES[roleKey].pages.includes(pageId);
+  const currentlyOn=effectivePages(roleKey).includes(pageId);
+  const target=!currentlyOn;
+  ROLE_MODULE_OVERRIDES[roleKey]=ROLE_MODULE_OVERRIDES[roleKey]||{};
+  if(target===base)delete ROLE_MODULE_OVERRIDES[roleKey][pageId];  // back to default
+  else ROLE_MODULE_OVERRIDES[roleKey][pageId]=target?1:0;
+  if(!Object.keys(ROLE_MODULE_OVERRIDES[roleKey]).length)delete ROLE_MODULE_OVERRIDES[roleKey];
+  NXDB.save('rolemodules');
+  writeAudit(target?'GrantModule':'RevokeModule','IAM',roleKey+':'+pageId,0,'high');
+  if(currentUser?.roleKey===roleKey){applyRoleModules(currentUser,roleKey);buildSidebar();}
+  renderRoleModules();
+  toast((PAGE_LABELS[pageId]||pageId)+(target?' enabled for ':' removed from ')+ROLES[roleKey].label,target?'#16A34A':'#D97706');
+}
+
+/* ═══ IoT & HARDWARE REGISTRY — sysadmin device onboarding ═══ */
+let IOT_DEVICES=[
+  {id:'IOT-001',name:'HQ Lobby Biometric Reader',type:'Biometric Reader',model:'ZKTeco SpeedFace V5L',serial:'ZK-88412-A',assignedTo:'Sandton HQ — Lobby',connection:'LAN',ip:'10.0.4.21',status:'Online',onboarded:'2026-03-14'},
+  {id:'IOT-002',name:'Hilux FL-01 Fuel Sensor',type:'Fuel Level Sensor',model:'Geotab GO9',serial:'G9-55021-F',assignedTo:'Vehicle FL-01',connection:'4G',ip:'—',status:'Online',onboarded:'2026-02-02'},
+  {id:'IOT-003',name:'Server Room Env Monitor',type:'Environment Sensor',model:'Ubiquiti UP-Sense',serial:'UB-10992-E',assignedTo:'Sandton HQ — Server Room',connection:'WiFi',ip:'10.0.9.8',status:'Online',onboarded:'2026-04-20'},
+];
+const IOT_TYPES=['Access Card Reader','Biometric Reader','PIN Keypad','Fuel Level Sensor','GPS Tracker','Environment Sensor','Scanner / Printer','CCTV Camera','Other'];
+const IOT_CONNECTIONS=['LAN','WiFi','4G','LoRaWAN','Bluetooth'];
+
+function renderIotRegistry(){
+  const el=document.getElementById('iotRegistryBody');if(!el)return;
+  const cnt=document.getElementById('iotCount');
+  if(cnt)cnt.textContent=IOT_DEVICES.length+' devices · '+IOT_DEVICES.filter(d=>d.status==='Online').length+' online';
+  el.innerHTML=`<div class="tw"><table>
+    <thead><tr><th>Device</th><th>Type</th><th>Model / Serial</th><th>Assigned To</th><th>Connection</th><th>Status</th><th></th></tr></thead>
+    <tbody>${IOT_DEVICES.map(d=>`<tr>
+      <td class="tb">${d.name}<div style="font-size:10px;color:var(--mu);">${d.id} · onboarded ${d.onboarded}</div></td>
+      <td style="font-size:11px;">${d.type}</td>
+      <td style="font-size:11px;">${d.model}<div style="font-size:10px;color:var(--mu);" class="mo">${d.serial}</div></td>
+      <td style="font-size:11px;">${d.assignedTo}</td>
+      <td style="font-size:11px;">${d.connection}${d.ip&&d.ip!=='—'?' · <span class="mo" style="font-size:10px;">'+d.ip+'</span>':''}</td>
+      <td><span class="badge ${d.status==='Online'?'gn':d.status==='Offline'?'rd':'am'}">${d.status}</span></td>
+      <td style="display:flex;gap:4px;">
+        <button class="btn bs btn-xs" onclick="iotToggleStatus('${d.id}')">${d.status==='Online'?'Take Offline':'Bring Online'}</button>
+        <button class="btn bd2 btn-xs" onclick="iotDecommission('${d.id}')">Decommission</button>
+      </td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+function iotOnboardDrawer(){
+  const sites=(window.ACCESS_SITES||[]).map(s=>s.name||s.site).filter(Boolean);
+  const vehicles=(window.FLEET_VEHICLES||[]).map(v=>'Vehicle '+v.id);
+  const targets=[...sites,...vehicles,'Head Office — Unassigned'];
+  nxDrawerOpen({
+    title:'Onboard IoT / Hardware Device',sub:'Registers the device and its connection so modules (Access Control, Fleet) can use it',icon:'shield',color:'#7C3AED',
+    body:`<div class="fg"><label class="fl">Device Name</label><input class="fi" id="iotName" placeholder="e.g. Cape Town Office Card Reader"/></div>
+      <div class="frow"><div class="fg"><label class="fl">Type</label><select class="fi" id="iotType">${IOT_TYPES.map(t=>`<option>${t}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">Connection</label><select class="fi" id="iotConn">${IOT_CONNECTIONS.map(c=>`<option>${c}</option>`).join('')}</select></div></div>
+      <div class="frow"><div class="fg"><label class="fl">Model</label><input class="fi" id="iotModel" placeholder="e.g. ZKTeco SpeedFace V5L"/></div>
+      <div class="fg"><label class="fl">Serial Number</label><input class="fi" id="iotSerial" placeholder="Vendor serial"/></div></div>
+      <div class="frow"><div class="fg"><label class="fl">Assign To</label><select class="fi" id="iotAssign">${targets.map(t=>`<option>${t}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">IP Address (if networked)</label><input class="fi" id="iotIp" placeholder="10.0.x.x"/></div></div>
+      <div style="font-size:11px;color:var(--mid);margin-top:8px;">On onboarding the device is registered in the hardware inventory, an audit entry is written, and it becomes selectable in Access Control site config and Fleet device setup.</div>`,
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Cancel</button><button class="btn bp" onclick="iotOnboardSubmit()">Onboard Device</button>`,
+  });
+}
+function iotOnboardSubmit(){
+  const name=document.getElementById('iotName')?.value.trim();
+  const model=document.getElementById('iotModel')?.value.trim();
+  if(!name||!model){toast('Device name and model are required','#DC2626');return;}
+  const d={
+    id:'IOT-'+String(IOT_DEVICES.length+1).padStart(3,'0'),
+    name,type:document.getElementById('iotType').value,model,
+    serial:document.getElementById('iotSerial').value.trim()||'—',
+    assignedTo:document.getElementById('iotAssign').value,
+    connection:document.getElementById('iotConn').value,
+    ip:document.getElementById('iotIp').value.trim()||'—',
+    status:'Online',onboarded:new Date().toISOString().slice(0,10),
+  };
+  IOT_DEVICES.unshift(d);
+  NXDB.save('iot');
+  writeAudit('OnboardDevice','Hardware',d.id+' '+d.name,0,'high');
+  nxDrawerClose();
+  renderIotRegistry();
+  toast(d.name+' onboarded and online','#16A34A');
+}
+function iotToggleStatus(id){
+  const d=IOT_DEVICES.find(x=>x.id===id);if(!d)return;
+  d.status=d.status==='Online'?'Offline':'Online';
+  NXDB.save('iot');
+  writeAudit(d.status==='Online'?'DeviceOnline':'DeviceOffline','Hardware',d.id,0,'medium');
+  renderIotRegistry();
+}
+function iotDecommission(id){
+  const d=IOT_DEVICES.find(x=>x.id===id);if(!d)return;
+  IOT_DEVICES=IOT_DEVICES.filter(x=>x.id!==id);
+  NXDB.save('iot');
+  writeAudit('DecommissionDevice','Hardware',d.id+' '+d.name,0,'high');
+  renderIotRegistry();
+  toast(d.name+' decommissioned','#D97706');
 }
 
 /* ═══ ONBOARDING ═══ */
@@ -7925,7 +8232,7 @@ function renderBudgetPage() {
       <input class="fi" type="text" placeholder="Search department..." style="max-width:260px" oninput="budgetDeptFilter(this.value)">
       <button class="btn bs btn-xs" onclick="budgetAddDept()">+ New Budget Line</button>
     </div>
-    <div id="budgetDeptGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px">
+    <div id="budgetDeptGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:18px;padding-bottom:8px">
       ${BUDGET_DEPTS.map(d=>budgetDeptCard(d)).join('')}
     </div>
   </div>
@@ -8013,11 +8320,11 @@ function budgetDeptCard(d) {
   const avail = d.allocated - d.spent - d.committed;
   const barColor = over ? 'var(--rd)' : pct>85 ? 'var(--or)' : 'var(--gn)';
   return `
-<div class="card" style="position:relative${d.restricted?';border-color:var(--rd)':''}" id="bdcard-${d.id}">
+<div class="card" style="position:relative;padding:20px;margin-bottom:0${d.restricted?';border-color:var(--rd)':''}" id="bdcard-${d.id}">
   ${d.restricted?'<div style="position:absolute;top:12px;right:12px"><span class="nbadge nb-rd">RESTRICTED</span></div>':''}
-  <div style="font-weight:600;font-size:15px;margin-bottom:2px">${d.name}</div>
-  <div style="font-size:12px;color:var(--mid);margin-bottom:14px">FY${d.fy} · Budget line</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+  <div style="font-weight:700;font-size:15.5px;margin-bottom:3px">${d.name}</div>
+  <div style="font-size:11.5px;color:var(--mid);margin-bottom:16px">FY${d.fy} · Budget line</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;margin-bottom:16px">
     <div>
       <div style="font-size:11px;color:var(--mid);margin-bottom:2px">ALLOCATED</div>
       <div style="font-size:16px;font-weight:600">R ${fmtK(d.allocated)}</div>
@@ -8039,13 +8346,13 @@ function budgetDeptCard(d) {
     <span style="font-size:12px;color:var(--mid)">Utilisation</span>
     <span style="font-size:12px;font-weight:600;color:${over?'var(--rd)':pct>85?'var(--or)':'inherit'}">${pct}%</span>
   </div>
-  <div style="height:8px;background:var(--bd-l);border-radius:4px;overflow:hidden;margin-bottom:14px">
+  <div style="height:8px;background:var(--bd-l);border-radius:4px;overflow:hidden;margin-bottom:16px">
     <div style="width:${Math.min(pct,100)}%;height:100%;background:${barColor};border-radius:4px"></div>
   </div>
-  <div style="display:flex;gap:8px">
-    <button class="btn bs btn-xs" style="flex:1" onclick="budgetEditDept('${d.id}')">Edit</button>
-    <button class="btn bs btn-xs" style="flex:1" onclick="budgetViewHistory('${d.id}')">History</button>
-    <button class="btn btn-sm ${d.restricted?'bp':''}" style="flex:1;" onclick="budgetToggleRestriction('${d.id}',${!d.restricted})">${d.restricted?'Lift':'Restrict'}</button>
+  <div style="display:flex;gap:8px;padding-top:14px;border-top:1px solid var(--bd-l)">
+    <button class="btn bs btn-sm" style="flex:1" onclick="budgetEditDept('${d.id}')">Edit</button>
+    <button class="btn bs btn-sm" style="flex:1" onclick="budgetViewHistory('${d.id}')">History</button>
+    <button class="btn ${d.restricted?'bp':'bs'} btn-sm" style="flex:1" onclick="budgetToggleRestriction('${d.id}',${!d.restricted})">${d.restricted?'Lift':'Restrict'}</button>
   </div>
 </div>`;
 }
@@ -8310,7 +8617,7 @@ function renderPayrollPage() {
   const section = document.createElement('div');
   section.id = 'payroll-module-section';
   section.innerHTML = `
-<div class="ph" style="margin-top:24px;border-top:1px solid var(--bd);padding-top:20px">
+<div class="ph" style="padding:0 0 16px 0;">
   <div class="ph-icon" style="background:var(--gn)">
     <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;">
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -8392,7 +8699,8 @@ function renderPayrollPage() {
   </table>
 </div>
 `;
-  hrEl.appendChild(section);
+  const host = document.getElementById('hrTabs-payroll') || hrEl;
+  host.appendChild(section);
 }
 
 /* ══════════════════════════════════════════════
@@ -11691,6 +11999,11 @@ function iamDefaultMatrix(){
     hr:     grant({hr:['Manage Users','Approve Leave','View Employee Records','Onboard / Offboard'],payroll:['View Payslips'],system:['View Audit Trail']}),
     staff:  grant({}),
     vendor: grant({vendor:['View Vendor Invoices']}),
+    driver: grant({fleet:['Log Fuel']}),
+    office_admin: grant({procurement:['Create Purchase Orders'],system:[]}),
+    it_team: grant({access:['Issue Credentials','Configure Devices','View Access Events'],system:['API Access','Manage Integrations','View Audit Trail']}),
+    pmo:    grant({crm:[],system:['View Audit Trail']}),
+    accountant: grant({finance:['View Ledger','Post Journal Entries','Export Reports'],vendor:['View Vendor Invoices']}),
   };
 }
 function iamIsValidMatrix(m){
@@ -12417,7 +12730,13 @@ const NXDB={
     },
     iam:{
       get:()=>({matrix:IAM_MATRIX,policy:IAM_POLICY}),
-      set:(st)=>{if(st.matrix&&iamIsValidMatrix(st.matrix))IAM_MATRIX=st.matrix;if(st.policy)IAM_POLICY=st.policy;},
+      set:(st)=>{
+        if(st.matrix&&iamIsValidMatrix(st.matrix)){
+          // merge: keep saved grants, but backfill roles added since the save
+          IAM_MATRIX={...iamDefaultMatrix(),...st.matrix};
+        }
+        if(st.policy)IAM_POLICY=st.policy;
+      },
       render:()=>typeof renderIAM==='function'&&renderIAM(),
     },
     integrations:{
@@ -12489,6 +12808,23 @@ const NXDB={
       get:()=>({platforms:SSO_PLATFORMS.map(p=>({name:p.name,status:p.status,clientId:p.clientId||null}))}),
       set:(st)=>{if(st.platforms)st.platforms.forEach(x=>{const p=SSO_PLATFORMS.find(y=>y.name===x.name);if(p){p.status=x.status;p.clientId=x.clientId;}});},
       render:()=>typeof renderSSOPage==='function'&&renderSSOPage(),
+    },
+    rolemodules:{
+      get:()=>({overrides:ROLE_MODULE_OVERRIDES}),
+      set:(st)=>{
+        if(st.overrides)ROLE_MODULE_OVERRIDES=st.overrides;
+        // re-apply to the signed-in user so persisted toggles take effect on reload
+        if(currentUser&&currentUser.roleKey&&currentUser.roleKey!=='admin'){
+          applyRoleModules(currentUser,currentUser.roleKey);
+          if(typeof buildSidebar==='function')buildSidebar();
+        }
+      },
+      render:()=>typeof renderRoleModules==='function'&&renderRoleModules(),
+    },
+    iot:{
+      get:()=>({devices:IOT_DEVICES}),
+      set:(st)=>{if(st.devices)IOT_DEVICES=st.devices;},
+      render:()=>typeof renderIotRegistry==='function'&&renderIotRegistry(),
     },
   },
 
