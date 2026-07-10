@@ -109,10 +109,25 @@ read-all/write-finance pattern. When the module tables in gap #1 are
 created, each needs the same treatment — especially `quotes` (vendor
 isolation) and `card_transactions` (finance-only).
 
-## Suggested next migrations (in order)
-1. `journal_lines` + balance trigger (gap 2) — protects the ledger.
-2. `payroll_periods` (gap 3) — prevents double pay runs.
-3. `quotes` + `recurring_schedules` (gaps 1, 4) — revenue documents out of JSON.
-4. `departments` + backfill from distinct strings (gap 6).
-5. CRM child tables (gap 5).
-6. Fleet/stock/contractors extraction (gap 1 remainder).
+## Migration status
+1. ~~`journal_lines` + balance trigger (gap 2)~~ — **DONE**
+   (`20260709000003`): 17 lines backfilled from jsonb, unbalanced-journal
+   insert verified rejected by the DB, balanced insert verified accepted.
+2. ~~`payroll_periods` (gap 3)~~ — **DONE** (`20260709000004`): Feb–Apr
+   2026 locked, May 2026 open; run into a locked period verified rejected;
+   unique index prevents duplicate runs per employee+period.
+3. ~~`quotes` + `recurring_schedules` (gaps 1, 4)~~ — **DONE**
+   (`20260709000005`): 5 quotes seeded on the May-2026 timeline;
+   billing-service rewritten to use recurring_schedules rows (upsert with a
+   unique invoice constraint) instead of the nx_module_state JSON blob.
+4. ~~`departments` + backfill (gap 6)~~ — **DONE** (`20260709000006`):
+   10 departments seeded, FK columns added to employees/budget_lines
+   alongside the legacy text.
+5. ~~CRM child tables (gap 5)~~ — **DONE** (`20260709000006`):
+   deal_comments / deal_attachments / deal_members with RLS.
+6. Fleet/stock/contractors extraction (gap 1 remainder) — **PENDING**.
+7. Frontend rewiring — **PENDING**: the app still reads quotes, journals,
+   departments, deal meta etc. from client-side state; these tables become
+   the source of truth once the frontend (or the microservices layer) is
+   pointed at them. GL integrity, payroll locking and schedule generation
+   are enforced at the DB now regardless.

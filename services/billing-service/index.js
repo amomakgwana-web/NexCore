@@ -1,27 +1,14 @@
 // Hero service: real business logic, not just CRUD.
-// VAT calc + a genuine recurring-billing engine (ported from the same
-// approach used in nexcore-standalone.html's invCheckRecurringDue). Recurring
-// schedules are persisted in nx_module_state (module='billing-recurring'),
-// NOT in-process memory — with multiple replicas behind a load balancer, any
-// replica must see the same schedule, so process-local state would silently
-// break the moment a second request landed on a different instance.
+// VAT calc + a genuine recurring-billing engine. Recurring schedules live
+// in the recurring_schedules table (migration 20260709000005) — one row per
+// invoice with a unique constraint, so concurrent replicas behind the load
+// balancer contend on rows instead of last-writer-wins over a JSON blob.
 const path = require('path');
 const { createService, mountCrud, getSupabaseClient, start } = require(path.join(__dirname, '../_shared/serviceFactory'));
 
 const { app } = createService('billing-service');
 const supabase = getSupabaseClient();
 
-const RECUR_MODULE = 'billing-recurring';
-
-async function loadRecurringConfig() {
-  const { data, error } = await supabase.from('nx_module_state').select('state').eq('module', RECUR_MODULE).maybeSingle();
-  if (error) throw new Error(error.message);
-  return data?.state || {};
-}
-async function saveRecurringConfig(cfg) {
-  const { error } = await supabase.from('nx_module_state').upsert({ module: RECUR_MODULE, state: cfg, updated_at: new Date().toISOString() });
-  if (error) throw new Error(error.message);
-}
 function advanceDate(dateStr, frequency) {
   const d = new Date(dateStr + 'T00:00:00Z');
   if (frequency === 'Quarterly') d.setUTCMonth(d.getUTCMonth() + 3);
@@ -52,25 +39,34 @@ app.post('/invoices/:id/recurring', async (req, res) => {
   const { data: inv, error: invErr } = await supabase.from('invoices').select('*').eq('id', req.params.id).maybeSingle();
   if (invErr) return res.status(500).json({ error: invErr.message });
   if (!inv) return res.status(404).json({ error: 'invoice not found' });
-  const cfg = await loadRecurringConfig();
-  if (!frequency) { delete cfg[req.params.id]; }
-  else { cfg[req.params.id] = { frequency, nextDate: advanceDate(inv.issue_date || new Date().toISOString().slice(0, 10), frequency) }; }
-  await saveRecurringConfig(cfg);
-  res.json({ data: cfg[req.params.id] || null });
+  if (!frequency) {
+    const { error } = await supabase.from('recurring_schedules').delete().eq('invoice_id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ data: null });
+  }
+  const nextDate = advanceDate(inv.issue_date || new Date().toISOString().slice(0, 10), frequency);
+  const { data, error } = await supabase.from('recurring_schedules')
+    .upsert({ invoice_id: req.params.id, frequency, next_date: nextDate, active: true }, { onConflict: 'invoice_id' })
+    .select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ data });
 });
 
 // Actually generates the follow-on invoice(s) for any schedule whose next
 // date has passed — a real state transition, not a status flag.
 app.post('/recurring/run-due', async (req, res) => {
   const today = new Date().toISOString().slice(0, 10);
-  const cfg = await loadRecurringConfig();
+  const { data: due, error: dueErr } = await supabase.from('recurring_schedules')
+    .select('*').eq('active', true).lte('next_date', today);
+  if (dueErr) return res.status(500).json({ error: dueErr.message });
   const generated = [];
-  for (const [invoiceId, sched] of Object.entries(cfg)) {
+  for (const sched of due || []) {
+    let nextDate = sched.next_date;
     let guard = 0;
-    while (sched.nextDate <= today && guard < 24) {
+    const { data: parent } = await supabase.from('invoices').select('*').eq('id', sched.invoice_id).maybeSingle();
+    if (!parent) continue;
+    while (nextDate <= today && guard < 24) {
       guard++;
-      const { data: parent } = await supabase.from('invoices').select('*').eq('id', invoiceId).maybeSingle();
-      if (!parent) break;
       const invoiceNumber = 'INV-' + Date.now().toString().slice(-6) + '-' + guard;
       const { data: created, error } = await supabase.from('invoices').insert({
         invoice_number: invoiceNumber, client_name: parent.client_name, contact_email: parent.contact_email,
@@ -79,10 +75,10 @@ app.post('/recurring/run-due', async (req, res) => {
         description: parent.description, reference: parent.reference,
       }).select().single();
       if (!error && created) generated.push(created);
-      sched.nextDate = advanceDate(sched.nextDate, sched.frequency);
+      nextDate = advanceDate(nextDate, sched.frequency);
     }
+    await supabase.from('recurring_schedules').update({ next_date: nextDate }).eq('id', sched.id);
   }
-  await saveRecurringConfig(cfg);
   res.json({ generatedCount: generated.length, generated });
 });
 
