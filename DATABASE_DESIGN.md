@@ -125,9 +125,19 @@ isolation) and `card_transactions` (finance-only).
    alongside the legacy text.
 5. ~~CRM child tables (gap 5)~~ — **DONE** (`20260709000006`):
    deal_comments / deal_attachments / deal_members with RLS.
-6. Fleet/stock/contractors extraction (gap 1 remainder) — **PENDING**.
-7. Frontend rewiring — **PENDING**: the app still reads quotes, journals,
-   departments, deal meta etc. from client-side state; these tables become
-   the source of truth once the frontend (or the microservices layer) is
-   pointed at them. GL integrity, payroll locking and schedule generation
-   are enforced at the DB now regardless.
+6. ~~Fleet/stock/contractors extraction (gap 1 remainder)~~ — **DONE**
+   (`20260710000001`): fleet_vehicles (4) + fuel_log (5), stock_items (6) +
+   stock_movements (13), contractors (8) + contractor_pay_runs (2) +
+   contractor_pay_lines, all with RLS, seeded on the May-2026 timeline.
+   Also fixed a pre-existing seed bug surfaced by the extraction (CTR-005
+   had end_date before start_date; the table now has a CHECK preventing it).
+7. ~~Frontend rewiring~~ — **DONE** for the extracted modules: the app now
+   loads quotes, fleet, fuel log, stock, contractors, pay runs and the
+   chart of accounts from their tables at login (loadQuotesFromDB /
+   loadFleetFromDB / loadStockFromDB / loadContractorsFromDB /
+   loadCOAFromDB), adapting rows into the existing render shapes and
+   falling back to the built-in demo seed when there is no session or a
+   table is empty — the same convention the app already used for invoices
+   and CRM deals. Still client-state only: boards/kanban, risk register,
+   IAM matrix, card transactions, bank feed, SARS submission history
+   (tables exist for none of these yet — next candidates).

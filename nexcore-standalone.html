@@ -2890,6 +2890,126 @@ async function loadInvoices() {
   if (billingPage?.classList.contains('on')) renderBillingContent();
 }
 
+/* ── Loaders for the tables extracted out of client state (migrations
+   20260709000005 / 20260710000001). Each adapts DB rows into the exact
+   shape the render code already uses, mutates the existing arrays in
+   place (NXDB registries and render closures hold references to them),
+   and leaves the demo seed untouched when there is no session or the
+   table is empty — same convention as loadInvoices/loadCRMDeals. ── */
+const _NX_SHORT_DATE = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  return d.getDate() + ' ' + d.toLocaleString('en-ZA', { month: 'short' });
+};
+
+async function loadQuotesFromDB() {
+  const client = sb(); if (!client) return;
+  const { data, error } = await client.from('quotes').select('*').order('issued_date', { ascending: false });
+  if (error) { dbError('quotes', error); return; }
+  if (!data?.length) return;
+  QUOTES_DATA.length = 0;
+  data.forEach(r => QUOTES_DATA.push({
+    id: r.quote_number, client: r.client_name, contact: r.contact_email || '',
+    value: Number(r.value) || 0, status: r.status, issued: r.issued_date,
+    expires: r.expires_date, prob: r.probability, owner: r.owner_name || '—', _dbId: r.id,
+  }));
+  if (typeof renderQuotes === 'function' && document.getElementById('quotesContent')) renderQuotes();
+}
+
+async function loadFleetFromDB() {
+  const client = sb(); if (!client) return;
+  const [veh, fuel] = await Promise.all([
+    client.from('fleet_vehicles').select('*').order('code'),
+    client.from('fuel_log').select('*').order('log_date', { ascending: false }).limit(100),
+  ]);
+  if (veh.error) { dbError('fleet_vehicles', veh.error); return; }
+  if (!veh.data?.length) return;
+  const codeById = {};
+  FLEET_VEHICLES.length = 0;
+  veh.data.forEach(r => {
+    codeById[r.id] = r.code;
+    FLEET_VEHICLES.push({
+      id: r.code, reg: r.registration, model: r.model, driver: r.driver_name || '—',
+      odo: r.odometer_km, serviceDueKm: r.service_due_km, serviceDueDate: r.service_due_date,
+      status: r.status, fuelBudget: Number(r.fuel_budget_monthly) || 0,
+      device: r.device || { model: 'None installed', status: 'Not installed' }, _dbId: r.id,
+    });
+  });
+  if (!fuel.error && fuel.data?.length) {
+    FUEL_LOG.length = 0;
+    fuel.data.forEach((r, i) => FUEL_LOG.push({
+      id: i + 1, vehicle: codeById[r.vehicle_id] || '—', date: _NX_SHORT_DATE(r.log_date),
+      odo: r.odometer_km, litres: Number(r.litres), cost: Number(r.cost), station: r.station || '—', _dbId: r.id,
+    }));
+  }
+  if (typeof renderFleet === 'function' && document.getElementById('page-fleet')?.classList.contains('on')) renderFleet();
+}
+
+async function loadStockFromDB() {
+  const client = sb(); if (!client) return;
+  const [items, moves] = await Promise.all([
+    client.from('stock_items').select('*').order('sku'),
+    client.from('stock_movements').select('*').order('moved_at'),
+  ]);
+  if (items.error) { dbError('stock_items', items.error); return; }
+  if (!items.data?.length) return;
+  const movesByItem = {};
+  (moves.data || []).forEach(m => {
+    (movesByItem[m.stock_item_id] = movesByItem[m.stock_item_id] || []).push({
+      ts: _NX_SHORT_DATE(m.moved_at), type: m.movement_type, qty: m.quantity,
+    });
+  });
+  STOCK_DATA.length = 0;
+  items.data.forEach(r => STOCK_DATA.push({
+    sku: r.sku, name: r.name, cat: r.category || '—', onHand: r.on_hand,
+    reorder: r.reorder_level, max: r.max_level, unit: r.unit || 'unit',
+    cost: Number(r.unit_cost) || 0,
+    color: r.on_hand <= r.reorder_level ? '#EF4444' : '#16A34A',
+    movements: movesByItem[r.id] || [], _dbId: r.id,
+  }));
+}
+
+async function loadContractorsFromDB() {
+  const client = sb(); if (!client) return;
+  const [ppl, runs] = await Promise.all([
+    client.from('contractors').select('*').order('code'),
+    client.from('contractor_pay_runs').select('*').order('run_date', { ascending: false }),
+  ]);
+  if (ppl.error) { dbError('contractors', ppl.error); return; }
+  if (!ppl.data?.length) return;
+  CONTRACTORS_DATA.length = 0;
+  ppl.data.forEach(r => CONTRACTORS_DATA.push({
+    id: r.code, name: r.full_name, role: r.role_title || '—', country: r.country || '—', flag: '',
+    currency: r.currency, rate: Number(r.rate) || 0, rateType: r.rate_type,
+    start: r.start_date, end: r.end_date, status: r.status,
+    employmentType: r.employment_type || 'Contractor', eorEntity: r.eor_entity || undefined,
+    docs: r.docs || {}, _dbId: r.id,
+  }));
+  if (!runs.error && runs.data?.length) {
+    CONTRACTOR_PAYRUNS.length = 0;
+    runs.data.forEach((r, i) => {
+      const snapshot = CONTRACTORS_DATA.filter(c => c.status !== 'Onboarding');
+      CONTRACTOR_PAYRUNS.push({
+        id: r.run_code, period: r.period, contractors: snapshot.length,
+        totalZAR: Number(r.total_zar) || 0, status: r.status,
+        date: r.run_date ? new Date(r.run_date + 'T00:00:00').toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }) : '—',
+        lines: typeof ctrPayRunLinesFromSnapshot === 'function' ? ctrPayRunLinesFromSnapshot(snapshot, 1 - i * 0.03) : [],
+        _dbId: r.id,
+      });
+    });
+  }
+  if (typeof renderContractors === 'function' && document.getElementById('page-contractors')?.classList.contains('on')) renderContractors();
+}
+
+async function loadCOAFromDB() {
+  const client = sb(); if (!client) return;
+  const { data, error } = await client.from('chart_of_accounts').select('*').eq('is_active', true).order('code');
+  if (error) { dbError('chart_of_accounts', error); return; }
+  if (!data?.length) return;
+  COA.length = 0;
+  data.forEach(r => COA.push({ code: r.code, name: r.name, type: r.account_type, balance: Number(r.opening_balance) || 0 }));
+}
+
 async function loadMyPayslips() {
   const { data, error } = await callEdgeFunction('payroll-service', 'get_my_payslips');
   const el = document.getElementById('essPayslipsList');
@@ -3295,6 +3415,11 @@ async function loadAllData() {
     // Non-critical loads
     loadCRMDeals().catch(console.warn);
     loadInvoices().catch(console.warn);
+    loadQuotesFromDB().catch(console.warn);
+    loadFleetFromDB().catch(console.warn);
+    loadStockFromDB().catch(console.warn);
+    loadContractorsFromDB().catch(console.warn);
+    loadCOAFromDB().catch(console.warn);
     subscribeApprovals();
     loadNotifications().catch(console.warn);
     subscribeNotifications();
@@ -10227,7 +10352,7 @@ let CONTRACTORS_DATA=[
   {id:'CTR-002',name:'Raj Patel',role:'Backend Engineer',country:'India',flag:'🇮🇳',currency:'INR',rate:280000,rateType:'Monthly',start:'2025-06-15',end:'2026-06-15',status:'Active',employmentType:'EOR Employee',eorEntity:'IndiaEOR Services Pvt Ltd',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Pending'}},
   {id:'CTR-003',name:'Grace Wanjiru',role:'Data Analyst',country:'Kenya',flag:'🇰🇪',currency:'KES',rate:350000,rateType:'Monthly',start:'2025-12-01',end:'2026-12-01',status:'Active',employmentType:'Contractor',docs:{contract:'Signed',tax:'Pending',id:'Verified',bank:'Verified'}},
   {id:'CTR-004',name:'Chidi Okafor',role:'Mobile Developer',country:'Nigeria',flag:'🇳🇬',currency:'NGN',rate:2800000,rateType:'Monthly',start:'2026-02-01',end:'2026-05-28',status:'Ending Soon',employmentType:'EOR Employee',eorEntity:'NaijaWorks EOR Ltd',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
-  {id:'CTR-005',name:'Ana Oliveira',role:'QA Engineer',country:'Brazil',flag:'🇧🇷',currency:'BRL',rate:9500,rateType:'Monthly',start:'2026-04-06',end:'2026-01-06',status:'Onboarding',employmentType:'Contractor',docs:{contract:'Sent',tax:'Pending',id:'Pending',bank:'Pending'}},
+  {id:'CTR-005',name:'Ana Oliveira',role:'QA Engineer',country:'Brazil',flag:'🇧🇷',currency:'BRL',rate:9500,rateType:'Monthly',start:'2026-04-06',end:'2027-04-06',status:'Onboarding',employmentType:'Contractor',docs:{contract:'Sent',tax:'Pending',id:'Pending',bank:'Pending'}},
   {id:'CTR-006',name:'Piotr Kowalski',role:'DevOps Engineer',country:'Poland',flag:'🇵🇱',currency:'EUR',rate:5100,rateType:'Monthly',start:'2025-10-01',end:'2026-10-01',status:'Active',employmentType:'EOR Employee',eorEntity:'PolskaZatrudnienie Sp. z o.o.',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
   {id:'CTR-007',name:'Sipho Dlamini',role:'Support Specialist',country:'South Africa',flag:'🇿🇦',currency:'ZAR',rate:38000,rateType:'Monthly',start:'2025-08-01',end:'2026-08-01',status:'Active',employmentType:'Contractor',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
   {id:'CTR-008',name:'Jasmine Cruz',role:'Content Designer',country:'Philippines',flag:'🇵🇭',currency:'USD',rate:2400,rateType:'Monthly',start:'2026-01-01',end:'2027-01-01',status:'Active',employmentType:'EOR Employee',eorEntity:'ManilaWorks EOR Inc.',docs:{contract:'Signed',tax:'Verified',id:'Verified',bank:'Verified'}},
