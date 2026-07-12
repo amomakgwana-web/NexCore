@@ -7,6 +7,7 @@
   <meta name="theme-color" content="#F97316"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='white'/%3E%3Cg fill='none' stroke='%23F97316' stroke-width='10' stroke-linejoin='miter'%3E%3Cpolyline points='50,6 16,25 16,64 48,83 64,74 64,36 46,26 46,47'/%3E%3Cpolyline points='56,10 75,21 75,66 57,77'/%3E%3Cpolyline points='64,5 88,19 88,69 66,81'/%3E%3C/g%3E%3C/svg%3E"/>
   <link rel="icon" type="image/png" href="icons/icon-192.png"/>
   <title>MORR ERP — Bipra</title>
 
@@ -1255,7 +1256,11 @@ body.dark .perm-check.on{background:var(--gn);}
     <div class="lg-brand-top">
       <div class="lg-mark">
         <div class="lg-mark-icon">
-          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+          <svg viewBox="0 0 100 100" style="stroke-width:9;stroke-linejoin:miter;stroke-linecap:butt;">
+            <polyline points="50,6 16,25 16,64 48,83 64,74 64,36 46,26 46,47"/>
+            <polyline points="56,10 75,21 75,66 57,77"/>
+            <polyline points="64,5 88,19 88,69 66,81"/>
+          </svg>
         </div>
         <div class="lg-mark-word">MORR<span> ERP</span></div>
       </div>
@@ -1296,6 +1301,7 @@ body.dark .perm-check.on{background:var(--gn);}
       <span class="lg-badge">Sandton</span>
       <span class="lg-badge">v5.5</span>
     </div>
+    <div style="position:relative;z-index:1;font-size:11px;color:rgba(255,255,255,.45);margin-top:16px;">Powered by <b style="color:#F97316;">Bipra</b></div>
   </div>
 
   <!-- ── Right form panel ────────────────────────────────── -->
@@ -1305,7 +1311,11 @@ body.dark .perm-check.on{background:var(--gn);}
       <!-- Mobile-only logo -->
       <div class="lg-mob-logo">
         <div class="lg-mob-icon">
-          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+          <svg viewBox="0 0 100 100" style="stroke-width:9;stroke-linejoin:miter;stroke-linecap:butt;">
+            <polyline points="50,6 16,25 16,64 48,83 64,74 64,36 46,26 46,47"/>
+            <polyline points="56,10 75,21 75,66 57,77"/>
+            <polyline points="64,5 88,19 88,69 66,81"/>
+          </svg>
         </div>
         <div class="lg-mob-word">MORR<span> ERP</span></div>
       </div>
@@ -1520,7 +1530,11 @@ body.dark .perm-check.on{background:var(--gn);}
   <div class="topbar">
     <button id="nxHamburger" onclick="document.querySelector('.sidebar').classList.toggle('mobile-open')" title="Menu"><svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
     <div class="tb-brand-zone">
-      <div class="tb-logo"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:white;"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></div>
+      <div class="tb-logo"><svg viewBox="0 0 100 100" style="width:15px;height:15px;fill:none;stroke:white;stroke-width:9;stroke-linejoin:miter;stroke-linecap:butt;">
+        <polyline points="50,6 16,25 16,64 48,83 64,74 64,36 46,26 46,47"/>
+        <polyline points="56,10 75,21 75,66 57,77"/>
+        <polyline points="64,5 88,19 88,69 66,81"/>
+      </svg></div>
       <div class="tb-wordmark">MORR<span> ERP</span></div>
     </div>
     <div class="tb-main">
@@ -1580,6 +1594,7 @@ body.dark .perm-check.on{background:var(--gn);}
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
           </button>
         </div>
+        <div style="text-align:center;font-size:9px;color:var(--mid);margin-top:9px;letter-spacing:.02em;">Powered by <b style="color:#F97316;">Bipra</b></div>
       </div>
     </div>
 
@@ -13056,7 +13071,6 @@ function nxDocChrome(docType,docNo,bodyHtml,opts={}){
   const brand=JSON.parse(localStorage.getItem('nexcore-brand')||'{}');
   const accent=brand.accent||'#F97316';
   const name=brand.name||NX_TPL.company;
-  const initials=brand.initials||'M';
   return `<!DOCTYPE html><html><head><title>${docType} ${docNo} — ${name}</title><style>
     *{box-sizing:border-box;}
     body{font-family:'Segoe UI',system-ui,sans-serif;max-width:720px;margin:28px auto;padding:0 24px;color:#18181B;font-size:13px;line-height:1.55;}
@@ -13069,7 +13083,13 @@ function nxDocChrome(docType,docNo,bodyHtml,opts={}){
   </style></head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid ${accent};padding-bottom:16px;margin-bottom:18px;">
     <div style="display:flex;gap:12px;align-items:center;">
-      <div style="width:46px;height:46px;border-radius:11px;background:${accent};display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:900;color:#fff;">${initials}</div>
+      <div style="width:46px;height:46px;border-radius:11px;background:${accent};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 100 100" style="width:26px;height:26px;fill:none;stroke:#fff;stroke-width:9;stroke-linejoin:miter;">
+          <polyline points="50,6 16,25 16,64 48,83 64,74 64,36 46,26 46,47"/>
+          <polyline points="56,10 75,21 75,66 57,77"/>
+          <polyline points="64,5 88,19 88,69 66,81"/>
+        </svg>
+      </div>
       <div>
         <div style="font-size:21px;font-weight:900;letter-spacing:-.4px;">${name}</div>
         <div style="font-size:10px;color:#71717A;">${NX_TPL.legal} · Reg ${NX_TPL.reg} · VAT ${NX_TPL.vat}</div>
@@ -14305,19 +14325,27 @@ function boardUpdAdd(gi,itemId){
 function _hexRGB(h){const n=parseInt(h.replace('#',''),16);return [(n>>16)&255,(n>>8)&255,n&255];}
 function _pdfSafe(t){return String(t).replace(/—/g,'-').replace(/–/g,'-').replace(/·/g,'|').replace(/→/g,'->').replace(/[^\x20-\x7E\n]/g,'');}
 
+function _drawMorrMark(d,x,y,size,color){
+  const s=size/100;
+  const segs=[
+    [[50,6],[16,25],[16,64],[48,83],[64,74],[64,36],[46,26],[46,47]],
+    [[56,10],[75,21],[75,66],[57,77]],
+    [[64,5],[88,19],[88,69],[66,81]]
+  ];
+  d.setDrawColor(...color); d.setLineWidth(Math.max(1.4,size/100*10));
+  segs.forEach(pts=>{for(let i=0;i<pts.length-1;i++){d.line(x+pts[i][0]*s,y+pts[i][1]*s,x+pts[i+1][0]*s,y+pts[i+1][1]*s);}});
+}
 function nxPDFStart(docType,docNo){
   if(!window.jspdf||!window.jspdf.jsPDF)return null;
   const brand=JSON.parse(localStorage.getItem('nexcore-brand')||'{}');
   const accent=_hexRGB(brand.accent||'#F97316');
   const name=brand.name||NX_TPL.company;
-  const initials=brand.initials||'M';
   const d=new window.jspdf.jsPDF({unit:'pt',format:'a4'});
   const W=595.28;
   /* header */
   d.setFillColor(...accent); d.rect(0,0,W,5,'F');
   d.setFillColor(...accent); d.roundedRect(40,26,40,40,8,8,'F');
-  d.setTextColor(255,255,255); d.setFont('helvetica','bold'); d.setFontSize(19);
-  d.text(initials,60,52,{align:'center'});
+  _drawMorrMark(d,48,34,24,[255,255,255]);
   d.setTextColor(24,24,27); d.setFontSize(19); d.text(_pdfSafe(name),92,46);
   d.setFontSize(7.5); d.setFont('helvetica','normal'); d.setTextColor(120,120,128);
   d.text(_pdfSafe(NX_TPL.legal+' | Reg '+NX_TPL.reg+' | VAT '+NX_TPL.vat),92,60);
