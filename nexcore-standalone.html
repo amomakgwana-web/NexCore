@@ -1963,6 +1963,13 @@ body.dark .perm-check.on{background:var(--gn);}
         <div class="content" id="riskContent"></div>
       </div>
 
+      <!-- HEALTH & SAFETY -->
+      <div class="page" id="page-healthsafety">
+        <div class="ph"><div class="ph-icon" style="background:var(--rd)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div><div><div class="ph-title">Health &amp; Safety</div><div class="ph-sub">Incident Register · PPE Compliance · Safety Inspections · OHS Act 85 of 1993</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="hsIncidentDrawer()">+ Log Incident</button><button class="btn bs btn-sm" onclick="hsExportRegister()">Export Register</button></div></div>
+        <div class="tabs"><button class="tab on" onclick="switchTab('hsTabs','incidents',this)">Incidents</button><button class="tab" onclick="switchTab('hsTabs','ppe',this)">PPE Register</button><button class="tab" onclick="switchTab('hsTabs','inspections',this)">Inspections</button></div>
+        <div class="content" id="hsContent"></div>
+      </div>
+
       <!-- SUPPLY CHAIN -->
       <div class="page" id="page-supply">
         <div class="ph"><div class="ph-icon" style="background:var(--cy)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div><div><div class="ph-title">Supply Chain</div><div class="ph-sub">Logistics · Delivery Tracking · Supplier Orders</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="openModal('newShipmentModal')">+ New Shipment</button></div></div>
@@ -2321,7 +2328,7 @@ const ROLES = {
   admin: {
     label:'Administrator', color:'#F97316', avBg:'#F97316', avInitials:'AM',
     name:'Amohelang M.', org:'Bipra',
-    pages:['dashboard','analytics','finance','procurement','approvals','hr','inventory','crm','projects','budget','entities','vendor','ess','workflow','billing','quotes','claims','swiftpay','xpayments','audit','vault','chat','settings','users','onboarding','ai','search','api','sso','offline','attendance','leave','payroll','reports','risk','supply','boards','contractors','accounting','paypro','fleet','access','iam','integrations','brand','email','orgchart'],
+    pages:['dashboard','analytics','finance','procurement','approvals','hr','inventory','crm','projects','budget','entities','vendor','ess','workflow','billing','quotes','claims','swiftpay','xpayments','audit','vault','chat','settings','users','onboarding','ai','search','api','sso','offline','attendance','leave','payroll','reports','risk','supply','boards','contractors','accounting','paypro','fleet','access','iam','integrations','brand','email','orgchart','healthsafety'],
     nav:[
       {section:'Overview'},
       {id:'dashboard',label:'Dashboard',icon:'grid'},
@@ -2368,6 +2375,7 @@ const ROLES = {
       {id:'reports',label:'Reports Center',icon:'bar'},
       {section:'Risk & Compliance'},
       {id:'risk',label:'Risk Management',icon:'alert',badge:'3',badgeClass:'nb-rd'},
+      {id:'healthsafety',label:'Health & Safety',icon:'firstaid'},
       {id:'supply',label:'Supply Chain',icon:'box'},
       {section:'Collaboration'},
       {id:'boards',label:'Work Boards',icon:'grid',badge:'NEW',badgeClass:'nb-bl'},
@@ -2465,7 +2473,7 @@ const ROLES = {
   hr: {
     label:'HR Manager', color:'#16A34A', avBg:'#16A34A', avInitials:'LK',
     name:'Lerato Khumalo', org:'Bipra',
-    pages:['dashboard','hr','onboarding','ess','vault','users','chat','search','leave','attendance','paypro','email','orgchart'],
+    pages:['dashboard','hr','onboarding','ess','vault','users','chat','search','leave','attendance','paypro','email','orgchart','healthsafety'],
     nav:[
       {section:'Overview'},
       {id:'dashboard',label:'Dashboard',icon:'grid'},
@@ -2474,6 +2482,7 @@ const ROLES = {
       {id:'paypro',label:'Payroll Engine',icon:'dollar',badge:'NEW',badgeClass:'nb-gn'},
       {id:'attendance',label:'Attendance Tracker',icon:'clock'},
       {id:'leave',label:'Leave Management',icon:'cal',badge:'3',badgeClass:'nb-or'},
+      {id:'healthsafety',label:'Health & Safety',icon:'firstaid'},
       {id:'onboarding',label:'Onboarding',icon:'useradd',badge:'2',badgeClass:'nb-gn'},
       {id:'users',label:'User Management',icon:'manage'},
       {section:'Self-Service'},
@@ -2670,7 +2679,8 @@ const PAGE_LABELS = {
   contractors:'Contractors & Global Pay',accounting:'Accounting · GL',paypro:'Payroll Engine',
   fleet:'Fleet Management',access:'Access Control',iam:'IAM Configuration',
   integrations:'Integrations',brand:'White Label',email:'Email Center',
-  attendance:'Attendance Tracker',leave:'Leave Management',payroll:'Payroll & Tax'
+  attendance:'Attendance Tracker',leave:'Leave Management',payroll:'Payroll & Tax',
+  healthsafety:'Health & Safety'
 };
 
 /* ── Role → Module assignment engine ─────────────────────────────
@@ -2755,6 +2765,7 @@ const ICONS = {
   alert:`<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>`,
   done:`<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>`,
   send:`<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>`,
+  firstaid:`<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>`,
 };
 
 function svgIcon(key, size='13px', color='currentColor'){
@@ -9616,6 +9627,7 @@ function renderEnhancedPayrollPage(){
     /* nexcore-v6 additions */
     renderReports();
     renderRisk();
+    renderHealthSafety();
     renderSupplyChain();
     initClock();
     initCommandPalette();
@@ -10100,6 +10112,252 @@ function exportRiskRegister(){
   a.download='risk-register.csv';
   a.click();
   toast('Risk register exported','#16A34A');
+}
+
+/* ── Health & Safety (OHS Act 85 of 1993) ── */
+const HS_TODAY='2026-05-25'; /* app-clock anchor, matches the rest of the platform's May-2026 timeline */
+const HS_CHECKLIST_ITEMS=['Fire extinguishers serviced & tagged','Emergency exits unobstructed','First aid kit stocked & accessible','PPE available at workstations','Electrical panels labelled & clear','Housekeeping / walkways clear','Chemical storage compliant (MSDS on file)','Evacuation signage visible'];
+let HS_INCIDENTS=[
+  {id:'INC-001',date:'2026-02-11',type:'Near Miss',severity:'Low',location:'Sandton HQ — Loading Bay',employee:'Sello Mahlangu',reportedBy:'Lerato Khumalo',description:'Forklift reversed near a pedestrian walkway without a spotter.',status:'Closed',correctiveAction:'Spotter policy enforced; warning signage added at loading bay.',closedDate:'2026-02-14'},
+  {id:'INC-002',date:'2026-03-05',type:'Injury',severity:'Medium',location:'Sandton HQ — Warehouse',employee:'Kagiso Dlamini',reportedBy:'Thabo Mokoena',description:'Employee sustained a laceration while unpacking stock crates.',status:'Closed',correctiveAction:'Cut-resistant gloves issued to warehouse team; toolbox talk held.',closedDate:'2026-03-09'},
+  {id:'INC-003',date:'2026-04-18',type:'Property Damage',severity:'Low',location:'Cape Town Branch',employee:'—',reportedBy:'Zanele Moalusi',description:'Water leak damaged server room flooring overnight.',status:'Investigating',correctiveAction:'',closedDate:''},
+  {id:'INC-004',date:'2026-05-02',type:'Injury',severity:'High',location:'Fleet — N1 Highway',employee:'Sello Mahlangu',reportedBy:'Thabo Mokoena',description:'Vehicle collision during a delivery run; driver taken for medical assessment.',status:'Open',correctiveAction:'Defensive driving refresher scheduled; telematics review in progress.',closedDate:''},
+  {id:'INC-005',date:'2026-05-20',type:'Near Miss',severity:'Low',location:'Sandton HQ — Office Floor 3',employee:'—',reportedBy:'Lerato Khumalo',description:'Loose cable across a walkway reported by staff.',status:'Open',correctiveAction:'Facilities notified for cable management.',closedDate:''},
+];
+let HS_PPE=[
+  {id:'PPE-001',employee:'Kagiso Dlamini',dept:'Warehouse & Ops',item:'Steel-toe Safety Boots',issuedDate:'2025-06-01',expiryDate:'2026-06-01'},
+  {id:'PPE-002',employee:'Sello Mahlangu',dept:'Fleet',item:'Hi-Vis Vest + Hard Hat',issuedDate:'2025-05-15',expiryDate:'2026-05-15'},
+  {id:'PPE-003',employee:'Thabo Mokoena',dept:'Operations',item:'Cut-Resistant Gloves',issuedDate:'2026-03-09',expiryDate:'2027-03-09'},
+  {id:'PPE-004',employee:'Bongani Sithole',dept:'Sales',item:'N95 Respirator (site visits)',issuedDate:'2025-12-01',expiryDate:'2026-06-05'},
+  {id:'PPE-005',employee:'Tumi Nkosi',dept:'IT',item:'ESD Wrist Strap',issuedDate:'2026-01-10',expiryDate:'2027-01-10'},
+  {id:'PPE-006',employee:'Zanele Moalusi',dept:'Office Admin',item:'First Aid Certification',issuedDate:'2025-04-20',expiryDate:'2026-04-20'},
+];
+let HS_INSPECTIONS=[
+  {id:'HSI-001',site:'Sandton HQ',date:'2026-03-01',inspector:'Lerato Khumalo',passed:7,total:8,notes:'Fire extinguisher service tag expired in kitchen — flagged for renewal.'},
+  {id:'HSI-002',site:'Cape Town Branch',date:'2026-04-02',inspector:'Zanele Moalusi',passed:8,total:8,notes:''},
+  {id:'HSI-003',site:'Warehouse — Sandton',date:'2026-04-28',inspector:'Thabo Mokoena',passed:5,total:8,notes:'Blocked emergency exit, missing MSDS sheets, PPE station empty.'},
+  {id:'HSI-004',site:'Fleet Yard',date:'2026-05-15',inspector:'Sello Mahlangu',passed:7,total:8,notes:'Spill kit needs restocking.'},
+];
+function hsPPEDaysLeft(exp){return Math.round((new Date(exp+'T00:00:00Z')-new Date(HS_TODAY+'T00:00:00Z'))/86400000);}
+function hsPPEStatus(exp){const d=hsPPEDaysLeft(exp);return d<0?'Expired':d<=30?'Expiring Soon':'Compliant';}
+function hsInspScore(i){return Math.round(i.passed/i.total*100);}
+function hsInspStatus(i){const s=hsInspScore(i);return s>=90?'Pass':s>=70?'Needs Action':'Fail';}
+
+function renderHealthSafety(){
+  const el=document.getElementById('hsContent'); if(!el)return;
+  const sevClass=s=>s==='High'?'rd':s==='Medium'?'am':'bl';
+  const openInc=HS_INCIDENTS.filter(i=>i.status!=='Closed');
+  const ltis=HS_INCIDENTS.filter(i=>i.type==='Injury');
+  const thisMonth=HS_INCIDENTS.filter(i=>i.date.startsWith('2026-05'));
+  const lastLtiDate=ltis.map(i=>i.date).sort().pop();
+  const daysSinceLti=lastLtiDate?Math.round((new Date(HS_TODAY+'T00:00:00Z')-new Date(lastLtiDate+'T00:00:00Z'))/86400000):null;
+  const expiring=HS_PPE.filter(p=>hsPPEStatus(p.expiryDate)==='Expiring Soon').length;
+  const expired=HS_PPE.filter(p=>hsPPEStatus(p.expiryDate)==='Expired').length;
+  const compliantPct=Math.round(HS_PPE.filter(p=>hsPPEStatus(p.expiryDate)==='Compliant').length/HS_PPE.length*100);
+  const avgInspScore=Math.round(HS_INSPECTIONS.reduce((s,i)=>s+hsInspScore(i),0)/HS_INSPECTIONS.length);
+  const failedInsp=HS_INSPECTIONS.filter(i=>hsInspStatus(i)==='Fail').length;
+  el.innerHTML=`
+  <div class="tp on" id="hsTabs-incidents">
+    <div class="kg kg-4" style="margin-bottom:14px;">
+      <div class="kpi rd"><div class="kpi-lbl">Open Incidents</div><div class="kpi-val">${openInc.length}</div><div class="kpi-sub">Needs follow-up</div></div>
+      <div class="kpi am"><div class="kpi-lbl">Lost-Time Injuries</div><div class="kpi-val">${ltis.length}</div><div class="kpi-sub">Year to date</div></div>
+      <div class="kpi gn"><div class="kpi-lbl">Days Since Last LTI</div><div class="kpi-val">${daysSinceLti!==null?daysSinceLti:'—'}</div><div class="kpi-sub">${lastLtiDate?'Last: '+lastLtiDate:'None recorded'}</div></div>
+      <div class="kpi bl"><div class="kpi-lbl">Logged This Month</div><div class="kpi-val">${thisMonth.length}</div><div class="kpi-sub">May 2026</div></div>
+    </div>
+    <div class="card">
+      <div class="ch2"><span class="ch2-title">Incident Register</span><span class="ch2-sub">${HS_INCIDENTS.length} incidents</span></div>
+      <div class="cb" style="padding:0;">
+        <div class="tw"><table><thead><tr><th>ID</th><th>Date</th><th>Type</th><th>Severity</th><th>Location</th><th>Employee</th><th>Status</th><th></th></tr></thead>
+        <tbody>${HS_INCIDENTS.map(i=>`<tr>
+          <td class="mo tb">${i.id}</td>
+          <td class="mo">${i.date}</td>
+          <td>${i.type}</td>
+          <td><span class="badge ${sevClass(i.severity)}">${i.severity}</span></td>
+          <td style="max-width:160px;">${i.location}</td>
+          <td>${i.employee}</td>
+          <td><span class="badge ${i.status==='Open'?'rd':i.status==='Investigating'?'am':'gy'}">${i.status}</span></td>
+          <td style="display:flex;gap:4px;"><button class="btn bs btn-xs" onclick="hsIncidentView('${i.id}')">View</button>${i.status!=='Closed'?`<button class="btn bp btn-xs" onclick="hsIncidentCloseDrawer('${i.id}')">Close Out</button>`:''}</td>
+        </tr>`).join('')}</tbody></table></div>
+      </div>
+    </div>
+  </div>
+  <div class="tp" id="hsTabs-ppe">
+    <div class="kg kg-4" style="margin-bottom:14px;">
+      <div class="kpi gn"><div class="kpi-lbl">Compliant</div><div class="kpi-val">${compliantPct}%</div><div class="kpi-sub">of PPE register</div></div>
+      <div class="kpi am"><div class="kpi-lbl">Expiring ≤30 Days</div><div class="kpi-val">${expiring}</div><div class="kpi-sub">Needs renewal</div></div>
+      <div class="kpi rd"><div class="kpi-lbl">Expired</div><div class="kpi-val">${expired}</div><div class="kpi-sub">Non-compliant now</div></div>
+      <div class="kpi bl"><div class="kpi-lbl">Total Issued</div><div class="kpi-val">${HS_PPE.length}</div><div class="kpi-sub">Active register</div></div>
+    </div>
+    <div class="card">
+      <div class="ch2"><span class="ch2-title">PPE Register</span><span class="ch2-sub"><button class="btn bp btn-xs" onclick="hsPPEDrawer()">+ Issue PPE</button></span></div>
+      <div class="cb" style="padding:0;">
+        <div class="tw"><table><thead><tr><th>Employee</th><th>Dept</th><th>Item</th><th>Issued</th><th>Expires</th><th>Status</th><th></th></tr></thead>
+        <tbody>${HS_PPE.map(p=>{const st=hsPPEStatus(p.expiryDate);return`<tr>
+          <td class="tb">${p.employee}</td>
+          <td>${p.dept}</td>
+          <td>${p.item}</td>
+          <td class="mo">${p.issuedDate}</td>
+          <td class="mo">${p.expiryDate}</td>
+          <td><span class="badge ${st==='Compliant'?'gn':st==='Expiring Soon'?'am':'rd'}">${st}</span></td>
+          <td>${st!=='Compliant'?`<button class="btn bs btn-xs" onclick="hsPPERenew('${p.id}')">Renew 12mo</button>`:''}</td>
+        </tr>`;}).join('')}</tbody></table></div>
+      </div>
+    </div>
+  </div>
+  <div class="tp" id="hsTabs-inspections">
+    <div class="kg kg-4" style="margin-bottom:14px;">
+      <div class="kpi bl"><div class="kpi-lbl">Avg. Score</div><div class="kpi-val">${avgInspScore}%</div><div class="kpi-sub">Across all sites</div></div>
+      <div class="kpi rd"><div class="kpi-lbl">Failed Inspections</div><div class="kpi-val">${failedInsp}</div><div class="kpi-sub">Immediate action</div></div>
+      <div class="kpi gn"><div class="kpi-lbl">Sites Covered</div><div class="kpi-val">${new Set(HS_INSPECTIONS.map(i=>i.site)).size}</div><div class="kpi-sub">Distinct locations</div></div>
+      <div class="kpi am"><div class="kpi-lbl">Total Inspections</div><div class="kpi-val">${HS_INSPECTIONS.length}</div><div class="kpi-sub">2026 to date</div></div>
+    </div>
+    <div class="card">
+      <div class="ch2"><span class="ch2-title">Safety Inspections</span><span class="ch2-sub"><button class="btn bp btn-xs" onclick="hsInspectionDrawer()">+ Run Inspection</button></span></div>
+      <div class="cb" style="padding:0;">
+        <div class="tw"><table><thead><tr><th>ID</th><th>Site</th><th>Date</th><th>Inspector</th><th>Checklist</th><th>Score</th><th>Result</th></tr></thead>
+        <tbody>${HS_INSPECTIONS.map(i=>{const sc=hsInspScore(i),st=hsInspStatus(i);return`<tr>
+          <td class="mo tb">${i.id}</td>
+          <td>${i.site}</td>
+          <td class="mo">${i.date}</td>
+          <td>${i.inspector}</td>
+          <td class="mo">${i.passed}/${i.total}</td>
+          <td class="mo">${sc}%</td>
+          <td><span class="badge ${st==='Pass'?'gn':st==='Needs Action'?'am':'rd'}" title="${i.notes||''}">${st}</span></td>
+        </tr>`;}).join('')}</tbody></table></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function hsIncidentDrawer(){
+  nxDrawerOpen({
+    title:'Log Health & Safety Incident',sub:'Creates a record in the incident register and notifies HR / Safety Officer',icon:'firstaid',color:'#DC2626',
+    body:`<div class="frow"><div class="fg"><label class="fl">Type</label><select class="fi" id="hsType"><option>Near Miss</option><option>Injury</option><option>Property Damage</option><option>Fire</option><option>Chemical Spill</option></select></div>
+      <div class="fg"><label class="fl">Severity</label><select class="fi" id="hsSeverity"><option>Low</option><option selected>Medium</option><option>High</option></select></div></div>
+      <div class="fg"><label class="fl">Location</label><input class="fi" id="hsLocation" placeholder="e.g. Sandton HQ — Warehouse"/></div>
+      <div class="fg"><label class="fl">Employee Involved (if any)</label><input class="fi" id="hsEmployee" placeholder="Leave blank if none"/></div>
+      <div class="fg"><label class="fl">Description</label><textarea class="fi" id="hsDescription" rows="3" placeholder="What happened?"></textarea></div>`,
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Cancel</button><button class="btn bp" onclick="hsIncidentSubmit()">Log Incident</button>`,
+  });
+}
+function hsIncidentSubmit(){
+  const location=document.getElementById('hsLocation')?.value.trim();
+  const description=document.getElementById('hsDescription')?.value.trim();
+  if(!location||!description){toast('Location and description are required','#DC2626');return;}
+  const inc={
+    id:'INC-'+String(HS_INCIDENTS.length+1).padStart(3,'0'),
+    date:new Date().toISOString().slice(0,10),
+    type:document.getElementById('hsType').value,
+    severity:document.getElementById('hsSeverity').value,
+    location,employee:document.getElementById('hsEmployee').value.trim()||'—',
+    reportedBy:currentUser?.name||'System',
+    description,status:'Open',correctiveAction:'',closedDate:'',
+  };
+  HS_INCIDENTS.unshift(inc);
+  NXDB.save('healthsafety');
+  writeAudit('LogIncident','HealthSafety',inc.id+' '+inc.type,0,inc.severity==='High'?'high':'medium');
+  nxDrawerClose();
+  renderHealthSafety();
+  toast(inc.id+' logged — '+inc.severity+' severity','#16A34A');
+}
+function hsIncidentView(id){
+  const i=HS_INCIDENTS.find(x=>x.id===id); if(!i)return;
+  nxDrawerOpen({
+    title:i.id+' — '+i.type,sub:i.date+' · '+i.location,icon:'firstaid',color:'#DC2626',
+    body:`<div class="fg"><label class="fl">Description</label><div style="font-size:12px;color:var(--ink);">${i.description}</div></div>
+      <div class="fg"><label class="fl">Reported By</label><div style="font-size:12px;">${i.reportedBy}</div></div>
+      <div class="fg"><label class="fl">Employee Involved</label><div style="font-size:12px;">${i.employee}</div></div>
+      ${i.correctiveAction?`<div class="fg"><label class="fl">Corrective Action</label><div style="font-size:12px;">${i.correctiveAction}</div></div>`:''}
+      ${i.closedDate?`<div class="fg"><label class="fl">Closed</label><div style="font-size:12px;">${i.closedDate}</div></div>`:''}`,
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Close</button>`,
+  });
+}
+function hsIncidentCloseDrawer(id){
+  const i=HS_INCIDENTS.find(x=>x.id===id); if(!i)return;
+  nxDrawerOpen({
+    title:'Close Out '+i.id,sub:'Record the corrective action before closing this incident',icon:'done',color:'#16A34A',
+    body:`<div class="fg"><label class="fl">Corrective Action Taken</label><textarea class="fi" id="hsCorrective" rows="3" placeholder="What was done to prevent recurrence?"></textarea></div>`,
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Cancel</button><button class="btn bp" onclick="hsIncidentCloseSubmit('${id}')">Mark Closed</button>`,
+  });
+}
+function hsIncidentCloseSubmit(id){
+  const i=HS_INCIDENTS.find(x=>x.id===id); if(!i)return;
+  const action=document.getElementById('hsCorrective')?.value.trim();
+  if(!action){toast('Corrective action is required to close an incident','#DC2626');return;}
+  i.status='Closed';i.correctiveAction=action;i.closedDate=new Date().toISOString().slice(0,10);
+  NXDB.save('healthsafety');
+  writeAudit('CloseIncident','HealthSafety',i.id,0,'medium');
+  nxDrawerClose();
+  renderHealthSafety();
+  toast(i.id+' closed','#16A34A');
+}
+function hsPPEDrawer(){
+  nxDrawerOpen({
+    title:'Issue PPE',sub:'Adds the item to the PPE compliance register with a 12-month expiry',icon:'firstaid',color:'#3B82F6',
+    body:`<div class="fg"><label class="fl">Employee</label><input class="fi" id="hsPpeEmployee" placeholder="Employee name"/></div>
+      <div class="frow"><div class="fg"><label class="fl">Department</label><input class="fi" id="hsPpeDept" placeholder="e.g. Warehouse & Ops"/></div>
+      <div class="fg"><label class="fl">PPE Item</label><input class="fi" id="hsPpeItem" placeholder="e.g. Safety Boots"/></div></div>`,
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Cancel</button><button class="btn bp" onclick="hsPPESubmit()">Issue PPE</button>`,
+  });
+}
+function hsPPESubmit(){
+  const employee=document.getElementById('hsPpeEmployee')?.value.trim();
+  const item=document.getElementById('hsPpeItem')?.value.trim();
+  if(!employee||!item){toast('Employee and PPE item are required','#DC2626');return;}
+  const issued=new Date().toISOString().slice(0,10);
+  const expiry=new Date();expiry.setFullYear(expiry.getFullYear()+1);
+  const rec={id:'PPE-'+String(HS_PPE.length+1).padStart(3,'0'),employee,dept:document.getElementById('hsPpeDept').value.trim()||'—',item,issuedDate:issued,expiryDate:expiry.toISOString().slice(0,10)};
+  HS_PPE.unshift(rec);
+  NXDB.save('healthsafety');
+  writeAudit('IssuePPE','HealthSafety',rec.id+' '+rec.item,0,'low');
+  nxDrawerClose();
+  renderHealthSafety();
+  toast(item+' issued to '+employee,'#16A34A');
+}
+function hsPPERenew(id){
+  const p=HS_PPE.find(x=>x.id===id); if(!p)return;
+  const exp=new Date();exp.setFullYear(exp.getFullYear()+1);
+  p.issuedDate=new Date().toISOString().slice(0,10);
+  p.expiryDate=exp.toISOString().slice(0,10);
+  NXDB.save('healthsafety');
+  writeAudit('RenewPPE','HealthSafety',p.id+' '+p.item,0,'low');
+  renderHealthSafety();
+  toast(p.item+' renewed for '+p.employee,'#16A34A');
+}
+function hsInspectionDrawer(){
+  nxDrawerOpen({
+    title:'Run Safety Inspection',sub:'Score is calculated automatically from the checklist',icon:'firstaid',color:'#7C3AED',
+    body:`<div class="frow"><div class="fg"><label class="fl">Site</label><input class="fi" id="hsInspSite" placeholder="e.g. Sandton HQ"/></div>
+      <div class="fg"><label class="fl">Inspector</label><input class="fi" id="hsInspInspector" value="${currentUser?.name||''}"/></div></div>
+      <div class="fg"><label class="fl">Checklist</label>
+        ${HS_CHECKLIST_ITEMS.map((item,ix)=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px;border-bottom:1px solid var(--bd-l);"><input type="checkbox" id="hsChk${ix}" checked/> ${item}</label>`).join('')}
+      </div>
+      <div class="fg"><label class="fl">Notes (failed items / follow-up)</label><textarea class="fi" id="hsInspNotes" rows="2" placeholder="Optional"></textarea></div>`,
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Cancel</button><button class="btn bp" onclick="hsInspectionSubmit()">Save Inspection</button>`,
+  });
+}
+function hsInspectionSubmit(){
+  const site=document.getElementById('hsInspSite')?.value.trim();
+  if(!site){toast('Site is required','#DC2626');return;}
+  const total=HS_CHECKLIST_ITEMS.length;
+  let passed=0;
+  for(let ix=0;ix<total;ix++){if(document.getElementById('hsChk'+ix)?.checked)passed++;}
+  const rec={id:'HSI-'+String(HS_INSPECTIONS.length+1).padStart(3,'0'),site,date:new Date().toISOString().slice(0,10),inspector:document.getElementById('hsInspInspector').value.trim()||currentUser?.name||'Unknown',passed,total,notes:document.getElementById('hsInspNotes').value.trim()};
+  HS_INSPECTIONS.unshift(rec);
+  NXDB.save('healthsafety');
+  writeAudit('RunInspection','HealthSafety',rec.id+' '+rec.site,0,hsInspStatus(rec)==='Fail'?'high':'low');
+  nxDrawerClose();
+  renderHealthSafety();
+  toast(rec.id+' saved — '+hsInspScore(rec)+'% ('+hsInspStatus(rec)+')',hsInspStatus(rec)==='Fail'?'#DC2626':'#16A34A');
+}
+function hsExportRegister(){
+  const rows=HS_INCIDENTS.map(i=>[i.id,i.date,i.type,i.severity,`"${i.location}"`,i.employee,i.status,`"${(i.correctiveAction||'').replace(/"/g,'""')}"`].join(','));
+  const csv='ID,Date,Type,Severity,Location,Employee,Status,Corrective Action\n'+rows.join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='health-safety-incident-register.csv';
+  a.click();
+  toast('Incident register exported','#16A34A');
 }
 
 /* ── Supply Chain ── */
@@ -12002,6 +12260,7 @@ const IAM_MODULES=[
   {key:'fleet',     label:'Fleet Management',     perms:['Log Fuel','Approve Service','View Fleet Analytics']},
   {key:'vendor',    label:'Vendor Portal',        perms:['View Vendor Invoices','Approve Vendor Payments']},
   {key:'access',    label:'Access Control',       perms:['Issue Credentials','Configure Devices','View Access Events']},
+  {key:'safety',    label:'Health & Safety',      perms:['Log Incidents','Close Incidents','Manage PPE Register','Run Inspections']},
   {key:'system',    label:'System & Compliance',  perms:['API Access','Delete Records','View Audit Trail','Manage Integrations']},
 ];
 function iamDefaultMatrix(){
@@ -12011,7 +12270,7 @@ function iamDefaultMatrix(){
     admin:  allOn(1),
     cfo:    grant({finance:['View Ledger','Post Journal Entries','Approve Journal Entries','Export Reports','Manage Chart of Accounts'],procurement:['Approve Purchase Orders'],payroll:['Run Payroll','View Payslips','Post Payroll to GL'],system:['Export Data','View Audit Trail']}),
     manager:grant({finance:['View Ledger'],procurement:['Create Purchase Orders','Approve Purchase Orders'],hr:['Approve Leave','View Employee Records'],crm:['Manage Deals','View Pipeline']}),
-    hr:     grant({hr:['Manage Users','Approve Leave','View Employee Records','Onboard / Offboard'],payroll:['View Payslips'],system:['View Audit Trail']}),
+    hr:     grant({hr:['Manage Users','Approve Leave','View Employee Records','Onboard / Offboard'],payroll:['View Payslips'],safety:['Log Incidents','Close Incidents','Manage PPE Register','Run Inspections'],system:['View Audit Trail']}),
     staff:  grant({}),
     vendor: grant({vendor:['View Vendor Invoices']}),
     driver: grant({fleet:['Log Fuel']}),
@@ -12747,8 +13006,11 @@ const NXDB={
       get:()=>({matrix:IAM_MATRIX,policy:IAM_POLICY}),
       set:(st)=>{
         if(st.matrix&&iamIsValidMatrix(st.matrix)){
-          // merge: keep saved grants, but backfill roles added since the save
-          IAM_MATRIX={...iamDefaultMatrix(),...st.matrix};
+          // merge: keep saved grants, but backfill roles/modules added since the save
+          const def=iamDefaultMatrix();
+          const merged={};
+          Object.keys(def).forEach(r=>{merged[r]={...def[r],...(st.matrix[r]||{})};});
+          IAM_MATRIX=merged;
         }
         if(st.policy)IAM_POLICY=st.policy;
       },
@@ -12768,6 +13030,11 @@ const NXDB={
       get:()=>({register:RISK_REGISTER}),
       set:(st)=>{if(st.register)RISK_REGISTER=st.register;},
       render:()=>typeof renderRisk==='function'&&renderRisk(),
+    },
+    healthsafety:{
+      get:()=>({incidents:HS_INCIDENTS,ppe:HS_PPE,inspections:HS_INSPECTIONS}),
+      set:(st)=>{if(st.incidents)HS_INCIDENTS=st.incidents;if(st.ppe)HS_PPE=st.ppe;if(st.inspections)HS_INSPECTIONS=st.inspections;},
+      render:()=>typeof renderHealthSafety==='function'&&renderHealthSafety(),
     },
     assets:{
       get:()=>({register:ASSET_REGISTER}),
