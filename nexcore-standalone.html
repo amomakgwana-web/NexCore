@@ -4882,7 +4882,7 @@ const SETTINGS_PANELS = {
     html: () => `
       <div style="font-size:16px;font-weight:800;margin-bottom:4px;">Supabase Configuration</div>
       <div style="font-size:12px;color:var(--mid);margin-bottom:18px;">Database · Auth · Realtime · Storage</div>
-      <div class="fg"><label class="fl">Project URL</label><input class="fi" value="https://anncqmypbgxuzkvxpptk.supabase.co"/></div>
+      <div class="fg"><label class="fl">Project URL</label><div style="display:flex;gap:6px;"><input class="fi" type="password" style="flex:1;" id="dbUrlField" value="https://anncqmypbgxuzkvxpptk.supabase.co" readonly/><button type="button" class="btn bs btn-xs" onclick="dbFieldToggle('dbUrlField',this)">Show</button></div></div>
       <div class="fg"><label class="fl">Anon Key (public)</label><input class="fi" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.••••••••••••••"/></div>
       <div class="fg"><label class="fl">Service Role Key (secret)</label><input class="fi" type="password" value="••••••••••••••••••••••••••"/></div>
       <div class="alert gn"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:var(--gn);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;margin-top:1px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><div><div class="alert-title">Status: ACTIVE_HEALTHY</div><div class="alert-body">674 user rows · 3,614 invoices · 18 open POs · Realtime subscriptions: 3 active</div></div></div>
@@ -7142,7 +7142,13 @@ function showSettingsPanel(key, el) {
   if(el) { el.style.color='var(--or-d)'; el.style.background='var(--or-bg)'; el.style.borderLeft='2px solid var(--or)'; }
   const body = document.getElementById('settingsBody');
   const panel = SETTINGS_PANELS[key];
-  if(body && panel) body.innerHTML = `<div style="max-width:640px;">${panel.html()}</div>`;
+  if(!body || !panel) return;
+  if(DB_LOCKED_PANELS.includes(key) && !_dbUnlocked){
+    body.innerHTML = `<div style="max-width:640px;">${dbLockGateHTML()}</div>`;
+    return;
+  }
+  const lockBar=DB_LOCKED_PANELS.includes(key)?`<div style="display:flex;justify-content:flex-end;margin-bottom:8px;"><button class="btn bs btn-xs" onclick="dbLockNow()">🔒 Lock Database Details</button></div>`:'';
+  body.innerHTML = `<div style="max-width:640px;">${lockBar}${panel.html()}</div>`;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -12289,6 +12295,88 @@ let IAM_MATRIX=iamDefaultMatrix();
 let IAM_POLICY={mfaAll:true,mfaFinance:true,ssoOnly:false,sessionTimeout:true};
 let IAM_EXPANDED={};
 
+/* ── Developer Database Lock ──────────────────────────────────
+   Gates the Supabase Configuration + Bipra Ecosystem settings panels
+   behind a password only the platform developer sets, independent of
+   role — a signed-in Administrator does not see connection details
+   without this second factor. Only a salted SHA-256 hash is ever
+   persisted; the unlock itself is session-only (_dbUnlocked resets on
+   reload), and never synced anywhere. */
+let DB_LOCK={hash:null,salt:null};
+let _dbUnlocked=false;
+const DB_LOCKED_PANELS=['supabase','xgroupecosystem'];
+function _dbLockRandSalt(){return [...crypto.getRandomValues(new Uint8Array(16))].map(b=>b.toString(16).padStart(2,'0')).join('');}
+async function _dbLockHash(pass,salt){return nxSha256Hex(new TextEncoder().encode(salt+':'+pass));}
+function dbLockGateHTML(){
+  return DB_LOCK.hash?dbLockPromptHTML():dbLockSetupHTML();
+}
+function dbLockSetupHTML(){
+  return `<div style="font-size:16px;font-weight:800;margin-bottom:4px;">🔒 Secure Database Details</div>
+    <div style="font-size:12px;color:var(--mid);margin-bottom:18px;">No developer password is set yet. Set one now — from then on, connection URLs and keys on this tab are hidden from everyone, including other Administrators, until this password is entered.</div>
+    <div class="fg"><label class="fl">New Password (min. 8 characters)</label><input class="fi" type="password" id="dbLockPass1" autocomplete="new-password"/></div>
+    <div class="fg"><label class="fl">Confirm Password</label><input class="fi" type="password" id="dbLockPass2" autocomplete="new-password" onkeydown="if(event.key==='Enter')dbLockSetupSubmit()"/></div>
+    <button class="btn bp" onclick="dbLockSetupSubmit()">Set Password &amp; Lock</button>`;
+}
+function dbLockPromptHTML(){
+  return `<div style="font-size:16px;font-weight:800;margin-bottom:4px;">🔒 Developer Password Required</div>
+    <div style="font-size:12px;color:var(--mid);margin-bottom:18px;">Database connection details are hidden. Enter the developer password to view them for this session.</div>
+    <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="dbLockPassInput" autocomplete="current-password" onkeydown="if(event.key==='Enter')dbLockUnlockSubmit()"/></div>
+    <button class="btn bp" onclick="dbLockUnlockSubmit()">Unlock</button>
+    <button class="btn bs" style="margin-left:6px;" onclick="dbLockResetPrompt()">Forgot password?</button>`;
+}
+async function dbLockSetupSubmit(){
+  const p1=document.getElementById('dbLockPass1')?.value||'';
+  const p2=document.getElementById('dbLockPass2')?.value||'';
+  if(p1.length<8){toast('Password must be at least 8 characters','#DC2626');return;}
+  if(p1!==p2){toast('Passwords do not match','#DC2626');return;}
+  const salt=_dbLockRandSalt();
+  DB_LOCK={hash:await _dbLockHash(p1,salt),salt};
+  _dbUnlocked=true;
+  NXDB.save('dbsecurity');
+  writeAudit('SetDatabaseLock','Security',currentUser?.email||currentUser?.name||'system',0,'high');
+  toast('Database details are now locked behind your password','#16A34A');
+  showSettingsPanel('supabase',[...document.querySelectorAll('#settingsNav div')].find(d=>d.textContent.includes('Supabase')));
+}
+async function dbLockUnlockSubmit(){
+  const p=document.getElementById('dbLockPassInput')?.value||'';
+  if(!p){toast('Enter the developer password','#DC2626');return;}
+  const hash=await _dbLockHash(p,DB_LOCK.salt);
+  if(hash!==DB_LOCK.hash){
+    writeAudit('FailedDatabaseUnlock','Security',currentUser?.email||currentUser?.name||'system',0,'high');
+    toast('Incorrect password','#DC2626');
+    return;
+  }
+  _dbUnlocked=true;
+  writeAudit('UnlockDatabaseDetails','Security',currentUser?.email||currentUser?.name||'system',0,'high');
+  const active=[...document.querySelectorAll('#settingsNav div')].find(d=>d.style.background&&d.style.background!=='transparent');
+  showSettingsPanel(active&&active.textContent.includes('Ecosystem')?'xgroupecosystem':'supabase',active);
+}
+function dbFieldToggle(id,btn){
+  const el=document.getElementById(id); if(!el)return;
+  const showing=el.type==='text';
+  el.type=showing?'password':'text';
+  btn.textContent=showing?'Show':'Hide';
+  if(!showing)writeAudit('RevealProjectURL','Security',currentUser?.email||currentUser?.name||'system',0,'medium');
+}
+function dbLockNow(){
+  _dbUnlocked=false;
+  writeAudit('LockDatabaseDetails','Security',currentUser?.email||currentUser?.name||'system',0,'medium');
+  toast('Database details locked','#71717A');
+  const body=document.getElementById('settingsBody');
+  if(body)body.innerHTML=`<div style="max-width:640px;">${dbLockGateHTML()}</div>`;
+}
+function dbLockResetPrompt(){
+  const phrase=prompt('This clears the current developer password so a new one can be set — anyone who can reach this Settings tab could otherwise use this to bypass it, so it is logged. Type RESET to confirm:');
+  if(phrase!=='RESET'){if(phrase!==null)toast('Reset cancelled — phrase did not match','#D97706');return;}
+  DB_LOCK={hash:null,salt:null};
+  _dbUnlocked=false;
+  NXDB.save('dbsecurity');
+  writeAudit('ResetDatabaseLock','Security',currentUser?.email||currentUser?.name||'system',0,'high');
+  toast('Developer password reset — set a new one to re-lock','#D97706');
+  const body=document.getElementById('settingsBody');
+  if(body)body.innerHTML=`<div style="max-width:640px;">${dbLockGateHTML()}</div>`;
+}
+
 function renderIAM(){
   const el=document.getElementById('iamContent'); if(!el)return;
   const roles=Object.keys(IAM_MATRIX);
@@ -13035,6 +13123,11 @@ const NXDB={
       get:()=>({incidents:HS_INCIDENTS,ppe:HS_PPE,inspections:HS_INSPECTIONS}),
       set:(st)=>{if(st.incidents)HS_INCIDENTS=st.incidents;if(st.ppe)HS_PPE=st.ppe;if(st.inspections)HS_INSPECTIONS=st.inspections;},
       render:()=>typeof renderHealthSafety==='function'&&renderHealthSafety(),
+    },
+    dbsecurity:{
+      get:()=>({hash:DB_LOCK.hash,salt:DB_LOCK.salt}),
+      set:(st)=>{if(st.hash&&st.salt)DB_LOCK={hash:st.hash,salt:st.salt};},
+      render:()=>{}, /* nothing to redraw — the gate re-checks DB_LOCK.hash whenever its tab is opened */
     },
     assets:{
       get:()=>({register:ASSET_REGISTER}),
