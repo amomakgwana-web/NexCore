@@ -1966,7 +1966,7 @@ body.dark .perm-check.on{background:var(--gn);}
       <!-- HEALTH & SAFETY -->
       <div class="page" id="page-healthsafety">
         <div class="ph"><div class="ph-icon" style="background:var(--rd)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div><div><div class="ph-title">Health &amp; Safety</div><div class="ph-sub">Incident Register · PPE Compliance · Safety Inspections · OHS Act 85 of 1993</div></div><div class="ph-right"><button class="btn bp btn-sm" onclick="hsIncidentDrawer()">+ Log Incident</button><button class="btn bs btn-sm" onclick="hsExportRegister()">Export Register</button></div></div>
-        <div class="tabs"><button class="tab on" onclick="switchTab('hsTabs','incidents',this)">Incidents</button><button class="tab" onclick="switchTab('hsTabs','ppe',this)">PPE Register</button><button class="tab" onclick="switchTab('hsTabs','inspections',this)">Inspections</button></div>
+        <div class="tabs"><button class="tab on" onclick="switchTab('hsTabs','incidents',this)">Incidents</button><button class="tab" onclick="switchTab('hsTabs','ppe',this)">PPE Register</button><button class="tab" onclick="switchTab('hsTabs','inspections',this)">Inspections</button><button class="tab" onclick="switchTab('hsTabs','medical',this)">Medical Records</button></div>
         <div class="content" id="hsContent"></div>
       </div>
 
@@ -2006,7 +2006,7 @@ body.dark .perm-check.on{background:var(--gn);}
       <!-- FLEET (fuel + servicing) -->
       <div class="page" id="page-fleet">
         <div class="ph"><div class="ph-icon" style="background:var(--bl)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M5 17H3v-6l2-5h12l2 5v6h-2"/><circle cx="7.5" cy="17.5" r="2"/><circle cx="16.5" cy="17.5" r="2"/></svg></div><div><div class="ph-title">Fleet Management</div><div class="ph-sub">Fuel Tracker · Service Schedule · Cost per KM</div></div><div class="ph-right"><button class="btn bs btn-sm" onclick="fleetOnboardDrawer()">+ Onboard Vehicle</button><button class="btn bp btn-sm" onclick="fleetLogFuel()">+ Log Fuel</button></div></div>
-        <div class="tabs"><button class="tab on" onclick="switchTab('fleetTabs','vehicles',this)">Vehicles</button><button class="tab" onclick="switchTab('fleetTabs','fuel',this)">Fuel Log</button><button class="tab" onclick="switchTab('fleetTabs','service',this)">Servicing</button><button class="tab" onclick="switchTab('fleetTabs','analytics',this);renderFleetAnalytics()">Analytics</button></div>
+        <div class="tabs"><button class="tab on" onclick="switchTab('fleetTabs','vehicles',this)">Vehicles</button><button class="tab" onclick="switchTab('fleetTabs','fuel',this)">Fuel Log</button><button class="tab" onclick="switchTab('fleetTabs','service',this)">Servicing</button><button class="tab" onclick="switchTab('fleetTabs','driverdocs',this)">Driver Docs</button><button class="tab" onclick="switchTab('fleetTabs','analytics',this);renderFleetAnalytics()">Analytics</button></div>
         <div class="content" id="fleetContent"></div>
       </div>
 
@@ -4461,6 +4461,23 @@ function switchTab(g,n,btn){
   document.getElementById(`${g}-${n}`)?.classList.add('on');
 }
 
+/* A full innerHTML rebuild (e.g. after booking/uploading a record) always
+   re-renders the "on" tab hardcoded in the template, silently kicking the
+   user back to the first tab. Capture/restore the active tab id around
+   such rebuilds so an action taken from tab 2/3/4 doesn't hide its own
+   result. */
+function nxCaptureActiveTab(contentElId){
+  return document.getElementById(contentElId)?.querySelector('.tp.on')?.id||null;
+}
+function nxRestoreActiveTab(contentElId,tabsBarSelector,tpId){
+  if(!tpId)return;
+  const el=document.getElementById(contentElId); if(!el)return;
+  el.querySelectorAll('.tp').forEach(p=>p.classList.toggle('on',p.id===tpId));
+  const bar=document.querySelector(tabsBarSelector); if(!bar)return;
+  const n=tpId.split('-').slice(1).join('-');
+  bar.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',(b.getAttribute('onclick')||'').includes(`'${n}'`)));
+}
+
 /* ══ MODAL ══ */
 
 function openModal(id){document.getElementById(id).classList.add('on');}
@@ -5996,11 +6013,50 @@ function renderVaultContent(){
   const va=document.getElementById('vaultActivity');
   if(va){const acts=[{av:'LK',c:'#16A34A',t:'Lerato K. uploaded CONTRACT-084',m:'2 hrs ago',user:'Lerato K.'},{av:'TM',c:'#3B82F6',t:'Thabo M. downloaded Payslip Apr 2026',m:'4 hrs ago',user:'Thabo M.'},{av:'SN',c:'#8B5CF6',t:'Sipho N. signed NDA — SIG-2026-003',m:'1 day ago',user:'Sipho N.'}];va.innerHTML=acts.map(a=>`<div class="act-item"><div class="act-av" style="background:${a.c};">${a.av}</div><div><div class="act-title"><span style="cursor:pointer;text-decoration:underline dotted;" onclick="employeeProfileDrawer('${a.user}')">${a.t.split(' ')[0]+' '+a.t.split(' ')[1]}</span>${a.t.slice(a.t.split(' ')[0].length+a.t.split(' ')[1].length+1)}</div><div class="act-meta">${a.m}</div></div></div>`).join('');}
 }
-/* ── Real folder popup: lists actual files (not a toast) ── */
+/* ── Real folder popup: lists actual files (not a toast) ──
+   'Medical Records' and 'Driver Documents' are live views over
+   HS_MEDICAL / DRIVER_DOCS rather than the static demo file list, so
+   this folder always reflects the real H&S / Fleet registers. ── */
 function vaultOpenFolder(name){
+  if(name==='Medical Records'){
+    nxDrawerOpen({
+      title:name,sub:HS_MEDICAL.length+' records on file',icon:'firstaid',color:'var(--bl)',
+      body:!HS_MEDICAL.length?'<div style="text-align:center;padding:24px;color:var(--mid);font-size:12px;">No medical records on file yet.</div>'
+        :HS_MEDICAL.map(m=>{const st=hsMedicalStatus(m);return`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bd-l);">
+          <div style="width:26px;height:26px;border-radius:6px;background:var(--sf2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">${svgIcon('firstaid','12px','var(--mid)')}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.checkType} — ${m.employee}</div>
+            <div style="font-size:10px;color:var(--mid);">${m.partner} · expires ${m.expiryDate}</div>
+          </div>
+          <span class="badge ${st==='Compliant'?'gn':st==='Expiring Soon'?'am':st==='Scheduled'?'bl':'rd'}">${st}</span>
+          <button class="btn bs btn-xs" onclick="nxDrawerClose();hsMedicalView('${m.id}')">View</button>
+        </div>`;}).join(''),
+      actions:`<button class="btn bs" onclick="nxDrawerClose()">Close</button>
+        <button class="btn bp" onclick="nxDrawerClose();openPage('healthsafety')">Open Health &amp; Safety</button>`,
+    });
+    return;
+  }
+  if(name==='Driver Documents'){
+    nxDrawerOpen({
+      title:name,sub:DRIVER_DOCS.length+' documents on file',icon:'firstaid',color:'var(--bl)',
+      body:!DRIVER_DOCS.length?'<div style="text-align:center;padding:24px;color:var(--mid);font-size:12px;">No driver documents on file yet.</div>'
+        :DRIVER_DOCS.map(d=>{const st=driverDocStatus(d.expiryDate);return`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bd-l);">
+          <div style="width:26px;height:26px;border-radius:6px;background:var(--sf2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">${svgIcon('firstaid','12px','var(--mid)')}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.docType} — ${d.employee}</div>
+            <div style="font-size:10px;color:var(--mid);">${d.number} · expires ${d.expiryDate}</div>
+          </div>
+          <span class="badge ${st==='Valid'?'gn':st==='Expiring Soon'?'am':'rd'}">${st}</span>
+          <button class="btn bs btn-xs" onclick="nxDrawerClose();driverDocView('${d.id}')">View</button>
+        </div>`;}).join(''),
+      actions:`<button class="btn bs" onclick="nxDrawerClose()">Close</button>
+        <button class="btn bp" onclick="nxDrawerClose();driverDocUploadDrawer()">Upload to ${name}</button>`,
+    });
+    return;
+  }
   const files=VAULT_FOLDER_FILES[name]||[];
   nxDrawerOpen({
-    title:name,sub:(VAULT_FOLDERS.find(f=>f.name===name)?.count||files.length)+' documents in this folder',icon:'file',color:'var(--bl)',
+    title:name,sub:files.length+' documents in this folder',icon:'file',color:'var(--bl)',
     body:!files.length
       ?'<div style="text-align:center;padding:24px;color:var(--mid);font-size:12px;">No sample documents indexed for this folder yet.</div>'
       :files.map(f=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bd-l);">
@@ -6389,11 +6445,13 @@ renderVaultContent = function() {
     {n:'Contracts',       count:384, c:'var(--bl-m)', icon:'Employment, NDAs, Service agreements'},
     {n:'Invoices',        count:1240,c:'var(--or)',    icon:'Supplier + client invoices'},
     {n:'HR Files',        count:674, c:'var(--gn)',    icon:'Employee records, payslips, IRP5s'},
+    {n:'Medical Records', count:(typeof HS_MEDICAL!=='undefined'?HS_MEDICAL.length:0), c:'var(--bl)', icon:'Occupational health checks · expiry-tracked'},
+    {n:'Driver Documents',count:(typeof DRIVER_DOCS!=='undefined'?DRIVER_DOCS.length:0), c:'#0891B2', icon:"Driver's licences, PrDPs, passports"},
     {n:'Board Resolutions',count:48, c:'var(--am)',    icon:'AGM minutes, director resolutions'},
     {n:'Compliance',      count:120, c:'var(--pu)',    icon:'POPIA, PFMA, AML documentation'},
     {n:'Procurement',     count:381, c:'var(--cy)',    icon:'POs, GRNs, vendor agreements'},
     {n:'Signed Documents',count:384, c:'var(--rd)',    icon:'ECTA e-signatures · SHA-256 hashed'},
-  ].map(x => `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--bd-l);cursor:pointer;transition:background .12s;" onmouseover="this.style.background='var(--sf)'" onmouseout="this.style.background=''" onclick="toast('Opening ${x.n} folder','#2563EB')">
+  ].map(x => `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--bd-l);cursor:pointer;transition:background .12s;" onmouseover="this.style.background='var(--sf)'" onmouseout="this.style.background=''" onclick="vaultOpenFolder('${x.n}')">
     <div style="width:30px;height:30px;border-radius:var(--r6);background:${x.c};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
       <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
     </div>
@@ -10124,15 +10182,15 @@ function exportRiskRegister(){
 const HS_TODAY='2026-05-25'; /* app-clock anchor, matches the rest of the platform's May-2026 timeline */
 const HS_CHECKLIST_ITEMS=['Fire extinguishers serviced & tagged','Emergency exits unobstructed','First aid kit stocked & accessible','PPE available at workstations','Electrical panels labelled & clear','Housekeeping / walkways clear','Chemical storage compliant (MSDS on file)','Evacuation signage visible'];
 let HS_INCIDENTS=[
-  {id:'INC-001',date:'2026-02-11',type:'Near Miss',severity:'Low',location:'Sandton HQ — Loading Bay',employee:'Sello Mahlangu',reportedBy:'Lerato Khumalo',description:'Forklift reversed near a pedestrian walkway without a spotter.',status:'Closed',correctiveAction:'Spotter policy enforced; warning signage added at loading bay.',closedDate:'2026-02-14'},
+  {id:'INC-001',date:'2026-02-11',type:'Near Miss',severity:'Low',location:'Sandton HQ — Loading Bay',employee:'Sello Mabaso',reportedBy:'Lerato Khumalo',description:'Forklift reversed near a pedestrian walkway without a spotter.',status:'Closed',correctiveAction:'Spotter policy enforced; warning signage added at loading bay.',closedDate:'2026-02-14'},
   {id:'INC-002',date:'2026-03-05',type:'Injury',severity:'Medium',location:'Sandton HQ — Warehouse',employee:'Kagiso Dlamini',reportedBy:'Thabo Mokoena',description:'Employee sustained a laceration while unpacking stock crates.',status:'Closed',correctiveAction:'Cut-resistant gloves issued to warehouse team; toolbox talk held.',closedDate:'2026-03-09'},
   {id:'INC-003',date:'2026-04-18',type:'Property Damage',severity:'Low',location:'Cape Town Branch',employee:'—',reportedBy:'Zanele Moalusi',description:'Water leak damaged server room flooring overnight.',status:'Investigating',correctiveAction:'',closedDate:''},
-  {id:'INC-004',date:'2026-05-02',type:'Injury',severity:'High',location:'Fleet — N1 Highway',employee:'Sello Mahlangu',reportedBy:'Thabo Mokoena',description:'Vehicle collision during a delivery run; driver taken for medical assessment.',status:'Open',correctiveAction:'Defensive driving refresher scheduled; telematics review in progress.',closedDate:''},
+  {id:'INC-004',date:'2026-05-02',type:'Injury',severity:'High',location:'Fleet — N1 Highway',employee:'Sello Mabaso',reportedBy:'Thabo Mokoena',description:'Vehicle collision during a delivery run; driver taken for medical assessment.',status:'Open',correctiveAction:'Defensive driving refresher scheduled; telematics review in progress.',closedDate:''},
   {id:'INC-005',date:'2026-05-20',type:'Near Miss',severity:'Low',location:'Sandton HQ — Office Floor 3',employee:'—',reportedBy:'Lerato Khumalo',description:'Loose cable across a walkway reported by staff.',status:'Open',correctiveAction:'Facilities notified for cable management.',closedDate:''},
 ];
 let HS_PPE=[
   {id:'PPE-001',employee:'Kagiso Dlamini',dept:'Warehouse & Ops',item:'Steel-toe Safety Boots',issuedDate:'2025-06-01',expiryDate:'2026-06-01'},
-  {id:'PPE-002',employee:'Sello Mahlangu',dept:'Fleet',item:'Hi-Vis Vest + Hard Hat',issuedDate:'2025-05-15',expiryDate:'2026-05-15'},
+  {id:'PPE-002',employee:'Sello Mabaso',dept:'Fleet',item:'Hi-Vis Vest + Hard Hat',issuedDate:'2025-05-15',expiryDate:'2026-05-15'},
   {id:'PPE-003',employee:'Thabo Mokoena',dept:'Operations',item:'Cut-Resistant Gloves',issuedDate:'2026-03-09',expiryDate:'2027-03-09'},
   {id:'PPE-004',employee:'Bongani Sithole',dept:'Sales',item:'N95 Respirator (site visits)',issuedDate:'2025-12-01',expiryDate:'2026-06-05'},
   {id:'PPE-005',employee:'Tumi Nkosi',dept:'IT',item:'ESD Wrist Strap',issuedDate:'2026-01-10',expiryDate:'2027-01-10'},
@@ -10142,15 +10200,33 @@ let HS_INSPECTIONS=[
   {id:'HSI-001',site:'Sandton HQ',date:'2026-03-01',inspector:'Lerato Khumalo',passed:7,total:8,notes:'Fire extinguisher service tag expired in kitchen — flagged for renewal.'},
   {id:'HSI-002',site:'Cape Town Branch',date:'2026-04-02',inspector:'Zanele Moalusi',passed:8,total:8,notes:''},
   {id:'HSI-003',site:'Warehouse — Sandton',date:'2026-04-28',inspector:'Thabo Mokoena',passed:5,total:8,notes:'Blocked emergency exit, missing MSDS sheets, PPE station empty.'},
-  {id:'HSI-004',site:'Fleet Yard',date:'2026-05-15',inspector:'Sello Mahlangu',passed:7,total:8,notes:'Spill kit needs restocking.'},
+  {id:'HSI-004',site:'Fleet Yard',date:'2026-05-15',inspector:'Sello Mabaso',passed:7,total:8,notes:'Spill kit needs restocking.'},
+];
+const HS_MEDICAL_PARTNERS=[
+  {id:'MP-01',name:'Sandton Occupational Health Centre',services:['Annual Medical','Hearing Test','General Medical'],phone:'011 555 0142',email:'bookings@sandtonoh.co.za'},
+  {id:'MP-02',name:'Netcare Sandton',services:['Annual Medical','General Medical','Vaccinations'],phone:'011 555 0198',email:'occhealth@netcare-sandton.co.za'},
+  {id:'MP-03',name:'Life Fourways Occupational Health',services:["Driver Medical Fitness Certificate",'Annual Medical'],phone:'011 555 0271',email:'ohc@lifefourways.co.za'},
+];
+let HS_MEDICAL=[
+  {id:'MED-001',employee:'Kagiso Dlamini',checkType:'Annual Medical',partner:'Netcare Sandton',issueDate:'2025-06-01',expiryDate:'2026-06-01',status:'Completed'},
+  {id:'MED-002',employee:'Sello Mabaso',checkType:'Driver Medical Fitness Certificate',partner:'Life Fourways Occupational Health',issueDate:'2025-05-20',expiryDate:'2026-05-20',status:'Completed'},
+  {id:'MED-003',employee:'Thabo Mokoena',checkType:'Annual Medical',partner:'Sandton Occupational Health Centre',issueDate:'2026-01-15',expiryDate:'2027-01-15',status:'Completed'},
+  {id:'MED-004',employee:'Bongani Sithole',checkType:'Hearing Test',partner:'Sandton Occupational Health Centre',issueDate:'2025-11-01',expiryDate:'2026-05-30',status:'Completed'},
+  {id:'MED-005',employee:'Zanele Moalusi',checkType:'General Medical',partner:'Netcare Sandton',issueDate:'2026-02-01',expiryDate:'2027-02-01',status:'Completed'},
 ];
 function hsPPEDaysLeft(exp){return Math.round((new Date(exp+'T00:00:00Z')-new Date(HS_TODAY+'T00:00:00Z'))/86400000);}
 function hsPPEStatus(exp){const d=hsPPEDaysLeft(exp);return d<0?'Expired':d<=30?'Expiring Soon':'Compliant';}
 function hsInspScore(i){return Math.round(i.passed/i.total*100);}
 function hsInspStatus(i){const s=hsInspScore(i);return s>=90?'Pass':s>=70?'Needs Action':'Fail';}
+function hsMedicalStatus(m){
+  if(m.status==='Scheduled')return 'Scheduled';
+  const d=hsPPEDaysLeft(m.expiryDate);
+  return d<0?'Expired':d<=30?'Expiring Soon':'Compliant';
+}
 
 function renderHealthSafety(){
   const el=document.getElementById('hsContent'); if(!el)return;
+  const _prevTp=nxCaptureActiveTab('hsContent');
   const sevClass=s=>s==='High'?'rd':s==='Medium'?'am':'bl';
   const openInc=HS_INCIDENTS.filter(i=>i.status!=='Closed');
   const ltis=HS_INCIDENTS.filter(i=>i.type==='Injury');
@@ -10162,6 +10238,9 @@ function renderHealthSafety(){
   const compliantPct=Math.round(HS_PPE.filter(p=>hsPPEStatus(p.expiryDate)==='Compliant').length/HS_PPE.length*100);
   const avgInspScore=Math.round(HS_INSPECTIONS.reduce((s,i)=>s+hsInspScore(i),0)/HS_INSPECTIONS.length);
   const failedInsp=HS_INSPECTIONS.filter(i=>hsInspStatus(i)==='Fail').length;
+  const medExpiring=HS_MEDICAL.filter(m=>hsMedicalStatus(m)==='Expiring Soon').length;
+  const medExpired=HS_MEDICAL.filter(m=>hsMedicalStatus(m)==='Expired').length;
+  const medScheduled=HS_MEDICAL.filter(m=>m.status==='Scheduled').length;
   el.innerHTML=`
   <div class="tp on" id="hsTabs-incidents">
     <div class="kg kg-4" style="margin-bottom:14px;">
@@ -10232,7 +10311,56 @@ function renderHealthSafety(){
         </tr>`;}).join('')}</tbody></table></div>
       </div>
     </div>
+  </div>
+  <div class="tp" id="hsTabs-medical">
+    <div class="kg kg-4" style="margin-bottom:14px;">
+      <div class="kpi am"><div class="kpi-lbl">Expiring ≤30 Days</div><div class="kpi-val">${medExpiring}</div><div class="kpi-sub">Book renewal</div></div>
+      <div class="kpi rd"><div class="kpi-lbl">Expired</div><div class="kpi-val">${medExpired}</div><div class="kpi-sub">Non-compliant now</div></div>
+      <div class="kpi bl"><div class="kpi-lbl">Scheduled</div><div class="kpi-val">${medScheduled}</div><div class="kpi-sub">Upcoming bookings</div></div>
+      <div class="kpi gn"><div class="kpi-lbl">On Record</div><div class="kpi-val">${HS_MEDICAL.length}</div><div class="kpi-sub">Total checks</div></div>
+    </div>
+    <div class="card">
+      <div class="ch2"><span class="ch2-title">Medical Records</span><span class="ch2-sub"><button class="btn bp btn-xs" onclick="hsMedicalBookDrawer()">+ Book Health Check</button></span></div>
+      <div class="cb" style="padding:0;">
+        <div class="tw"><table><thead><tr><th>Employee</th><th>Check Type</th><th>Partner</th><th>Issued</th><th>Expires</th><th>Status</th><th></th></tr></thead>
+        <tbody>${HS_MEDICAL.map(m=>{const st=hsMedicalStatus(m);return`<tr>
+          <td class="tb">${m.employee}</td>
+          <td>${m.checkType}</td>
+          <td style="font-size:11px;">${m.partner}</td>
+          <td class="mo">${m.status==='Scheduled'?'—':m.issueDate}</td>
+          <td class="mo">${m.status==='Scheduled'?m.expiryDate+' (booked)':m.expiryDate}</td>
+          <td><span class="badge ${st==='Compliant'?'gn':st==='Expiring Soon'?'am':st==='Scheduled'?'bl':'rd'}">${st}</span></td>
+          <td>${st==='Scheduled'?`<button class="btn bp btn-xs" onclick="hsMedicalComplete('${m.id}')">Mark Complete</button>`:st!=='Compliant'?`<button class="btn bs btn-xs" onclick="hsMedicalBookDrawer('${m.employee.replace(/'/g,"\\'")}','${m.checkType.replace(/'/g,"\\'")}')">Book Renewal</button>`:''}</td>
+        </tr>`;}).join('')}</tbody></table></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px;">
+      <div class="ch2"><span class="ch2-title">Medical Partners</span></div>
+      <div class="cb" style="padding:0;">${HS_MEDICAL_PARTNERS.map(p=>`
+        <div class="stock-card">
+          <div class="stock-icon" style="background:var(--bl-l);">${svgIcon('firstaid','14px','var(--bl-m)')}</div>
+          <div style="flex:1;">
+            <div class="stock-name">${p.name}</div>
+            <div class="stock-sku">${p.services.join(' · ')}</div>
+            <div style="font-size:10px;color:var(--mid);margin-top:2px;">${p.phone} · ${p.email}</div>
+          </div>
+        </div>`).join('')}</div>
+    </div>
   </div>`;
+  nxRestoreActiveTab('hsContent','#page-healthsafety .tabs',_prevTp);
+  hsPushExpiryNotifs();
+}
+function hsPushExpiryNotifs(){
+  if(!currentUser||!['admin','hr'].includes(currentUser.roleKey||currentRole))return;
+  const flagged=HS_MEDICAL.filter(m=>['Expired','Expiring Soon'].includes(hsMedicalStatus(m)));
+  if(!flagged.length)return;
+  const title='Health & Safety: '+flagged.length+' medical record'+(flagged.length===1?'':'s')+' need renewal';
+  if(currentUser.notifs?.some(n=>n.title===title))return;
+  const body=flagged.slice(0,3).map(m=>m.employee+' — '+m.checkType).join(' · ')+(flagged.length>3?' · +'+(flagged.length-3)+' more':'');
+  if(currentUser.notifs){
+    currentUser.notifs.unshift({title,body,color:'#D97706',icon:'firstaid',unread:true,time:'Just now',action:"openPage('healthsafety');switchTab('hsTabs','medical',document.querySelectorAll('#page-healthsafety .tab')[3]);closeNotif()",actionLabel:'Review'});
+    if(typeof renderNotifs==='function')renderNotifs();
+  }
 }
 
 function hsIncidentDrawer(){
@@ -10329,6 +10457,56 @@ function hsPPERenew(id){
   writeAudit('RenewPPE','HealthSafety',p.id+' '+p.item,0,'low');
   renderHealthSafety();
   toast(p.item+' renewed for '+p.employee,'#16A34A');
+}
+function hsMedicalBookDrawer(employee='',checkType=''){
+  nxDrawerOpen({
+    title:'Book Health Check',sub:'Schedules a check with one of the approved medical partners',icon:'firstaid',color:'#3B82F6',
+    body:`<div class="fg"><label class="fl">Employee</label><input class="fi" id="hsMedEmployee" value="${employee.replace(/"/g,'&quot;')}" placeholder="Employee name"/></div>
+      <div class="fg"><label class="fl">Check Type</label><select class="fi" id="hsMedType">${[...new Set(HS_MEDICAL_PARTNERS.flatMap(p=>p.services))].map(s=>`<option ${s===checkType?'selected':''}>${s}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">Medical Partner</label><select class="fi" id="hsMedPartner">${HS_MEDICAL_PARTNERS.map(p=>`<option>${p.name}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">Booking Date</label><input class="fi" type="date" id="hsMedDate" value="${HS_TODAY}"/></div>`,
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Cancel</button><button class="btn bp" onclick="hsMedicalBookSubmit()">Book Health Check</button>`,
+  });
+}
+function hsMedicalBookSubmit(){
+  const employee=document.getElementById('hsMedEmployee')?.value.trim();
+  const date=document.getElementById('hsMedDate')?.value;
+  if(!employee||!date){toast('Employee and booking date are required','#DC2626');return;}
+  const rec={
+    id:'MED-'+String(HS_MEDICAL.length+1).padStart(3,'0'),
+    employee,checkType:document.getElementById('hsMedType').value,
+    partner:document.getElementById('hsMedPartner').value,
+    issueDate:'',expiryDate:date,status:'Scheduled',
+  };
+  HS_MEDICAL.unshift(rec);
+  NXDB.save('healthsafety');
+  writeAudit('BookHealthCheck','HealthSafety',rec.id+' '+rec.employee,0,'low');
+  nxDrawerClose();
+  renderHealthSafety();
+  toast('Health check booked for '+employee+' on '+date,'#16A34A');
+}
+function hsMedicalComplete(id){
+  const m=HS_MEDICAL.find(x=>x.id===id); if(!m)return;
+  const exp=new Date();exp.setFullYear(exp.getFullYear()+1);
+  m.issueDate=new Date().toISOString().slice(0,10);
+  m.expiryDate=exp.toISOString().slice(0,10);
+  m.status='Completed';
+  NXDB.save('healthsafety');
+  writeAudit('CompleteHealthCheck','HealthSafety',m.id+' '+m.employee,0,'low');
+  renderHealthSafety();
+  toast(m.checkType+' completed for '+m.employee,'#16A34A');
+}
+function hsMedicalView(id){
+  const m=HS_MEDICAL.find(x=>x.id===id); if(!m)return;
+  const st=hsMedicalStatus(m);
+  nxDrawerOpen({
+    title:m.checkType,sub:m.employee+' · '+m.partner,icon:'firstaid',color:'#3B82F6',
+    body:`<div class="fg"><label class="fl">Status</label><div><span class="badge ${st==='Compliant'?'gn':st==='Expiring Soon'?'am':st==='Scheduled'?'bl':'rd'}">${st}</span></div></div>
+      <div class="fg"><label class="fl">Issued</label><div style="font-size:12px;">${m.issueDate||'—'}</div></div>
+      <div class="fg"><label class="fl">${m.status==='Scheduled'?'Booked For':'Expires'}</label><div style="font-size:12px;">${m.expiryDate}</div></div>
+      <div class="fg"><label class="fl">Medical Partner</label><div style="font-size:12px;">${m.partner}</div></div>`,
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Close</button>${m.status==='Scheduled'?`<button class="btn bp" onclick="nxDrawerClose();hsMedicalComplete('${m.id}')">Mark Complete</button>`:''}`,
+  });
 }
 function hsInspectionDrawer(){
   nxDrawerOpen({
@@ -11880,6 +12058,140 @@ let FUEL_LOG=[
   {id:5,vehicle:'FL-02',date:'18 Apr',odo:117820,litres:40,cost:928,station:'Engen Rosebank'},
 ];
 
+const DRIVER_DOC_TYPES=["Driver's Licence",'Professional Driving Permit (PrDP)','Passport'];
+let DRIVER_DOCS=[
+  {id:'DOC-001',employee:'Sello Mabaso',docType:"Driver's Licence",number:'0102035800086',issueDate:'2022-06-01',expiryDate:'2027-06-01',uploadedDate:'2026-01-10',fileDataUrl:null},
+  {id:'DOC-002',employee:'Sello Mabaso',docType:'Professional Driving Permit (PrDP)',number:'PRDP-88213',issueDate:'2025-05-20',expiryDate:'2026-05-20',uploadedDate:'2025-05-20',fileDataUrl:null},
+  {id:'DOC-003',employee:'Sello Mabaso',docType:'Passport',number:'A0234871',issueDate:'2021-08-01',expiryDate:'2031-08-01',uploadedDate:'2026-02-01',fileDataUrl:null},
+  {id:'DOC-004',employee:'Thabo Mokoena',docType:"Driver's Licence",number:'8501055800083',issueDate:'2020-03-01',expiryDate:'2030-03-01',uploadedDate:'2026-01-05',fileDataUrl:null},
+  {id:'DOC-005',employee:'Kagiso Dlamini',docType:"Driver's Licence",number:'9203125800084',issueDate:'2019-11-01',expiryDate:'2026-04-15',uploadedDate:'2025-12-01',fileDataUrl:null},
+];
+function driverDocDaysLeft(exp){return Math.round((new Date(exp+'T00:00:00Z')-new Date(HS_TODAY+'T00:00:00Z'))/86400000);}
+function driverDocStatus(exp){const d=driverDocDaysLeft(exp);return d<0?'Expired':d<=30?'Expiring Soon':'Valid';}
+function driverLicenceStatus(employee){
+  const doc=DRIVER_DOCS.find(d=>d.docType==="Driver's Licence"&&(d.employee===employee||nxNameMatches(d.employee,employee)||nxNameMatches(employee,d.employee)));
+  if(!doc)return {status:'Missing',doc:null};
+  return {status:driverDocStatus(doc.expiryDate),doc};
+}
+function driverDocUploadDrawer(employee){
+  employee=employee||(currentRole==='driver'?currentUser?.name:'')||'';
+  nxDrawerOpen({
+    title:'Upload Driver Document',sub:'Stored in xVault → Driver Documents · used for Fleet licence checks',icon:'firstaid',color:'#0891B2',
+    body:`<div class="fg"><label class="fl">Employee</label><input class="fi" id="ddEmployee" value="${employee.replace(/"/g,'&quot;')}"/></div>
+      <div class="fg"><label class="fl">Document Type</label><select class="fi" id="ddType">${DRIVER_DOC_TYPES.map(t=>`<option>${t}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">Document / Licence Number</label><input class="fi" id="ddNumber" placeholder="As printed on the document"/></div>
+      <div class="frow"><div class="fg"><label class="fl">Issue Date</label><input class="fi" type="date" id="ddIssue"/></div>
+      <div class="fg"><label class="fl">Expiry Date</label><input class="fi" type="date" id="ddExpiry"/></div></div>
+      <div class="fg"><label class="fl">File (image or PDF)</label><input class="fi" type="file" id="ddFile" accept="image/*,.pdf"/></div>`,
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Cancel</button><button class="btn bp" onclick="driverDocUploadSubmit()">Upload</button>`,
+  });
+}
+async function driverDocUploadSubmit(){
+  const employee=document.getElementById('ddEmployee')?.value.trim();
+  const docType=document.getElementById('ddType')?.value;
+  const number=document.getElementById('ddNumber')?.value.trim();
+  const issueDate=document.getElementById('ddIssue')?.value;
+  const expiryDate=document.getElementById('ddExpiry')?.value;
+  if(!employee||!number||!expiryDate){toast('Employee, document number and expiry date are required','#DC2626');return;}
+  const fileInput=document.getElementById('ddFile');
+  let fileDataUrl=null;
+  if(fileInput?.files?.[0]){
+    fileDataUrl=await new Promise(resolve=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(reader.result);
+      reader.onerror=()=>resolve(null);
+      reader.readAsDataURL(fileInput.files[0]);
+    });
+  }
+  const existingIdx=DRIVER_DOCS.findIndex(d=>d.employee===employee&&d.docType===docType);
+  const rec={id:existingIdx>=0?DRIVER_DOCS[existingIdx].id:'DOC-'+String(DRIVER_DOCS.length+1).padStart(3,'0'),employee,docType,number,issueDate:issueDate||new Date().toISOString().slice(0,10),expiryDate,uploadedDate:new Date().toISOString().slice(0,10),fileDataUrl};
+  if(existingIdx>=0)DRIVER_DOCS[existingIdx]=rec; else DRIVER_DOCS.unshift(rec);
+  NXDB.save('driverdocs');
+  writeAudit('UploadDriverDoc','Fleet',rec.id+' '+rec.docType+' — '+employee,0,'medium');
+  nxDrawerClose();
+  if(typeof renderFleet==='function')renderFleet();
+  toast(docType+' uploaded for '+employee,'#16A34A');
+}
+function driverDocView(id){
+  const d=DRIVER_DOCS.find(x=>x.id===id); if(!d)return;
+  const st=driverDocStatus(d.expiryDate);
+  nxDrawerOpen({
+    title:d.docType,sub:d.employee+' · '+d.number,icon:'firstaid',color:'#0891B2',
+    body:`<div class="fg"><label class="fl">Status</label><div><span class="badge ${st==='Valid'?'gn':st==='Expiring Soon'?'am':'rd'}">${st}</span></div></div>
+      <div class="fg"><label class="fl">Issued</label><div style="font-size:12px;">${d.issueDate||'—'}</div></div>
+      <div class="fg"><label class="fl">Expires</label><div style="font-size:12px;">${d.expiryDate}</div></div>
+      <div class="fg"><label class="fl">Uploaded</label><div style="font-size:12px;">${d.uploadedDate}</div></div>
+      ${d.fileDataUrl?(d.fileDataUrl.startsWith('data:image')?`<img src="${d.fileDataUrl}" style="max-width:100%;border-radius:8px;margin-top:8px;"/>`:`<a href="${d.fileDataUrl}" target="_blank" class="btn bs btn-sm" style="margin-top:8px;">Open File</a>`):'<div style="font-size:11px;color:var(--mid);margin-top:8px;">No file attached — number and dates recorded only.</div>'}`,
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Close</button>`,
+  });
+}
+let FLEET_ASSIGNMENTS=[
+  {id:'ASG-001',vehicleId:'FL-01',employee:'Thabo Mokoena',date:HS_TODAY,status:'Active'},
+];
+const FLEET_DRIVER_ROSTER=['Sello Mabaso','Thabo Mokoena','Kagiso Dlamini','Nomsa Petersen','Bongani Sithole'];
+function fleetDriverTodayAssignment(employee){
+  return FLEET_ASSIGNMENTS.find(a=>a.date===HS_TODAY&&a.status==='Active'&&(a.employee===employee||nxNameMatches(a.employee,employee)||nxNameMatches(employee,a.employee)));
+}
+function fleetAssignDriverDrawer(vehicleId){
+  const v=FLEET_VEHICLES.find(x=>x.id===vehicleId); if(!v)return;
+  const rows=FLEET_DRIVER_ROSTER.map(name=>{
+    const {status}=driverLicenceStatus(name);
+    const blocked=status==='Expired'||status==='Missing';
+    return `<label style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd-l);font-size:12px;${blocked?'opacity:.5;':''}">
+      <input type="radio" name="fleetAssignDriver" value="${name}" ${blocked?'disabled':''}/>
+      <span style="flex:1;">${name}</span>
+      <span class="badge ${status==='Valid'?'gn':status==='Expiring Soon'?'am':'rd'}">${status==='Missing'?'No Licence on File':status}</span>
+    </label>`;
+  }).join('');
+  nxDrawerOpen({
+    title:'Assign Driver — '+v.reg,sub:v.model+' · today, '+HS_TODAY,icon:'box',color:'var(--bl)',
+    body:`<div style="font-size:11px;color:var(--mid);margin-bottom:10px;">Drivers with an expired or missing licence cannot be assigned — upload/renew their licence under Fleet → Driver Docs first.</div>${rows}`,
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Cancel</button><button class="btn bp" onclick="fleetAssignDriverSubmit('${vehicleId}')">Assign</button>`,
+  });
+}
+function fleetAssignDriverSubmit(vehicleId){
+  const picked=document.querySelector('input[name="fleetAssignDriver"]:checked')?.value;
+  if(!picked){toast('Select a driver','#DC2626');return;}
+  const {status}=driverLicenceStatus(picked);
+  if(status==='Expired'||status==='Missing'){toast(picked+' cannot be assigned — licence '+(status==='Missing'?'not on file':'expired'),'#DC2626');return;}
+  const v=FLEET_VEHICLES.find(x=>x.id===vehicleId); if(!v)return;
+  FLEET_ASSIGNMENTS.forEach(a=>{if(a.date===HS_TODAY&&a.status==='Active'&&(a.vehicleId===vehicleId||a.employee===picked))a.status='Ended';});
+  FLEET_ASSIGNMENTS.unshift({id:'ASG-'+String(FLEET_ASSIGNMENTS.length+1).padStart(3,'0'),vehicleId,employee:picked,date:HS_TODAY,status:'Active'});
+  v.driver=picked;
+  NXDB.save('fleet');NXDB.save('fleetassignments');
+  writeAudit('AssignDriver','Fleet',vehicleId+' → '+picked,0,'medium');
+  nxDrawerClose();
+  renderFleet();
+  toast(picked+' assigned to '+v.reg+' for today','#16A34A');
+}
+function fleetSelectMyVehicle(){
+  const employee=currentUser?.name; if(!employee)return;
+  const {status}=driverLicenceStatus(employee);
+  if(status==='Expired'||status==='Missing'){toast('Your licence is '+(status==='Missing'?'not on file':'expired')+' — you cannot select a vehicle until it is renewed','#DC2626');return;}
+  const taken=new Set(FLEET_ASSIGNMENTS.filter(a=>a.date===HS_TODAY&&a.status==='Active').map(a=>a.vehicleId));
+  const available=FLEET_VEHICLES.filter(v=>!taken.has(v.id));
+  if(!available.length){toast('No vehicles available today — all are assigned','#D97706');return;}
+  nxDrawerOpen({
+    title:"Select Today's Vehicle",sub:HS_TODAY,icon:'box',color:'var(--bl)',
+    body:available.map(v=>`<label style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd-l);font-size:12px;">
+      <input type="radio" name="fleetMyVehicle" value="${v.id}"/><span style="flex:1;">${v.reg} — ${v.model}</span></label>`).join(''),
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Cancel</button><button class="btn bp" onclick="fleetSelectMyVehicleSubmit()">Confirm</button>`,
+  });
+}
+function fleetSelectMyVehicleSubmit(){
+  const vehicleId=document.querySelector('input[name="fleetMyVehicle"]:checked')?.value;
+  if(!vehicleId){toast('Select a vehicle','#DC2626');return;}
+  const employee=currentUser?.name;
+  const v=FLEET_VEHICLES.find(x=>x.id===vehicleId); if(!v)return;
+  FLEET_ASSIGNMENTS.forEach(a=>{if(a.date===HS_TODAY&&a.status==='Active'&&(a.vehicleId===vehicleId||a.employee===employee))a.status='Ended';});
+  FLEET_ASSIGNMENTS.unshift({id:'ASG-'+String(FLEET_ASSIGNMENTS.length+1).padStart(3,'0'),vehicleId,employee,date:HS_TODAY,status:'Active'});
+  v.driver=employee;
+  NXDB.save('fleet');NXDB.save('fleetassignments');
+  writeAudit('SelectVehicle','Fleet',vehicleId+' ← '+employee,0,'medium');
+  nxDrawerClose();
+  renderFleet();
+  toast('You are assigned '+v.reg+' for today','#16A34A');
+}
 function fleetConsumption(vehId){
   const entries=FUEL_LOG.filter(f=>f.vehicle===vehId).sort((a,b)=>a.odo-b.odo);
   if(entries.length<2)return null;
@@ -11890,10 +12202,27 @@ function fleetConsumption(vehId){
 
 function renderFleet(){
   const el=document.getElementById('fleetContent'); if(!el)return;
+  const _prevTp=nxCaptureActiveTab('fleetContent');
   const stBadge={OK:'gn','Due Soon':'am',Overdue:'rd'};
   const mtdFuel=FUEL_LOG.reduce((s,f)=>s+f.cost,0);
   el.innerHTML=`
   <div class="tp on" id="fleetTabs-vehicles">
+    ${currentRole==='driver'?(()=>{
+      const mine=fleetDriverTodayAssignment(currentUser?.name);
+      const {status}=driverLicenceStatus(currentUser?.name);
+      const v=mine?FLEET_VEHICLES.find(x=>x.id===mine.vehicleId):null;
+      return `<div class="card" style="margin-bottom:14px;">
+        <div class="ch2"><span class="ch2-title">My Vehicle Today</span><span class="ch2-sub">${HS_TODAY}</span></div>
+        <div class="cb">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            <span style="font-size:11px;color:var(--mid);">My licence status:</span>
+            <span class="badge ${status==='Valid'?'gn':status==='Expiring Soon'?'am':'rd'}">${status==='Missing'?'No Licence on File':status}</span>
+          </div>
+          ${v?`<div class="stock-card"><div class="stock-icon" style="background:var(--gn-l);">${svgIcon('box','14px','var(--gn)')}</div><div style="flex:1;"><div class="stock-name">${v.reg} — ${v.model}</div><div class="stock-sku">Assigned to you for today</div></div></div>`
+             :`<div style="font-size:12px;color:var(--mid);margin-bottom:10px;">No vehicle selected yet.</div><button class="btn bp btn-sm" ${status==='Expired'||status==='Missing'?'disabled title="Your licence must be valid before you can select a vehicle"':''} onclick="fleetSelectMyVehicle()">Select Today's Vehicle</button>`}
+        </div>
+      </div>`;
+    })():''}
     <div class="kg kg-4" style="margin-bottom:14px;">
       <div class="kpi bl"><div class="kpi-lbl">Fleet Size</div><div class="kpi-val">${FLEET_VEHICLES.length}</div><div class="kpi-sub">${FLEET_VEHICLES.filter(v=>v.status==='OK').length} operational</div></div>
       <div class="kpi or"><div class="kpi-lbl">Fuel Spend (MTD)</div><div class="kpi-val">${fmt(mtdFuel)}</div><div class="kpi-sub">${FUEL_LOG.reduce((s,f)=>s+f.litres,0)} litres</div></div>
@@ -11902,18 +12231,20 @@ function renderFleet(){
     </div>
     <div class="card"><div class="ch2"><span class="ch2-title">Vehicle Register</span><span class="ch2-sub">Click a vehicle for its full profile</span></div>
     <div class="cb" style="padding:0;"><div class="tw"><table>
-      <thead><tr><th>Reg</th><th>Vehicle</th><th>Driver</th><th>Odometer</th><th>Consumption</th><th>Fuel Budget</th><th>Service Status</th><th></th></tr></thead>
+      <thead><tr><th>Reg</th><th>Vehicle</th><th>Driver</th><th>Licence</th><th>Odometer</th><th>Consumption</th><th>Fuel Budget</th><th>Service Status</th><th></th></tr></thead>
       <tbody>${FLEET_VEHICLES.map(v=>{
         const cons=fleetConsumption(v.id);
         const spend=FUEL_LOG.filter(f=>f.vehicle===v.id).reduce((s,f)=>s+f.cost,0);
         const over=v.fuelBudget&&spend>v.fuelBudget;
+        const lic=v.driver==='Pool vehicle'?null:driverLicenceStatus(v.driver);
         return `<tr style="cursor:pointer;" onclick="fleetVehicleDrawer('${v.id}')">
         <td class="mo tb">${v.reg}</td><td class="tb">${v.model}</td><td>${v.driver}</td>
+        <td>${lic?`<span class="badge ${lic.status==='Valid'?'gn':lic.status==='Expiring Soon'?'am':'rd'}">${lic.status==='Missing'?'No Licence':lic.status}</span>`:'—'}</td>
         <td class="mo">${v.odo.toLocaleString()} km</td>
         <td class="mo">${cons?cons.toFixed(1)+' L/100km':'—'}</td>
         <td class="mo" style="color:${over?'var(--rd)':'var(--mid)'};">${fmt(spend)} / ${fmt(v.fuelBudget||0)}</td>
         <td><span class="badge ${stBadge[v.status]}">${v.status}</span></td>
-        <td>${v.status!=='OK'?`<button class="btn bp btn-xs" onclick="event.stopPropagation();fleetBookService('${v.id}')">Book Service</button>`:''}</td>
+        <td style="display:flex;gap:4px;">${v.status!=='OK'?`<button class="btn bp btn-xs" onclick="event.stopPropagation();fleetBookService('${v.id}')">Book Service</button>`:''}${currentRole!=='driver'?`<button class="btn bs btn-xs" onclick="event.stopPropagation();fleetAssignDriverDrawer('${v.id}')">Assign Driver</button>`:''}</td>
       </tr>`;}).join('')}</tbody></table></div></div></div>
   </div>
   <div class="tp" id="fleetTabs-fuel">
@@ -11952,6 +12283,29 @@ function renderFleet(){
       ${v.status!=='OK'?`<button class="btn bp btn-xs" onclick="fleetBookService('${v.id}')">Book</button>`:''}
     </div>`;}).join('')}</div></div>
   </div>
+  <div class="tp" id="fleetTabs-driverdocs">
+    <div class="kg kg-4" style="margin-bottom:14px;">
+      <div class="kpi gn"><div class="kpi-lbl">Valid Licences</div><div class="kpi-val">${DRIVER_DOCS.filter(d=>d.docType==="Driver's Licence"&&driverDocStatus(d.expiryDate)==='Valid').length}</div><div class="kpi-sub">Cleared to drive</div></div>
+      <div class="kpi am"><div class="kpi-lbl">Expiring ≤30 Days</div><div class="kpi-val">${DRIVER_DOCS.filter(d=>driverDocStatus(d.expiryDate)==='Expiring Soon').length}</div><div class="kpi-sub">Renew soon</div></div>
+      <div class="kpi rd"><div class="kpi-lbl">Expired</div><div class="kpi-val">${DRIVER_DOCS.filter(d=>driverDocStatus(d.expiryDate)==='Expired').length}</div><div class="kpi-sub">Cannot be assigned</div></div>
+      <div class="kpi bl"><div class="kpi-lbl">Documents on File</div><div class="kpi-val">${DRIVER_DOCS.length}</div><div class="kpi-sub">Licences, PrDPs, passports</div></div>
+    </div>
+    <div class="card">
+      <div class="ch2"><span class="ch2-title">Driver Documents</span><span class="ch2-sub"><button class="btn bp btn-xs" onclick="driverDocUploadDrawer()">+ Upload Document</button></span></div>
+      <div class="cb" style="padding:0;">
+        <div class="tw"><table><thead><tr><th>Employee</th><th>Document</th><th>Number</th><th>Issued</th><th>Expires</th><th>Status</th><th></th></tr></thead>
+        <tbody>${DRIVER_DOCS.map(d=>{const st=driverDocStatus(d.expiryDate);return`<tr>
+          <td class="tb">${d.employee}</td>
+          <td>${d.docType}</td>
+          <td class="mo" style="font-size:11px;">${d.number}</td>
+          <td class="mo">${d.issueDate||'—'}</td>
+          <td class="mo">${d.expiryDate}</td>
+          <td><span class="badge ${st==='Valid'?'gn':st==='Expiring Soon'?'am':'rd'}">${st}</span></td>
+          <td style="display:flex;gap:4px;"><button class="btn bs btn-xs" onclick="driverDocView('${d.id}')">View</button>${st!=='Valid'?`<button class="btn bp btn-xs" onclick="driverDocUploadDrawer('${d.employee.replace(/'/g,"\\'")}')">Renew</button>`:''}</td>
+        </tr>`;}).join('')}</tbody></table></div>
+      </div>
+    </div>
+  </div>
   <div class="tp" id="fleetTabs-analytics">
     <div class="g2">
       <div class="card"><div class="ch2"><span class="ch2-title">Fuel Spend by Vehicle</span></div><div class="cb" id="fleetSpendDonut"></div></div>
@@ -11962,6 +12316,8 @@ function renderFleet(){
     const fc=document.getElementById('fuelChart');
     if(fc)svgBarChart(fc,[{lbl:'Dec',v:5100,fmt:'R5.1k'},{lbl:'Jan',v:5900,fmt:'R5.9k'},{lbl:'Feb',v:5400,fmt:'R5.4k'},{lbl:'Mar',v:4200,fmt:'R4.2k'},{lbl:'Apr',v:mtdFuel,fmt:'R'+(mtdFuel/1000).toFixed(1)+'k'}],{h:120,colors:['#3B82F6']});
   },80);
+  nxRestoreActiveTab('fleetContent','#page-fleet .tabs',_prevTp);
+  if(_prevTp==='fleetTabs-analytics')renderFleetAnalytics();
 }
 function renderFleetAnalytics(){
   setTimeout(()=>{
@@ -13085,6 +13441,16 @@ const NXDB={
       set:(st)=>{if(st.vehicles)FLEET_VEHICLES=st.vehicles;if(st.fuel)FUEL_LOG=st.fuel;},
       render:()=>typeof renderFleet==='function'&&renderFleet(),
     },
+    driverdocs:{
+      get:()=>({docs:DRIVER_DOCS}),
+      set:(st)=>{if(st.docs)DRIVER_DOCS=st.docs;},
+      render:()=>typeof renderFleet==='function'&&renderFleet(),
+    },
+    fleetassignments:{
+      get:()=>({list:FLEET_ASSIGNMENTS}),
+      set:(st)=>{if(st.list)FLEET_ASSIGNMENTS=st.list;},
+      render:()=>typeof renderFleet==='function'&&renderFleet(),
+    },
     access:{
       get:()=>({creds:ACCESS_CREDS,events:ACCESS_EVENTS.slice(0,40),sites:ACCESS_SITES}),
       set:(st)=>{if(st.creds)ACCESS_CREDS=st.creds;if(st.events)ACCESS_EVENTS=st.events;if(st.sites)ACCESS_SITES=st.sites;},
@@ -13120,8 +13486,8 @@ const NXDB={
       render:()=>typeof renderRisk==='function'&&renderRisk(),
     },
     healthsafety:{
-      get:()=>({incidents:HS_INCIDENTS,ppe:HS_PPE,inspections:HS_INSPECTIONS}),
-      set:(st)=>{if(st.incidents)HS_INCIDENTS=st.incidents;if(st.ppe)HS_PPE=st.ppe;if(st.inspections)HS_INSPECTIONS=st.inspections;},
+      get:()=>({incidents:HS_INCIDENTS,ppe:HS_PPE,inspections:HS_INSPECTIONS,medical:HS_MEDICAL}),
+      set:(st)=>{if(st.incidents)HS_INCIDENTS=st.incidents;if(st.ppe)HS_PPE=st.ppe;if(st.inspections)HS_INSPECTIONS=st.inspections;if(st.medical)HS_MEDICAL=st.medical;},
       render:()=>typeof renderHealthSafety==='function'&&renderHealthSafety(),
     },
     dbsecurity:{
