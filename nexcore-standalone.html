@@ -13081,6 +13081,26 @@ function brandPreview(){
   const pr=document.getElementById('brPvProg');if(pr)pr.style.background=accent;
   const pv=document.getElementById('brPreview');if(pv)pv.style.fontFamily=font;
 }
+/* Default morr mark, reused wherever a logo target has no custom upload —
+   keeps the topbar/login fallback in sync with the real mark instead of
+   the old placeholder grid icon. */
+function _morrMarkSVG(strokeColor){
+  return `<svg viewBox="0 0 100 100" style="width:100%;height:100%;fill:none;stroke:${strokeColor};stroke-width:9;stroke-linejoin:miter;">
+    <polyline points="50,6 16,25 16,64 48,83 64,74 64,36 46,26 46,47"/>
+    <polyline points="56,10 75,21 75,66 57,77"/>
+    <polyline points="64,5 88,19 88,69 66,81"/>
+  </svg>`;
+}
+function _brandApplyLogo(el,brand){
+  if(!el)return;
+  if(brand.logoDataUrl){
+    el.style.background='transparent';
+    el.innerHTML=`<img src="${brand.logoDataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;"/>`;
+  }else{
+    el.style.background=brand.accent?`linear-gradient(145deg,${brand.accent} 0%,${brandDarken(brand.accent,.82)} 100%)`:'';
+    el.innerHTML=_morrMarkSVG('#fff');
+  }
+}
 function brandApply(brand){
   if(!brand)return;
   const r=document.documentElement.style;
@@ -13091,17 +13111,12 @@ function brandApply(brand){
   }
   if(brand.font)r.setProperty('--fn',brand.font);
   const _nm=(brand.name||'MORR ERP').split(' ');
-  document.querySelectorAll('.tb-wordmark').forEach(w=>{w.innerHTML=_nm[0]+(_nm.length>1?'<span> '+_nm.slice(1).join(' ')+'</span>':'');});
-  const logo=document.querySelector('.tb-logo');
-  if(logo){
-    if(brand.logoDataUrl){
-      logo.style.background='transparent';
-      logo.innerHTML=`<img src="${brand.logoDataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;"/>`;
-    }else{
-      logo.style.background=brand.accent||'';
-      logo.innerHTML='<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:white;"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>';
-    }
-  }
+  const _wordHtml=_nm[0]+(_nm.length>1?'<span> '+_nm.slice(1).join(' ')+'</span>':'');
+  document.querySelectorAll('.tb-wordmark, .lg-mark-word, .lg-mob-word').forEach(w=>{w.innerHTML=_wordHtml;});
+  _brandApplyLogo(document.querySelector('.tb-logo'),brand);
+  _brandApplyLogo(document.querySelector('.lg-mark-icon'),brand);
+  _brandApplyLogo(document.querySelector('.lg-mob-icon'),brand);
+  const loginBtn=document.getElementById('loginBtn');if(loginBtn&&brand.name)loginBtn.textContent='Sign in to '+brand.name;
   const org=document.getElementById('tbOrg');if(org&&brand.name)org.textContent=brand.name;
 }
 function brandDarken(hex,f){
@@ -13132,9 +13147,12 @@ function brandReset(){
   _brandPendingLogo=null;
   const r=document.documentElement.style;
   r.removeProperty('--or');r.removeProperty('--or-d');r.removeProperty('--accent');r.removeProperty('--fn');
-  document.querySelectorAll('.tb-wordmark').forEach(w=>{w.innerHTML='MORR<span> ERP</span>';});
-  const logo=document.querySelector('.tb-logo');
-  if(logo){logo.style.background='';logo.innerHTML='<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:white;"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>';}
+  document.querySelectorAll('.tb-wordmark, .lg-mark-word, .lg-mob-word').forEach(w=>{w.innerHTML='MORR<span> ERP</span>';});
+  document.querySelectorAll('.tb-logo, .lg-mark-icon, .lg-mob-icon').forEach(el=>{
+    el.style.removeProperty('background');
+    el.innerHTML=_morrMarkSVG('#fff');
+  });
+  const loginBtn=document.getElementById('loginBtn');if(loginBtn)loginBtn.textContent='Sign in to MORR ERP';
   renderBrand();
   toast('Reset to MORR ERP default branding','#71717A');
 }
