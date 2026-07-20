@@ -6054,6 +6054,67 @@ function vaultOpenFolder(name){
     });
     return;
   }
+  if(name==='Contracts'){
+    const rows=[
+      ...PAYPRO_EMPS.map((e,i)=>({label:e.name+' — Employment Contract',sub:(e.dept||'—')+' · Permanent',view:()=>{nxDrawerClose();pdfContract(i);}})),
+      ...CONTRACTORS_DATA.map(c=>({label:c.name+' — Contractor Agreement',sub:(c.role||'—')+' · '+(c.currency||'ZAR')+' '+((c.rate||0).toLocaleString())+'/'+(c.rateType||'month').toLowerCase(),view:()=>{nxDrawerClose();pdfContract(c.id);}})),
+    ];
+    nxDrawerOpen({
+      title:name,sub:rows.length+' contracts on file',icon:'file',color:'var(--bl)',
+      body:rows.map((r,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bd-l);">
+        <div style="width:26px;height:26px;border-radius:6px;background:var(--sf2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">${svgIcon('file','12px','var(--mid)')}</div>
+        <div style="flex:1;min-width:0;"><div style="font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.label}</div><div style="font-size:10px;color:var(--mid);">${r.sub}</div></div>
+        <button class="btn bs btn-xs" onclick="_vaultRowAction(${i})">View</button>
+      </div>`).join(''),
+      actions:`<button class="btn bs" onclick="nxDrawerClose()">Close</button>`,
+    });
+    window._vaultRows=rows;
+    return;
+  }
+  if(name==='Invoices'){
+    const rows=INVOICES_DATA.map(inv=>({label:inv.id+' — '+inv.client,sub:fmt(inv.total)+' · '+inv.status,view:()=>{nxDrawerClose();printInvoice(inv);}}));
+    nxDrawerOpen({
+      title:name,sub:rows.length+' invoices on file',icon:'file',color:'var(--bl)',
+      body:rows.map((r,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bd-l);">
+        <div style="width:26px;height:26px;border-radius:6px;background:var(--sf2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">${svgIcon('file','12px','var(--mid)')}</div>
+        <div style="flex:1;min-width:0;"><div style="font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.label}</div><div style="font-size:10px;color:var(--mid);">${r.sub}</div></div>
+        <button class="btn bs btn-xs" onclick="_vaultRowAction(${i})">View</button>
+      </div>`).join(''),
+      actions:`<button class="btn bs" onclick="nxDrawerClose()">Close</button>`,
+    });
+    window._vaultRows=rows;
+    return;
+  }
+  if(name==='Procurement'){
+    const list=window.PO_DATA||[];
+    const rows=list.map(po=>({label:po.po_number+' — '+po.vendor_name,sub:fmt(po.total_amount)+' · '+po.status,view:()=>{nxDrawerClose();poDrawer(po.po_number);}}));
+    nxDrawerOpen({
+      title:name,sub:rows.length+' purchase orders on file',icon:'file',color:'var(--bl)',
+      body:!rows.length?'<div style="text-align:center;padding:24px;color:var(--mid);font-size:12px;">No purchase orders loaded — sign in to view live POs.</div>'
+        :rows.map((r,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bd-l);">
+        <div style="width:26px;height:26px;border-radius:6px;background:var(--sf2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">${svgIcon('file','12px','var(--mid)')}</div>
+        <div style="flex:1;min-width:0;"><div style="font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.label}</div><div style="font-size:10px;color:var(--mid);">${r.sub}</div></div>
+        <button class="btn bs btn-xs" onclick="_vaultRowAction(${i})">View</button>
+      </div>`).join(''),
+      actions:`<button class="btn bs" onclick="nxDrawerClose()">Close</button>`,
+    });
+    window._vaultRows=rows;
+    return;
+  }
+  if(name==='HR Files'){
+    const rows=PAYPRO_EMPS.map(e=>({label:e.name+' — HR File',sub:(e.dept||'—')+' · Manager: '+(e.manager||'—'),view:()=>{nxDrawerClose();employeeProfileDrawer(e.name);}}));
+    nxDrawerOpen({
+      title:name,sub:rows.length+' employee files on record',icon:'file',color:'var(--bl)',
+      body:rows.map((r,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bd-l);">
+        <div style="width:26px;height:26px;border-radius:6px;background:var(--sf2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">${svgIcon('file','12px','var(--mid)')}</div>
+        <div style="flex:1;min-width:0;"><div style="font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.label}</div><div style="font-size:10px;color:var(--mid);">${r.sub}</div></div>
+        <button class="btn bs btn-xs" onclick="_vaultRowAction(${i})">View</button>
+      </div>`).join(''),
+      actions:`<button class="btn bs" onclick="nxDrawerClose()">Close</button>`,
+    });
+    window._vaultRows=rows;
+    return;
+  }
   const files=VAULT_FOLDER_FILES[name]||[];
   nxDrawerOpen({
     title:name,sub:files.length+' documents in this folder',icon:'file',color:'var(--bl)',
@@ -6071,6 +6132,7 @@ function vaultOpenFolder(name){
       <button class="btn bp" onclick="nxDrawerClose();vaultUploadDrawer()">Upload to ${name}</button>`,
   });
 }
+function _vaultRowAction(i){window._vaultRows?.[i]?.view();}
 /* ── Reusable employee profile drawer: history, contract, assignments, email ──
    Names appear in short form ("Kagiso D.") in most places but full form
    ("Kagiso Dlamini") in PAYPRO_EMPS — use the same fuzzy matcher as user
@@ -6442,14 +6504,14 @@ const origRenderVaultContent = renderVaultContent;
 renderVaultContent = function() {
   const f = document.getElementById('vaultFolders'); if(!f) return;
   f.innerHTML = [
-    {n:'Contracts',       count:384, c:'var(--bl-m)', icon:'Employment, NDAs, Service agreements'},
-    {n:'Invoices',        count:1240,c:'var(--or)',    icon:'Supplier + client invoices'},
-    {n:'HR Files',        count:674, c:'var(--gn)',    icon:'Employee records, payslips, IRP5s'},
+    {n:'Contracts',       count:(typeof PAYPRO_EMPS!=='undefined'?PAYPRO_EMPS.length:0)+(typeof CONTRACTORS_DATA!=='undefined'?CONTRACTORS_DATA.length:0), c:'var(--bl-m)', icon:'Employment, NDAs, Service agreements'},
+    {n:'Invoices',        count:(typeof INVOICES_DATA!=='undefined'?INVOICES_DATA.length:0),c:'var(--or)',    icon:'Supplier + client invoices'},
+    {n:'HR Files',        count:(typeof PAYPRO_EMPS!=='undefined'?PAYPRO_EMPS.length:0), c:'var(--gn)',    icon:'Employee records, payslips, IRP5s'},
     {n:'Medical Records', count:(typeof HS_MEDICAL!=='undefined'?HS_MEDICAL.length:0), c:'var(--bl)', icon:'Occupational health checks · expiry-tracked'},
     {n:'Driver Documents',count:(typeof DRIVER_DOCS!=='undefined'?DRIVER_DOCS.length:0), c:'#0891B2', icon:"Driver's licences, PrDPs, passports"},
     {n:'Board Resolutions',count:48, c:'var(--am)',    icon:'AGM minutes, director resolutions'},
     {n:'Compliance',      count:120, c:'var(--pu)',    icon:'POPIA, PFMA, AML documentation'},
-    {n:'Procurement',     count:381, c:'var(--cy)',    icon:'POs, GRNs, vendor agreements'},
+    {n:'Procurement',     count:(window.PO_DATA||[]).length, c:'var(--cy)',    icon:'POs, GRNs, vendor agreements'},
     {n:'Signed Documents',count:384, c:'var(--rd)',    icon:'ECTA e-signatures · SHA-256 hashed'},
   ].map(x => `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--bd-l);cursor:pointer;transition:background .12s;" onmouseover="this.style.background='var(--sf)'" onmouseout="this.style.background=''" onclick="vaultOpenFolder('${x.n}')">
     <div style="width:30px;height:30px;border-radius:var(--r6);background:${x.c};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -10202,7 +10264,7 @@ let HS_INSPECTIONS=[
   {id:'HSI-003',site:'Warehouse — Sandton',date:'2026-04-28',inspector:'Thabo Mokoena',passed:5,total:8,notes:'Blocked emergency exit, missing MSDS sheets, PPE station empty.'},
   {id:'HSI-004',site:'Fleet Yard',date:'2026-05-15',inspector:'Sello Mabaso',passed:7,total:8,notes:'Spill kit needs restocking.'},
 ];
-const HS_MEDICAL_PARTNERS=[
+let HS_MEDICAL_PARTNERS=[
   {id:'MP-01',name:'Sandton Occupational Health Centre',services:['Annual Medical','Hearing Test','General Medical'],phone:'011 555 0142',email:'bookings@sandtonoh.co.za'},
   {id:'MP-02',name:'Netcare Sandton',services:['Annual Medical','General Medical','Vaccinations'],phone:'011 555 0198',email:'occhealth@netcare-sandton.co.za'},
   {id:'MP-03',name:'Life Fourways Occupational Health',services:["Driver Medical Fitness Certificate",'Annual Medical'],phone:'011 555 0271',email:'ohc@lifefourways.co.za'},
@@ -10335,7 +10397,7 @@ function renderHealthSafety(){
       </div>
     </div>
     <div class="card" style="margin-top:14px;">
-      <div class="ch2"><span class="ch2-title">Medical Partners</span></div>
+      <div class="ch2"><span class="ch2-title">Medical Partners</span><span class="ch2-sub"><button class="btn bp btn-xs" onclick="hsPartnerDrawer()">+ Add Partner</button></span></div>
       <div class="cb" style="padding:0;">${HS_MEDICAL_PARTNERS.map(p=>`
         <div class="stock-card">
           <div class="stock-icon" style="background:var(--bl-l);">${svgIcon('firstaid','14px','var(--bl-m)')}</div>
@@ -10344,6 +10406,7 @@ function renderHealthSafety(){
             <div class="stock-sku">${p.services.join(' · ')}</div>
             <div style="font-size:10px;color:var(--mid);margin-top:2px;">${p.phone} · ${p.email}</div>
           </div>
+          <button class="btn bs btn-xs" onclick="hsPartnerRemove('${p.id}')">Remove</button>
         </div>`).join('')}</div>
     </div>
   </div>`;
@@ -10542,6 +10605,42 @@ function hsExportRegister(){
   a.download='health-safety-incident-register.csv';
   a.click();
   toast('Incident register exported','#16A34A');
+}
+function hsPartnerDrawer(){
+  nxDrawerOpen({
+    title:'Add Medical Partner',sub:'Approved clinics appear immediately in the Book Health Check dropdown',icon:'firstaid',color:'#3B82F6',
+    body:`<div class="fg"><label class="fl">Clinic / Partner Name</label><input class="fi" id="hsPartnerName" placeholder="e.g. Milpark Occupational Health"/></div>
+      <div class="fg"><label class="fl">Services Offered</label><input class="fi" id="hsPartnerServices" placeholder="Comma-separated, e.g. Annual Medical, Hearing Test"/></div>
+      <div class="frow"><div class="fg"><label class="fl">Phone</label><input class="fi" id="hsPartnerPhone" placeholder="011 555 0000"/></div>
+      <div class="fg"><label class="fl">Email</label><input class="fi" id="hsPartnerEmail" placeholder="bookings@partner.co.za"/></div></div>`,
+    actions:`<button class="btn bs" onclick="nxDrawerClose()">Cancel</button><button class="btn bp" onclick="hsPartnerSubmit()">Add Partner</button>`,
+  });
+}
+function hsPartnerSubmit(){
+  const name=document.getElementById('hsPartnerName')?.value.trim();
+  const servicesRaw=document.getElementById('hsPartnerServices')?.value.trim();
+  if(!name||!servicesRaw){toast('Partner name and at least one service are required','#DC2626');return;}
+  const rec={
+    id:'MP-'+String(HS_MEDICAL_PARTNERS.length+1).padStart(2,'0'),
+    name,services:servicesRaw.split(',').map(s=>s.trim()).filter(Boolean),
+    phone:document.getElementById('hsPartnerPhone').value.trim()||'—',
+    email:document.getElementById('hsPartnerEmail').value.trim()||'—',
+  };
+  HS_MEDICAL_PARTNERS.push(rec);
+  NXDB.save('healthsafety');
+  writeAudit('AddMedicalPartner','HealthSafety',rec.id+' '+rec.name,0,'low');
+  nxDrawerClose();
+  renderHealthSafety();
+  toast(name+' added as an approved medical partner','#16A34A');
+}
+function hsPartnerRemove(id){
+  const p=HS_MEDICAL_PARTNERS.find(x=>x.id===id); if(!p)return;
+  if(HS_MEDICAL.some(m=>m.partner===p.name)){toast('Cannot remove '+p.name+' — it has medical records on file','#DC2626');return;}
+  HS_MEDICAL_PARTNERS=HS_MEDICAL_PARTNERS.filter(x=>x.id!==id);
+  NXDB.save('healthsafety');
+  writeAudit('RemoveMedicalPartner','HealthSafety',id+' '+p.name,0,'medium');
+  renderHealthSafety();
+  toast(p.name+' removed','#71717A');
 }
 
 /* ── Supply Chain ── */
@@ -12128,13 +12227,28 @@ function driverDocView(id){
 let FLEET_ASSIGNMENTS=[
   {id:'ASG-001',vehicleId:'FL-01',employee:'Thabo Mokoena',date:HS_TODAY,status:'Active'},
 ];
-const FLEET_DRIVER_ROSTER=['Sello Mabaso','Thabo Mokoena','Kagiso Dlamini','Nomsa Petersen','Bongani Sithole'];
+/* Built from real usage rather than a fixed guess: anyone already driving a
+   vehicle, plus anyone who has put a licence/PrDP/passport on file — the
+   moment a new hire uploads their driver docs, they become assignable. */
+function fleetDriverRoster(){
+  const candidates=[];
+  FLEET_VEHICLES.forEach(v=>{if(v.driver&&v.driver!=='Pool vehicle')candidates.push(v.driver);});
+  DRIVER_DOCS.forEach(d=>candidates.push(d.employee));
+  // dedupe fuzzy-matching names ("Thabo M." vs "Thabo Mokoena") and keep the fuller form
+  const roster=[];
+  candidates.forEach(name=>{
+    const i=roster.findIndex(r=>r===name||nxNameMatches(r,name)||nxNameMatches(name,r));
+    if(i===-1)roster.push(name);
+    else if(name.length>roster[i].length)roster[i]=name;
+  });
+  return roster.sort();
+}
 function fleetDriverTodayAssignment(employee){
   return FLEET_ASSIGNMENTS.find(a=>a.date===HS_TODAY&&a.status==='Active'&&(a.employee===employee||nxNameMatches(a.employee,employee)||nxNameMatches(employee,a.employee)));
 }
 function fleetAssignDriverDrawer(vehicleId){
   const v=FLEET_VEHICLES.find(x=>x.id===vehicleId); if(!v)return;
-  const rows=FLEET_DRIVER_ROSTER.map(name=>{
+  const rows=fleetDriverRoster().map(name=>{
     const {status}=driverLicenceStatus(name);
     const blocked=status==='Expired'||status==='Missing';
     return `<label style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd-l);font-size:12px;${blocked?'opacity:.5;':''}">
@@ -13486,8 +13600,8 @@ const NXDB={
       render:()=>typeof renderRisk==='function'&&renderRisk(),
     },
     healthsafety:{
-      get:()=>({incidents:HS_INCIDENTS,ppe:HS_PPE,inspections:HS_INSPECTIONS,medical:HS_MEDICAL}),
-      set:(st)=>{if(st.incidents)HS_INCIDENTS=st.incidents;if(st.ppe)HS_PPE=st.ppe;if(st.inspections)HS_INSPECTIONS=st.inspections;if(st.medical)HS_MEDICAL=st.medical;},
+      get:()=>({incidents:HS_INCIDENTS,ppe:HS_PPE,inspections:HS_INSPECTIONS,medical:HS_MEDICAL,partners:HS_MEDICAL_PARTNERS}),
+      set:(st)=>{if(st.incidents)HS_INCIDENTS=st.incidents;if(st.ppe)HS_PPE=st.ppe;if(st.inspections)HS_INSPECTIONS=st.inspections;if(st.medical)HS_MEDICAL=st.medical;if(st.partners)HS_MEDICAL_PARTNERS=st.partners;},
       render:()=>typeof renderHealthSafety==='function'&&renderHealthSafety(),
     },
     dbsecurity:{
