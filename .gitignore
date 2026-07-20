@@ -1,5 +1,7 @@
 node_modules/
 test-results/
-package.json
-package-lock.json
+/package.json
+/package-lock.json
 playwright-report/
+gateway/logs/
+.env
