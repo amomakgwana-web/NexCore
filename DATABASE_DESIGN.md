@@ -109,6 +109,39 @@ read-all/write-finance pattern. When the module tables in gap #1 are
 created, each needs the same treatment — especially `quotes` (vendor
 isolation) and `card_transactions` (finance-only).
 
+**Security advisor sweep (`20260720000001`–`3`)**: `deal_comments` /
+`deal_attachments` / `deal_members` had `for all using (true) with check
+(true)` policies — any authenticated user (any role) could read, edit, or
+delete any other user's rows on any deal, and INSERT didn't check identity,
+so a user could post a comment "as" someone else. Tightened to
+SELECT/INSERT-own for any authenticated user, UPDATE/DELETE restricted to
+the row's own author/uploader/member or an admin/cfo/manager/hr_manager
+override. Separately, `audit_write`, `nx_check_rate`, and `rls_auto_enable`
+were still callable by `anon` over PostgREST RPC despite two earlier
+migrations (`20250704000001`, `20250705000001`) trying to revoke it —
+those revoked from `anon`/`authenticated` specifically, but the functions
+still granted `EXECUTE` to `PUBLIC` from creation time, and a named-role
+revoke is a no-op against a standing `PUBLIC` grant. Revoked from `PUBLIC`
+directly and re-granted to `service_role` only. None of the three are ever
+called from the client (`writeAudit()` inserts into `audit_log` directly
+under its own policy instead), so this closes real excess privilege with
+no functional change. `check_login_lockout`/`record_login_attempt` remain
+callable by `anon` — that's intentional, both run during the login flow
+itself before a session exists.
+
+**On the Supabase anon key living in the client source**: this is not a
+gap. `SUPABASE_URL`/`SUPABASE_ANON_KEY` are necessarily public in any
+browser-only Supabase app — same as a Firebase config object — and the
+password lock on Settings → Supabase Configuration (see `dbLockGateHTML`)
+is a UI convenience, not a security boundary; it doesn't and can't make an
+already-public key secret. The actual boundary is RLS, which is what this
+sweep hardens. The one thing that must never ship client-side is the
+*service role* key, and it doesn't — the Settings panel's "Service Role
+Key" field is a static placeholder string, and the real key only exists
+server-side in the microservices' environment variables
+(`services/_shared/serviceFactory.js` reads
+`SUPABASE_SERVICE_ROLE_KEY` from `process.env`).
+
 ## Migration status
 1. ~~`journal_lines` + balance trigger (gap 2)~~ — **DONE**
    (`20260709000003`): 17 lines backfilled from jsonb, unbalanced-journal
